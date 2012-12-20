@@ -150,7 +150,7 @@ Or install it yourself as:
       </ul>
     <br/>
     <div style="text-align:right;width:100%;height:30px;" class="advanced-search-container-buttons"><!--BUTTON_RESET--><!--BUTTON_SEARCH--></div>
-</div>')
+    </div>')
 
     #
     # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
