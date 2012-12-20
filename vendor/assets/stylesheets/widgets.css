@@ -1,0 +1,117 @@
+.inputLong, .inputLarge, .inputSmall, .inputMeniumTiny, .inputTiny
+{
+    border: 0px;
+    display: inline-block;
+    padding:7px;
+    margin-right:0px;
+    padding-right:8px;
+    vertical-align:top;
+    height:20px;
+}
+
+select.inputLong, select.inputLarge, select.inputSmall
+{
+    height:33px;
+    padding-top:7px;
+}
+
+.inputLong
+{
+    background: url("../assets/images/long-text.jpg") no-repeat scroll 0px 2px transparent;
+    width: 301px;
+}
+
+.inputLarge
+{
+    background: url("../assets/images/text-field.gif") no-repeat scroll 0px 2px transparent;
+}
+
+.inputSmall
+{
+    background: url("../assets/images/text-field-small.gif") no-repeat scroll 0px 2px transparent;
+}
+
+.inputMeniumTiny
+{
+    background: url("../assets/images/text-field-medium-tiny.gif") no-repeat scroll 0px 2px transparent;
+}
+
+.inputTiny
+{
+    background: url("../assets/images/text-field-tiny.gif") no-repeat scroll 0px 2px transparent;
+}
+
+.inputLarge
+{
+   width: 183px;
+}
+
+select.inputLarge
+{
+   width: 197px;
+}
+
+.inputSmall
+{
+   width: 130px;
+}
+
+.inputMeniumTiny
+{
+   width: 72px;
+}
+
+.inputTiny
+{
+   width: 58px;
+}
+
+
+
+/**
+* Select box
+*/
+div.select-outer
+{
+    position:relative;
+    background: transparent url('../assets/images/input_text_right.png') no-repeat scroll top right;
+    display: inline-block;
+    height: 27px;
+    line-height: 27px;
+    padding-right: 11px;
+    text-decoration: none;
+}
+
+div.select-outer .select-inner {position:relative;background: transparent url('../assets/images/input_text_left.png') no-repeat scroll top left;border: none;height: 27px;line-height: 27px;padding-left: 6px;width: auto;padding-right: 7px; margin-right:-6px}
+
+div.select-outer div.select-inner select {padding:0px !important; margin:5px 0px 0px 0px !important; border:0px solid red !important;background:transparent !important; width:100% !important}
+
+/**
+* Multiple Select box
+*/
+div.select-outer-multiple
+{
+    position:relative;
+    background: transparent url('../assets/images/select-multiple-right.png') no-repeat scroll top right;
+    display: inline-block;
+    height: 140px;
+    padding-right: 13px;
+    text-decoration: none;
+}
+
+
+.fake-select
+{
+   display:     inline-block;
+   margin-left: 10px;
+}
+
+.fake-select .label
+{
+   display:     inline-block;
+   font-weight: bold;
+}
+
+div.select-outer-multiple .select-inner-multiple {position:relative;background: transparent url('../assets/images/select-multiple-left.png') no-repeat scroll top left;border: none;height: 138px;padding-left: 6px;width: auto;padding-right: 7px; margin-right:-10px}
+
+div.select-outer-multiple div.select-inner-multiple select {padding:7px 0px !important;margin:0px !important;border:0px solid red !important;background:transparent !important; position:relative; top:4px; height:126px; width:100% !important}
