@@ -1,6 +1,5 @@
-widget_list
-====================
 # WidgetList
+====================
 
 ## Introduction
 
@@ -11,10 +10,29 @@ I feel like there are not very good lists in ruby/rails and/or dont care to find
 In rails you have will_paginate and other ones like it using the ActiveRecord approach, but widget_list adds some awesome treats to standard boring pagers:
 
 * A sleek ajaxified list
-* Full sorting
+* Supports *ALL Databases (Haven't tested everything yet though, I am sure there are tweaks for each DB)
+** mysql tested (basic example)
+** postgres tested (basic example)
+* Full sorting ASC/DESC of list via ajax
+* Easily add row level buttons for each row
+* Custom tags to pass to be replaced by actual data from each column/value
 * Search bar/Ajax searching
-* Column mappings
-* Buttons for each row and areas on the bottom of the grid where you can add "Action buttons" like Add R
+* Column mappings and names
+* Checkboxes for each row for custom selection and mass actions
+* Session rememberance for each list/view of what was last sorted, which page the person was on, the limit and search filters
+* Ability to set a cool custom HTML arrow which draws a hidden DIV intended for someone to put custom widgets inside of to pass new filters to the list before it executes
+* Buttons for each row and areas on the bottom of the grid where you can add "Action buttons"
+
+## Screenshots
+
+Main Example Loaded:
+![](http://davidrenne.com/html/github/widget_list/main.png)
+
+Filter Drop Downs:
+![](http://davidrenne.com/html/github/widget_list/filtered.png)
+
+Searching a row:
+![](http://davidrenne.com/html/github/widget_list/search.png)
 
 
 ## Installation
@@ -44,16 +62,27 @@ Or install it yourself as:
 
     //= require widget_list
 
-### #2 - Run bundle exec rails s to have widget_list create config/widget-list.yml
+### #2 - Run `bundle exec rails s` to have widget_list create config/widget-list.yml (by default a sqlite3 memory database is created)
 
-    Change application.css to:
+    Configure your connection settings for your primary or secondary widget_list connections.
 
-    *= require widget_list
-    *= require widgets
+    http://sequel.rubyforge.org/rdoc/files/doc/opening_databases_rdoc.html
 
-    Change application.js to:
+### #3 - If you wish to integrate into an existing rails application create a new controller
+    
+    rails generate controller WidgetListExamples ruby_items
 
-    //= require widget_list
+  Then modify app/views/widget_list_examples/ruby_items.html.erb and add 
+    <div style="margin:50px;">
+      <%=raw @ouput%>
+    </div>
+  
+  Add config/routes.rb if it is not in there:
+    match ':controller(/:action)'
+  
+  Add the example shown below to app/controllers/widget_list_examples_controller.rb#ruby_items
+  
+  Go To http://localhost:3000/widget_list_examples/ruby_items
 
 ### Example Calling Page That Sets up Config and calls WidgetList.render
 
@@ -150,7 +179,7 @@ Or install it yourself as:
       </ul>
     <br/>
     <div style="text-align:right;width:100%;height:30px;" class="advanced-search-container-buttons"><!--BUTTON_RESET--><!--BUTTON_SEARCH--></div>
-    </div>')
+</div>')
 
     #
     # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
@@ -234,7 +263,7 @@ Or install it yourself as:
 Meta
 ----
 
-* Gems: <http://rubygems.org/gems/widget-list>
+* Gems: <https://rubygems.org/gems/widget_list>
 
 
 Authors

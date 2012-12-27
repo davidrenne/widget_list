@@ -6,11 +6,11 @@ require 'widget_list/version'
 Gem::Specification.new do |gem|
   gem.name          = "widget_list"
   gem.version       = WidgetList::VERSION
-  gem.authors       = ["Dave"]
-  gem.email         = ["dave@dave.com"]
-  gem.description   = %q{widgetlist desc}
-  gem.summary       = %q{widgetlist summary}
-  gem.homepage      = ""
+  gem.authors       = ["David Renne"]
+  gem.email         = ["message_me_on_github@dave.com"]
+  gem.description   = %q{An Advanced and flexible ajax data grid.  Outside of all of the RAILS Active record CRAP!}
+  gem.summary       = %q{In rails you have will_paginate and other gems like it using the ActiveRecord approach, but widget_list adds some awesome treats to standard boring pagers}
+  gem.homepage      = "https://github.com/davidrenne/widget_list"
   gem.add_dependency('sequel', '3.42.0')
 
   gem.files         = `git ls-files`.split($/)

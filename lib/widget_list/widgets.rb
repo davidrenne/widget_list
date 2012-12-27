@@ -604,7 +604,7 @@ module WidgetList
         'submit'     => '',
         'args'       => {},
         'class'      => 'btn',     #Always stays the same
-        'innerClass' => 'success', #.primary(blue) .info(light-blue) .success(green) .danger(red) .disabled(light grey) .default(grey)
+        'innerClass' => 'info',    #.primary(blue) .info(light-blue) .success(green) .danger(red) .disabled(light grey) .default(grey)
         'passive'    => false,
         'function'   => 'ButtonLinkPost',
         'onclick'    => '',
