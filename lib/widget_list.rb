@@ -26,18 +26,38 @@ module WidgetList
 
     include ActionView::Helpers::SanitizeHelper
 
+    def self.determine_db_type(db_type)
+      the_type, void = db_type.split("://")
+      return the_type.downcase
+    end
+
     def self.connect
 
-      if Rails.root.join("config", "widget-list.yml").file?
-        config = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
-        @primary_conn   = config[:primary]
-        @secondary_conn = config[:secondary]
-      else
-        throw 'widget-list.yml not found'
-      end
+      begin
+        if Rails.root.join("config", "widget-list.yml").file?
+          config = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
+          if config.nil?
+             throw 'Configuration file widget-list.yml has no data.  Check that (' + Rails.env + ') Rails.env matches the pointers in the file'
+          end
+          @primary_conn   = config[:primary]
+          @secondary_conn = config[:secondary]
+        else
+          throw 'widget-list.yml not found'
+        end
 
-      $DATABASE  = Sequel.connect(@primary_conn) if @primary_conn.class.name == 'String'
-      $DATABASE2 = Sequel.connect(@secondary_conn) if @secondary_conn.class.name == 'String'
+        $DATABASE  = Sequel.connect(@primary_conn) if @primary_conn != 'false' and @primary_conn != false
+        $DATABASE2 = Sequel.connect(@secondary_conn) if @secondary_conn != 'false' and @secondary_conn != false
+
+        if @primary_conn.class.name != 'false' and @primary_conn != false
+          $DATABASE.db_type = determine_db_type(@primary_conn)
+        end
+
+        if @primary_conn.class.name != 'false' and @secondary_conn != false
+          $DATABASE2.db_type = determine_db_type(@secondary_conn)
+        end
+      rescue Exception => e
+        p "widget-list.yml and connection to \$DATABASE failed.  Please fix and try again (" + e.to_s + ")"
+      end
 
     end
 
@@ -423,6 +443,7 @@ module WidgetList
          #
          if (@items['sql'])
          {
+            #tick_field()....
             preg_match("/\s+from\s+`?([a-z\d_]+)`?/i", @items['sql'], $match);
             $viewName = $match[1];
          }
@@ -527,7 +548,7 @@ module WidgetList
                 if @items['searchIdCol'].class.name == 'Array'
                   @items['searchIdCol'].each { |searchIdCol|
                     if(fieldsToSearch.key?(searchIdCol))
-                      searchSQL << "`" + searchIdCol + "` IN(" + searchFilter  + ")"
+                      searchSQL << tick_field() + searchIdCol + tick_field() + " IN(" + searchFilter  + ")"
                     end
                   }
 
@@ -539,14 +560,14 @@ module WidgetList
                   end
                 elsif @items['fields'].key?(@items['searchIdCol'])
                   numericSearch = true
-                  @items['filter']  << "`#{@items['searchIdCol']}` IN(" + criteriaTmp.join(',') + ")"
+                  @items['filter']  << tick_field() + "#{@items['searchIdCol']}" + tick_field() + " IN(" + criteriaTmp.join(',') + ")"
                 end
               end
             elsif @items['searchIdCol'].class.name == 'Array'
               if WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.')
                 @items['searchIdCol'].each { |searchIdCol|
                   if fieldsToSearch.key?(searchIdCol)
-                    searchSQL << "`#{searchIdCol}` IN(#{searchFilter})"
+                    searchSQL << tick_field() + "#{searchIdCol}" + tick_field() + " IN(#{searchFilter})"
                   end
                 }
 
@@ -557,11 +578,9 @@ module WidgetList
                   @items['filter'] << "(" + searchSQL.join(' OR ') + ")"
                 end
               end
-              #elsif WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.') && @items['fields'].key?(@items['searchIdCol'])
-              #   #19.95 is numeric, but people might be searching for dollar amounts which should be string based search
-              #   numericSearch = true
-              #
-              #   @items['filter'] << "`#{@items['searchIdCol']}` IN(" + searchFilter + ")"
+            elsif WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.') && @items['fields'].key?(@items['searchIdCol'])
+              numericSearch = true
+              @items['filter'] << tick_field() + "#{@items['searchIdCol']}" + tick_field() + " IN(" + searchFilter + ")"
             end
 
             # If it is not an id or a list of ids then it is assumed a string search
@@ -576,6 +595,14 @@ module WidgetList
                     skip = true
                   end
                 }
+                
+                (@items['inputs']||{}).each { |k,v|
+                  if fieldName == k
+                    skip = true
+                  end
+                }
+                
+                
 
                 #buttons must ALWAYS BE ON THE RIGHT SIDE IN ORDER FOR THIS NOT TO SEARCH A NON-EXISTENT COLUMN  (used to be hard coded to 'features' as a column to remove)
                 if (!@items['buttons'].empty? && ii == (fieldsToSearch.length - 1)) || skip
@@ -598,7 +625,7 @@ module WidgetList
                 end
 
                 #todo - escape bind variables using Sequel
-                searchSQL << "`#{fieldName}` LIKE '%" + searchCriteria + "%'"
+                searchSQL << tick_field() + "#{fieldName}" + cast_col() + tick_field() + " LIKE '%" + searchCriteria + "%'"
                 ii = ii + 1
               }
 
@@ -685,6 +712,24 @@ module WidgetList
       end
     end
 
+    def tick_field()
+      case WidgetList::List.get_database.db_type
+        when 'postgres'
+          ''
+        else
+          '`'
+      end
+    end
+
+    def cast_col()
+      case WidgetList::List.get_database.db_type
+        when 'postgres'
+          '::char(1000)'
+        else
+          ''
+      end
+    end
+    
     def ajax_maintain_checks()
 
       #
@@ -1895,7 +1940,7 @@ module WidgetList
       if !@items['sql'].empty? || !@items['force_query_sql'].empty?
         if !@items['fieldNames'].empty?
           @items['fieldNames'].each { |column|
-            tick = '`'
+            tick = tick_field()
             if(isset(@items['function'][column]))
               tick   = ''
               column = @items['function'][column]
@@ -1968,10 +2013,10 @@ module WidgetList
 
       if !@items['LIST_COL_SORT'].empty? || $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
         if ! @items['LIST_COL_SORT'].empty?
-          pieces['<!--ORDERBY-->'] += ' ORDER BY `' + @items['LIST_COL_SORT'] + "` " + @items['LIST_COL_SORT_ORDER']
+          pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + @items['LIST_COL_SORT'] + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
         else
           $_SESSION['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
-            pieces['<!--ORDERBY-->'] += ' ORDER BY `' + order[0] + "` " + order[1]
+            pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + order[0] + tick_field() +  " " + order[1]
           } if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
         end
 
@@ -1983,8 +2028,14 @@ module WidgetList
       elsif !@items['orderBy'].empty?
         pieces['<!--ORDERBY-->'] += ' ORDER BY ' + @items['orderBy']
       end
-
-      pieces['<!--LIMIT-->'] = ' LIMIT :LOW, :HIGH'
+      
+      case WidgetList::List.get_database.db_type
+        when 'postgres'
+          pieces['<!--LIMIT-->'] = ' LIMIT :HIGH OFFSET :LOW'
+        else
+          pieces['<!--LIMIT-->'] = ' LIMIT :LOW, :HIGH'
+      end
+      
 
       statement = WidgetList::Utils::fill(pieces, statement)
 
@@ -2050,5 +2101,3 @@ module WidgetList
   end
 
 end
-
-

@@ -9,6 +9,9 @@ module Sequel
     @last_error = ''
     attr_accessor :last_error
 
+    @db_type = ''
+    attr_accessor :db_type
+
     @final_count = 0
     attr_accessor :final_count
 
