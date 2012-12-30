@@ -96,7 +96,7 @@ module WidgetList
         'results'             => {},
         'buttons'             => {},
         'inputs'              => {},
-        'filter'              => '',
+        'filter'              => [],
         'rowStart'            => 0,
         'rowLimit'            => 10,
         'orderBy'             => '',
@@ -527,6 +527,7 @@ module WidgetList
               }
 
               if isNumeric
+	        numericSearch = true
                 if @items['searchIdCol'].class.name == 'Array'
                   @items['searchIdCol'].each { |searchIdCol|
                     if(fieldsToSearch.key?(searchIdCol))
@@ -547,7 +548,8 @@ module WidgetList
               end
             elsif @items['searchIdCol'].class.name == 'Array'
               if WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.')
-                @items['searchIdCol'].each { |searchIdCol|
+                numericSearch = true
+		@items['searchIdCol'].each { |searchIdCol|
                   if fieldsToSearch.key?(searchIdCol)
                     searchSQL << tick_field() + "#{searchIdCol}" + tick_field() + " IN(#{searchFilter})"
                   end
