@@ -181,7 +181,7 @@ module WidgetList
         'useSort'             => true,
         'headerClass'         => {},
         'groupBy'             => '',
-        'function'            => {},
+        'fieldFunction'       => {},
         'buttonVal'           => 'templateListJump',
         'linkFunction'        => 'ButtonLinkPost',
         'template'            => '',
@@ -567,16 +567,17 @@ module WidgetList
 
             # If it is not an id or a list of ids then it is assumed a string search
             if !numericSearch
-              ii = 0
+
               fieldsToSearch.each { |fieldName,fieldTitle|
 
-                # new lodgette. if function exists, find all matches and skip them
+                # new lodgette. if fieldFunction exists, find all matches and skip them
                 skip = false
-                (@items['function']||{}).each { |k,v|
-                  if fieldName == k
-                    skip = true
-                  end
-                }
+
+                if @items['fieldFunction'].key?(fieldName)
+                  theField = @items['fieldFunction'][fieldName]  + cast_col()
+                else
+                  theField = tick_field() + "#{fieldName}" + cast_col() + tick_field()
+                end
 
                 (@items['inputs']||{}).each { |k,v|
                   if fieldName == k
@@ -584,10 +585,12 @@ module WidgetList
                   end
                 }
 
-
+                if @items['buttons'].key?(fieldName)
+                  skip = true
+                end
 
                 #buttons must ALWAYS BE ON THE RIGHT SIDE IN ORDER FOR THIS NOT TO SEARCH A NON-EXISTENT COLUMN  (used to be hard coded to 'features' as a column to remove)
-                if (!@items['buttons'].empty? && ii == (fieldsToSearch.length - 1)) || skip
+                if skip
                   next
                 end
 
@@ -607,8 +610,7 @@ module WidgetList
                 end
 
                 #todo - escape bind variables using Sequel
-                searchSQL << tick_field() + "#{fieldName}" + cast_col() + tick_field() + " LIKE '%" + searchCriteria + "%'"
-                ii = ii + 1
+                searchSQL <<  theField + " LIKE '%" + searchCriteria + "%'"
               }
 
               #
@@ -1931,8 +1933,9 @@ module WidgetList
       #Build out a list of columns to select from
       #
       @items['fields'].each { |column, fieldTitle|
-        if @items['function'].key?(column) && !@items['function'][column].empty?
-          column = @items['function'][column]
+        if @items['fieldFunction'].key?(column) && !@items['fieldFunction'][column].empty?
+          # fieldFunction's should not have an alias, just the database functions
+          column = @items['fieldFunction'][column] + " " + column
         end
 
         @fieldList << column
