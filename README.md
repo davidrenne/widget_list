@@ -11,8 +11,10 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 
 * A sleek ajaxified list
 * Supports *ALL Databases (Haven't tested everything yet though, I am sure there are tweaks for each DB)
-** mysql tested (basic example)
-** postgres tested (basic example)
+*    mysql tested (basic example)
+*    postgres tested (basic example)
+*    oracle tested (basic example)
+*    sqllite tested (basic example)
 * Full sorting ASC/DESC of list via ajax
 * Easily add row level buttons for each row
 * Custom tags to pass to be replaced by actual data from each column/value
