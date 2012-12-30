@@ -26,13 +26,13 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 ## Screenshots
 
 Main Example Loaded:
-![](http://davidrenne.com/html/github/widget_list/main.png)
+![](http://davidrenne.com/github/widget_list/main.png)
 
 Filter Drop Downs:
-![](http://davidrenne.com/html/github/widget_list/filtered.png)
+![](http://davidrenne.com/github/widget_list/filtered.png)
 
 Searching a row:
-![](http://davidrenne.com/html/github/widget_list/search.png)
+![](http://davidrenne.com/github/widget_list/search.png)
 
 
 ## Installation
@@ -49,7 +49,9 @@ Or install it yourself as:
 
     $ gem install widget_list
 
-## Usage
+## Usage/Examples
+
+You can either follow the below instructions or take a look at the changes here https://github.com/davidrenne/widget_list_example/commit/e4e8ab54edcf8bc4538b1850ee762c13bc6f5316
 
 ### #1 - Add widget_list CSS and JS to your application css and js
 
@@ -86,26 +88,23 @@ Or install it yourself as:
 
 ### Example Calling Page That Sets up Config and calls WidgetList.render
 
-    #
-    # Load Sample "items" Data. Comment out in your first time executing a widgetlist to create the items table
-    #
-
-    # no table - create it and load it with 5K records
+   
     WidgetList::List.get_database.create_table :items do
       primary_key :id
       String :name
       Float :price
+      Int :sku
+      Date :date_added
     end
     items = WidgetList::List.get_database[:items]
     100.times {
-      items.insert(:name => 'abc', :price => rand * 100)
-      items.insert(:name => '123', :price => rand * 100)
-      items.insert(:name => 'asdf', :price => rand * 100)
-      items.insert(:name => 'qwerty', :price => rand * 100)
-      items.insert(:name => 'poop', :price => rand * 100)
-    }
-
-
+      items.insert(:name => 'abc', :price => rand * 100, :date_added => '2008-02-01', :sku => 12345)
+      items.insert(:name => '123', :price => rand * 100, :date_added => '2008-02-02', :sku => 54321)
+      items.insert(:name => 'asdf', :price => rand * 100, :date_added => '2008-02-03', :sku => 67895)
+      items.insert(:name => 'qwerty', :price => rand * 100, :date_added => '2008-02-04', :sku => 66666)
+      items.insert(:name => 'poop', :price => rand * 100, :date_added => '2008-02-05', :sku => 77777)
+    }  
+    
     #
     # Setup your first widget_list
     #
@@ -123,8 +122,9 @@ Or install it yourself as:
     # Give it a name, some SQL to feed widget_list and set a noDataMessage
     #
     list_parms['name']          = 'ruby_items_yum'
+    list_parms['searchIdCol']   = ['id','sku']
     list_parms['view']          = '(SELECT \'\'  as checkbox,a.* FROM items a ) a'
-    list_parms['noDataMessage'] = 'No Tables Found'
+    list_parms['noDataMessage'] = 'No Ruby Items Found'
     list_parms['title']         = 'Ruby Items!!!'
 
     #
@@ -133,18 +133,21 @@ Or install it yourself as:
 
     mini_buttons = {}
     mini_buttons['button_edit'] = {'page'       => '/edit',
-                              'text'       => 'Edit',
-                              'function'   => 'Redirect',
-                              #pass tags to pull from each column when building the URL
-                              'tags'       => {'my_key_name' => 'name','value_from_database'=>'price'}}
+                                   'text'       => 'Edit',
+                                   'function'   => 'Redirect',
+                                     #pass tags to pull from each column when building the URL
+                                   'tags'       => {'my_key_name' => 'name','value_from_database'=>'price'}}
 
     mini_buttons['button_delete'] = {'page'       => '/delete',
-                                'text'       => 'Delete',
-                                'function'   => 'alert',
-                                'innerClass' => 'danger'}
+                                     'text'       => 'Delete',
+                                     'function'   => 'alert',
+                                     'innerClass' => 'danger'}
     list_parms['buttons']                                            = {button_column_name => mini_buttons}
-    list_parms['function']                                           = {button_column_name => "'' " + button_column_name }
-    list_parms['groupByItems']= ['All Records','Another Grouping Item']
+    list_parms['fieldFunction']                                      = {
+                                                                          button_column_name => "''",
+                                                                          'date_added'  => ['postgres','oracle'].include?(WidgetList::List.get_database.db_type) ? "TO_CHAR(date_added, 'MM/DD/YYYY')" : "date_added"
+                                                                       }
+    list_parms['groupByItems']    = ['All Records','Item Name']
 
     #
     # Generate a template for the DOWN ARROW for CUSTOM FILTER
@@ -179,21 +182,58 @@ Or install it yourself as:
       </ul>
     <br/>
     <div style="text-align:right;width:100%;height:30px;" class="advanced-search-container-buttons"><!--BUTTON_RESET--><!--BUTTON_SEARCH--></div>
-</div>')
+    </div>')
 
     #
-    # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
+    # Map out the visible fields
     #
 
     list_parms.deep_merge!({'fields' =>
                     {
                       'checkbox'=> 'checkbox_header',
+                    }
+                 })
+                 
+    list_parms.deep_merge!({'fields' =>
+                    {
                       'id'=> 'Item Id',
+                    }
+                 })
+                 
+    list_parms.deep_merge!({'fields' =>
+                    {
                       'name'=> 'Name',
+                    }
+                 })
+                 
+    list_parms.deep_merge!({'fields' =>
+                    {
                       'price'=> 'Price of Item',
+                    }
+                 })
+                 
+                 
+    list_parms.deep_merge!({'fields' =>
+                    {
+                      'sku'=> 'Sku #',
+                    }
+                 })
+                 
+    list_parms.deep_merge!({'fields' =>
+                    {
+                      'date_added'=> 'Date Added',
+                    }
+                 })
+ 
+    list_parms.deep_merge!({'fields' =>
+                    {
                       button_column_name => button_column_name.capitalize,
                     }
                  })
+                 
+    #
+    # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
+    #
 
     list_parms.deep_merge!({'inputs' =>
                           {'checkbox'=>
@@ -248,7 +288,7 @@ Or install it yourself as:
       #
       # Else assign to variable for view
       #
-      @output = WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
+      @output =  WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
     end
 
 ## Contributing
