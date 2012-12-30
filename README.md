@@ -74,7 +74,7 @@ Or install it yourself as:
 
   Then modify app/views/widget_list_examples/ruby_items.html.erb and add 
     <div style="margin:50px;">
-      <%=raw @ouput%>
+      <%=raw @output%>
     </div>
   
   Add config/routes.rb if it is not in there:

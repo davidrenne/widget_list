@@ -37,7 +37,7 @@ module WidgetList
         if Rails.root.join("config", "widget-list.yml").file?
           config = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
           if config.nil?
-             throw 'Configuration file widget-list.yml has no data.  Check that (' + Rails.env + ') Rails.env matches the pointers in the file'
+            throw 'Configuration file widget-list.yml has no data.  Check that (' + Rails.env + ') Rails.env matches the pointers in the file'
           end
           @primary_conn   = config[:primary]
           @secondary_conn = config[:secondary]
@@ -292,40 +292,10 @@ module WidgetList
                          })
 
       @items.deep_merge!({'statement' =>
-                            {'select'=>
-                               {'sql' =>
-                                  '
-                                  SELECT <!--FIELDS--> FROM (<!--SQL-->) a <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
-                                  '
-                               }
-                            }
-                         })
-
-      @items.deep_merge!({'statement' =>
                             {'count'=>
                                {'view' =>
                                   '
                                   SELECT count(1) total FROM <!--VIEW--> <!--WHERE-->
-                                  '
-                               }
-                            }
-                         })
-
-      @items.deep_merge!({'statement' =>
-                            {'count'=>
-                               {'sql' =>
-                                  '
-                                  SELECT count(1) total FROM (<!--SQL-->) s <!--WHERE-->
-                                  '
-                               }
-                            }
-                         })
-
-      @items.deep_merge!({'statement' =>
-                            {'count'=>
-                               {'table' =>
-                                  '
-                                  SELECT count(1) total FROM <!--TABLE--> <!--WHERE-->
                                   '
                                }
                             }
@@ -384,6 +354,21 @@ module WidgetList
 
       @items = WidgetList::Widgets::populate_items(list,@items)
 
+      # current_db is a flag of the last known primary or secondary YML used or defaulted when running a list
+      $current_db_selection = @items['database']
+
+      if WidgetList::List.get_database.db_type == 'oracle'
+        @items.deep_merge!({'statement' =>
+                              {'select'=>
+                                 {'view' =>
+                                    '
+                                    SELECT <!--FIELDS-->, rn FROM ( SELECT ' + ( (!@items['view'].include?('(')) ? '<!--SOURCE-->' : @items['view'].strip.split(" ").last ) + '.*, rank() over (<!--ORDERBY-->) rn FROM <!--SOURCE--> ) a <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
+                                    '
+                                 }
+                              }
+                           })
+
+      end
 
       begin
         @isJumpingList = false
@@ -428,9 +413,6 @@ module WidgetList
           end
 
         end
-
-        # current_db is a flag of the last known primary or secondary YML used or defaulted when running a list
-        $current_db_selection = @items['database']
 
         @items['groupByClick'] = "ListChangeGrouping('" + @items['name']  + "')"
 
@@ -595,14 +577,14 @@ module WidgetList
                     skip = true
                   end
                 }
-                
+
                 (@items['inputs']||{}).each { |k,v|
                   if fieldName == k
                     skip = true
                   end
                 }
-                
-                
+
+
 
                 #buttons must ALWAYS BE ON THE RIGHT SIDE IN ORDER FOR THIS NOT TO SEARCH A NON-EXISTENT COLUMN  (used to be hard coded to 'features' as a column to remove)
                 if (!@items['buttons'].empty? && ii == (fieldsToSearch.length - 1)) || skip
@@ -715,6 +697,7 @@ module WidgetList
     def tick_field()
       case WidgetList::List.get_database.db_type
         when 'postgres'
+        when 'oracle'
           ''
         else
           '`'
@@ -729,7 +712,7 @@ module WidgetList
           ''
       end
     end
-    
+
     def ajax_maintain_checks()
 
       #
@@ -854,7 +837,15 @@ module WidgetList
       @items['bindVarsLegacy']['HIGH'] = @items['rowLimit']
 
       if @sequence.to_i > 1 && ! @items['NEW_SEARCH']
-        @items['bindVarsLegacy']['LOW'] = (((@sequence * @items['rowLimit']) - @items['rowLimit']))
+        subtractLimit = 0
+        if WidgetList::List.get_database.db_type != 'oracle'
+          subtractLimit = @items['rowLimit']
+        end
+        @items['bindVarsLegacy']['LOW'] = (((@sequence * @items['rowLimit']) -  subtractLimit))
+        if WidgetList::List.get_database.db_type == 'oracle'
+          @items['bindVarsLegacy']['HIGH'] = ((((@sequence + 1) * @items['rowLimit'])))
+        end
+
       end
     end
 
@@ -1937,59 +1928,27 @@ module WidgetList
                           '<!--ORDERBY-->' => '',
                           '<!--LIMIT-->'   => ''}
 
-      if !@items['sql'].empty? || !@items['force_query_sql'].empty?
-        if !@items['fieldNames'].empty?
-          @items['fieldNames'].each { |column|
-            tick = tick_field()
-            if(isset(@items['function'][column]))
-              tick   = ''
-              column = @items['function'][column]
-            end
-            @fieldList << "#{tick}#{column}#{tick}"
-          }
-          fields = @fieldList.join(',')
-
-
-        else
-          fields = "*";
+      #Build out a list of columns to select from
+      #
+      @items['fields'].each { |column, fieldTitle|
+        if @items['function'].key?(column) && !@items['function'][column].empty?
+          column = @items['function'][column]
         end
 
+        @fieldList << column
+      }
 
-        sqlPieces = {};
-        sqlPieces['<!--FIELDS-->'] = fields;
-        sqlPieces['<!--SQL-->']    = @items['sql'];
+      #Add any columns without corresponding header titles
+      #
+      @items['columns'].each { |column|
+        @fieldList << column
+      }
 
-        if !@items['force_query_sql'].empty?
-          statement = @items['force_query_sql']
-        else
-          statement = @items['statement']['select']['sql']
-        end
+      viewPieces = {}
+      viewPieces['<!--FIELDS-->'] = @fieldList.join(',')
+      viewPieces['<!--SOURCE-->'] = @items['view']
 
-        statement = WidgetList::Utils::fill(sqlPieces, @items['statement']['count']['table'])
-
-      elsif !@items['view'].empty?
-        #Build out a list of columns to select from
-        #
-        @items['fields'].each { |column, fieldTitle|
-          if @items['function'].key?(column) && !@items['function'][column].empty?
-            column = @items['function'][column]
-          end
-
-          @fieldList << column
-        }
-
-        #Add any columns without corresponding header titles
-        #
-        @items['columns'].each { |column|
-          @fieldList << column
-        }
-
-        viewPieces = {}
-        viewPieces['<!--FIELDS-->'] = @fieldList.join(',')
-        viewPieces['<!--SOURCE-->'] = @items['view']
-
-        statement = WidgetList::Utils::fill(viewPieces, @items['statement']['select']['view'])
-      end
+      statement = WidgetList::Utils::fill(viewPieces, @items['statement']['select']['view'])
 
       @sqlHash = Digest::SHA2.hexdigest( WidgetList::Utils::fill(pieces, statement) )
 
@@ -2003,8 +1962,7 @@ module WidgetList
       end
 
       if !@filter.empty?
-        where = ' WHERE '
-        pieces['<!--WHERE-->'] = where + @filter
+        pieces['<!--WHERE-->'] = ' WHERE ' + @filter
       end
 
       if !@items['groupBy'].empty?
@@ -2028,14 +1986,35 @@ module WidgetList
       elsif !@items['orderBy'].empty?
         pieces['<!--ORDERBY-->'] += ' ORDER BY ' + @items['orderBy']
       end
-      
+
+      if WidgetList::List.get_database.db_type == 'oracle' && pieces['<!--ORDERBY-->'].empty?
+        keys = @items['fields'].keys
+        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + keys.first + ' ASC'
+      end
+
       case WidgetList::List.get_database.db_type
         when 'postgres'
           pieces['<!--LIMIT-->'] = ' LIMIT :HIGH OFFSET :LOW'
+        when 'oracle'
+          pieces['<!--LIMIT-->'] = ''
+
+          if !@filter.empty?
+            and_where = ' AND '
+          else
+            and_where = ' WHERE '
+          end
+          pieces['<!--WHERE-->'] += and_where +
+            '
+            (
+                 a.rn >= :LOW
+              AND
+                 a.rn <= :HIGH
+            )
+            '
         else
           pieces['<!--LIMIT-->'] = ' LIMIT :LOW, :HIGH'
       end
-      
+
 
       statement = WidgetList::Utils::fill(pieces, statement)
 
@@ -2060,10 +2039,6 @@ module WidgetList
 
       if !@items['force_count_sql'].empty?
         sql = @items['force_count_sql']
-      elsif !@items['table'].empty?
-        sql = WidgetList::Utils::fill({'<!--TABLE-->' => @items['table']}, @items['statement']['count']['table'])
-      elsif !@items['sql'].empty?
-        sql = WidgetList::Utils::fill({'<!--SQL-->' => @items['sql']}, @items['statement']['count']['sql'])
       elsif !@items['view'].empty?
         sql = WidgetList::Utils::fill({'<!--VIEW-->' => @items['view']}, @items['statement']['count']['view'])
       end
