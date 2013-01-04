@@ -87,28 +87,73 @@ You can either follow the below instructions or take a look at the changes here 
 ### Example Calling Page That Sets up Config and calls WidgetList.render
 
    
-    WidgetList::List.get_database.create_table :items do
-      primary_key :id
-      String :name
-      Float :price
-      Int :sku
-      Date :date_added
+    #
+    # Load Sample "items" Data. Comment out in your first time executing a widgetlist to create the items table
+    #
+    begin 
+        WidgetList::List.get_database.create_table :items do
+          primary_key :id
+          String :name
+          Float :price
+          Int :sku
+          Date :date_added
+        end
+        items = WidgetList::List.get_database[:items]
+        100.times {
+          items.insert(:name => 'abc', :price => rand * 100, :date_added => '2008-02-01', :sku => 12345)
+          items.insert(:name => '123', :price => rand * 100, :date_added => '2008-02-02', :sku => 54321)
+          items.insert(:name => 'asdf', :price => rand * 100, :date_added => '2008-02-03', :sku => 67895)
+          items.insert(:name => 'qwerty', :price => rand * 100, :date_added => '2008-02-04', :sku => 66666)
+          items.insert(:name => 'poop', :price => rand * 100, :date_added => '2008-02-05', :sku => 77777)
+        }
+    rescue Exception => e
+      #
+      # Table already exists
+      #
+      logger.info "Test table in items already exists? " + e.to_s
     end
-    items = WidgetList::List.get_database[:items]
-    100.times {
-      items.insert(:name => 'abc', :price => rand * 100, :date_added => '2008-02-01', :sku => 12345)
-      items.insert(:name => '123', :price => rand * 100, :date_added => '2008-02-02', :sku => 54321)
-      items.insert(:name => 'asdf', :price => rand * 100, :date_added => '2008-02-03', :sku => 67895)
-      items.insert(:name => 'qwerty', :price => rand * 100, :date_added => '2008-02-04', :sku => 66666)
-      items.insert(:name => 'poop', :price => rand * 100, :date_added => '2008-02-05', :sku => 77777)
-    }  
     
+    list_parms   = {}
+
+    #
+    # Give it a name, some SQL to feed widget_list and set a noDataMessage
+    #
+    list_parms['name']          = 'ruby_items_yum'
+
+    #
+    # Handle Dynamic Filters
+    #
+    if $_REQUEST.key?('switch_grouping') && $_REQUEST['switch_grouping'] == 'Item Name'
+      groupByFilter       = 'item'
+      countSQL            = 'COUNT(1) as cnt,'
+      groupBySQL          = 'GROUP BY name'
+    elsif  $_REQUEST.key?('switch_grouping') && $_REQUEST['switch_grouping'] == 'Sku Number'
+      groupByFilter       = 'sku'
+      countSQL            = 'COUNT(1) as cnt,'
+      groupBySQL          = 'GROUP BY sku'
+    else
+      groupByFilter       = 'none'
+      countSQL            = ''
+      groupBySQL          = ''
+    end
+
+    list_parms['filter']    = []
+    drillDown, filterValue  = WidgetList::List::get_filter_and_drilldown(list_parms['name'])
+
+    case drillDown
+      when 'filter_by_name'
+        list_parms['filter'] << " name = '" + filterValue + "'"
+      when 'filter_by_sku'
+        list_parms['filter'] << " sku =  '" + filterValue + "'"
+    end
+
+
+
     #
     # Setup your first widget_list
     #
 
     button_column_name = 'actions'
-    list_parms   = {}
 
     #
     # action_buttons will add buttons to the bottom of the list.
@@ -117,11 +162,24 @@ You can either follow the below instructions or take a look at the changes here 
     action_buttons =  WidgetList::Widgets::widget_button('Add New Item', {'page' => '/add/'} ) + WidgetList::Widgets::widget_button('Do something else', {'page' => '/else/'} )
 
     #
-    # Give it a name, some SQL to feed widget_list and set a noDataMessage
+    # Give some SQL to feed widget_list and set a noDataMessage
     #
-    list_parms['name']          = 'ruby_items_yum'
     list_parms['searchIdCol']   = ['id','sku']
-    list_parms['view']          = '(SELECT \'\'  as checkbox,a.* FROM items a ) a'
+    list_parms['view']          = '(
+                                     SELECT
+                                           ' + countSQL + '
+                                           ' + WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_name','a.name','a.name','name_linked') + '
+                                           ' + WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_sku','a.sku','a.sku','sku_linked') + '
+                                           \'\'    AS checkbox,
+                                           a.id    AS id,
+                                           a.name  AS name,
+                                           a.sku   AS sku,
+                                           a.price AS price,
+                                           a.date_added AS date_added
+                                       FROM
+                                           items a
+                                     ' + groupBySQL + '
+                                   ) a'
     list_parms['noDataMessage'] = 'No Ruby Items Found'
     list_parms['title']         = 'Ruby Items!!!'
 
@@ -133,7 +191,7 @@ You can either follow the below instructions or take a look at the changes here 
     mini_buttons['button_edit'] = {'page'       => '/edit',
                                    'text'       => 'Edit',
                                    'function'   => 'Redirect',
-                                     #pass tags to pull from each column when building the URL
+                                   #pass tags to pull from each column when building the URL
                                    'tags'       => {'my_key_name' => 'name','value_from_database'=>'price'}}
 
     mini_buttons['button_delete'] = {'page'       => '/delete',
@@ -142,10 +200,10 @@ You can either follow the below instructions or take a look at the changes here 
                                      'innerClass' => 'danger'}
     list_parms['buttons']                                            = {button_column_name => mini_buttons}
     list_parms['fieldFunction']                                      = {
-                                                                          button_column_name => "''",
-                                                                          'date_added'  => ['postgres','oracle'].include?(WidgetList::List.get_database.db_type) ? "TO_CHAR(date_added, 'MM/DD/YYYY')" : "date_added"
-                                                                       }
-    list_parms['groupByItems']    = ['All Records','Item Name']
+      button_column_name => "''",
+      'date_added'  => ['postgres','oracle'].include?(WidgetList::List.get_database.db_type) ? "TO_CHAR(date_added, 'MM/DD/YYYY')" : "date_added"
+    }
+    list_parms['groupByItems']    = ['All Records','Item Name', 'Sku Number']
 
     #
     # Generate a template for the DOWN ARROW for CUSTOM FILTER
@@ -166,10 +224,10 @@ You can either follow the below instructions or take a look at the changes here 
     button_search['onclick']      = "alert('This would search, but is not coded.  That is for you to do')"
 
     list_parms['list_search_form'] = WidgetList::Utils::fill( {
-                              '<!--COMMENTS-->'            => WidgetList::Widgets::widget_input(input),
-                              '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', button_search),
-                              '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)" } ,
-    '
+                                                                '<!--COMMENTS-->'            => WidgetList::Widgets::widget_input(input),
+                                                                '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', button_search),
+                                                                '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)" } ,
+                                                              '
     <div id="advanced-search-container">
     <div class="widget-search-drilldown-close" onclick="<!--BUTTON_CLOSE-->">X</div>
       <ul class="advanced-search-container-inline" id="search_columns">
@@ -187,89 +245,94 @@ You can either follow the below instructions or take a look at the changes here 
     #
 
     list_parms.deep_merge!({'fields' =>
-                    {
-                      'checkbox'=> 'checkbox_header',
-                    }
-                 })
-                 
+                              {
+                                'checkbox'=> 'checkbox_header',
+                              }
+                           })
+
     list_parms.deep_merge!({'fields' =>
-                    {
-                      'id'=> 'Item Id',
-                    }
-                 })
-                 
+                              {
+                                'cnt'=> 'Total Items In Group',
+                              }
+                           }) if groupByFilter != 'none'
+
     list_parms.deep_merge!({'fields' =>
-                    {
-                      'name'=> 'Name',
-                    }
-                 })
-                 
+                              {
+                                'id'=> 'Item Id',
+                              }
+                           }) if groupByFilter == 'none'
+
     list_parms.deep_merge!({'fields' =>
-                    {
-                      'price'=> 'Price of Item',
-                    }
-                 })
-                 
-                 
+                              {
+                                'name_linked'=> 'Name',
+                              }
+                           }) if groupByFilter == 'none' or groupByFilter == 'item'
+
     list_parms.deep_merge!({'fields' =>
-                    {
-                      'sku'=> 'Sku #',
-                    }
-                 })
-                 
+                              {
+                                'price'=> 'Price of Item',
+                              }
+                           }) if groupByFilter == 'none'
+
     list_parms.deep_merge!({'fields' =>
-                    {
-                      'date_added'=> 'Date Added',
-                    }
-                 })
- 
+                              {
+                                'sku_linked'=> 'Sku #',
+                              }
+                           }) if groupByFilter == 'none' or groupByFilter == 'sku'
+
     list_parms.deep_merge!({'fields' =>
-                    {
-                      button_column_name => button_column_name.capitalize,
-                    }
-                 })
-                 
+                              {
+                                'date_added'=> 'Date Added',
+                              }
+                           }) if groupByFilter == 'none'
+
+    list_parms.deep_merge!({'fields' =>
+                              {
+                                button_column_name => button_column_name.capitalize,
+                              }
+                           })
+
     #
     # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
     #
 
     list_parms.deep_merge!({'inputs' =>
-                          {'checkbox'=>
-                             {'type' => 'checkbox'
-                             }
-                          }
-                       })
+                              {'checkbox'=>
+                                 {'type' => 'checkbox'
+                                 }
+                              }
+                           })
 
     list_parms.deep_merge!({'inputs' =>
-                          {'checkbox'=>
-                             {'items' =>
-                               {
-                                 'name'          => 'visible_checks[]',
-                                 'value'         => 'id', #the value should be a column name mapping
-                                 'class_handle'  => 'info_tables',
-                               }
-                             }
-                          }
-                       })
+                              {'checkbox'=>
+                                 {'items' =>
+                                    {
+                                      'name'          => 'visible_checks[]',
+                                      'value'         => 'id', #the value should be a column name mapping
+                                      'class_handle'  => 'info_tables',
+                                    }
+                                 }
+                              }
+                           })
 
     list_parms.deep_merge!({'inputs' =>
-                          {'checkbox_header'=>
-                             {'type' => 'checkbox'
-                             }
-                          }
-                       })
+                              {'checkbox_header'=>
+                                 {'type' => 'checkbox'
+                                 }
+                              }
+                           })
 
     list_parms.deep_merge!({'inputs' =>
-                          {'checkbox_header'=>
-                             {'items' =>
-                               {
-                                 'check_all'     => true,
-                                 'id'            => 'info_tables_check_all',
-                                 'class_handle'  => 'info_tables',
-                               }
-                             }
-                          }
-                       })
+                              {'checkbox_header'=>
+                                 {'items' =>
+                                    {
+                                      'check_all'     => true,
+                                      'id'            => 'info_tables_check_all',
+                                      'class_handle'  => 'info_tables',
+                                    }
+                                 }
+                              }
+                           })
 
     list = WidgetList::List.new(list_parms)
 
