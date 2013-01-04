@@ -28,6 +28,9 @@ module WidgetList
 
     def self.determine_db_type(db_type)
       the_type, void = db_type.split("://")
+      if the_type == 'sqlite:/'
+        the_type = 'sqlite'
+      end
       return the_type.downcase
     end
 
@@ -416,46 +419,6 @@ module WidgetList
 
         @items['groupByClick'] = "ListChangeGrouping('" + @items['name']  + "')"
 
-=begin
-      #todo
-      @items['fieldNames'] = {};
-      if (empty(@items['fields']) && empty(@items['data']))
-      {
-         #Lazy mode where new columns added to view show up in list (unless you name the column "HIDE_xxxxx")
-         #
-         if (@items['sql'])
-         {
-            #tick_field()....
-            preg_match("/\s+from\s+`?([a-z\d_]+)`?/i", @items['sql'], $match);
-            $viewName = $match[1];
-         }
-         elseif (@items['view'])
-         {
-            $viewName = @items['view'];
-         }
-
-         if ($this->DATABASE->Select("SHOW FULL COLUMNS IN ".$viewName))
-         {
-            foreach($this->DATABASE->results['FIELD'] as $col)
-            {
-               @items['fieldNames'][] = $col;
-               $columnUpper = strtoupper($col);
-               $columnLower = strtolower($col);
-               if (substr($columnUpper,0,5) != 'HIDE_')
-               {
-                  #any columns named HIDE_ will not show
-                  #
-                  @items['fields'][$columnLower] = $this->autoColumnName($columnUpper);
-                  if ($columnLower != 'features')
-                  {
-                     @items['columnSort'][$columnLower] = $columnLower;
-                  }
-               }
-            }
-         }
-      }
-=end
-
         if $_REQUEST.key?('searchClear')
           clear_search_session()
         end
@@ -527,7 +490,7 @@ module WidgetList
               }
 
               if isNumeric
-	        numericSearch = true
+                numericSearch = true
                 if @items['searchIdCol'].class.name == 'Array'
                   @items['searchIdCol'].each { |searchIdCol|
                     if(fieldsToSearch.key?(searchIdCol))
@@ -549,7 +512,7 @@ module WidgetList
             elsif @items['searchIdCol'].class.name == 'Array'
               if WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.')
                 numericSearch = true
-		@items['searchIdCol'].each { |searchIdCol|
+                @items['searchIdCol'].each { |searchIdCol|
                   if fieldsToSearch.key?(searchIdCol)
                     searchSQL << tick_field() + "#{searchIdCol}" + tick_field() + " IN(#{searchFilter})"
                   end
@@ -629,7 +592,7 @@ module WidgetList
 
           #Initialize page load/Session stuff whe list first loads
           #
-          clear_check_box_session(@items['name'])
+          WidgetList::List::clear_check_box_session(@items['name'])
         end
 
 
@@ -773,7 +736,7 @@ module WidgetList
       end
     end
 
-    def clear_check_box_session(name='')
+    def self.clear_check_box_session(name='')
 
       if $_SESSION.key?('DRILL_DOWN_FILTERS')
         $_SESSION.delete('DRILL_DOWN_FILTERS')
@@ -823,6 +786,33 @@ module WidgetList
         $_SESSION.delete('LIST_SEQUENCE')
       end
 
+    end
+
+    def self.get_filter_and_drilldown(listId)
+      filter = ''
+      drillDown = ''
+      if !$_REQUEST.key?('BUTTON_VALUE')
+        # Initialize page load/Session stuff whe list first loads
+        #
+        WidgetList::List::clear_check_box_session(listId)
+      end
+
+      if $_REQUEST.key?('drill_down')
+        drillDown = $_REQUEST['drill_down']
+        $_SESSION.deep_merge!({'DRILL_DOWNS' => { listId => drillDown} })
+      elsif $_SESSION.key?('DRILL_DOWNS') && $_SESSION['DRILL_DOWNS'].key?(listId)
+        drillDown = $_SESSION['DRILL_DOWNS'][listId]
+      else
+        drillDown = 'default'
+      end
+
+      if $_REQUEST.key?('filter')
+        filter = $_REQUEST['filter']
+        $_SESSION.deep_merge!({'DRILL_DOWN_FILTERS' => { listId => filter} })
+      elsif $_SESSION.key?('DRILL_DOWN_FILTERS') && $_SESSION['DRILL_DOWN_FILTERS'].key?(listId)
+        filter = $_SESSION['DRILL_DOWN_FILTERS'][listId]
+      end
+      return drillDown, filter
     end
 
     def clear_sort_get_vars()
@@ -1531,6 +1521,60 @@ module WidgetList
       return content
     end
 
+    def self.build_drill_down_link(listId,drillDownName,dataToPassFromView,columnToShow,columnAlias='',functionName='ListDrillDown',columnClass='')
+      if columnAlias.empty?
+        columnAlias = columnToShow
+      end
+
+      if !columnClass.empty?
+        columnClass = ' "' + WidgetList::List::concat_string() + columnClass + WidgetList::List::concat_string() + '"'
+      end
+
+      return %[#{WidgetList::List::concat_inner()}"<a style='cursor:pointer;color:blue;' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote()}#{drillDownName}#{WidgetList::List::double_quote()},#{WidgetList::List::double_quote()}"#{WidgetList::List::concat_string()} #{dataToPassFromView} #{WidgetList::List::concat_string()} "#{WidgetList::List::double_quote()},#{WidgetList::List::double_quote()}#{listId}#{WidgetList::List::double_quote()})'>"#{WidgetList::List::concat_string()}#{columnToShow}#{WidgetList::List::concat_string()}"</a>"#{WidgetList::List::concat_outer()}  as #{columnAlias},]
+    end
+
+    def self.concat_string
+      case WidgetList::List.get_database.db_type
+        when 'mysql'
+          ' , '
+        when 'oracle'
+        when 'sqlite'
+          ' || '
+        else
+          ','
+      end
+    end
+
+    def self.double_quote
+      case WidgetList::List.get_database.db_type
+        when 'mysql'
+          '\\"'
+        when 'oracle'
+        when 'sqlite'
+          '""'
+        else
+          '"'
+      end
+    end
+
+    def self.concat_outer
+      case WidgetList::List.get_database.db_type
+        when 'mysql'
+          ')'
+        else
+          ''
+      end
+    end
+
+    def self.concat_inner
+      case WidgetList::List.get_database.db_type
+        when 'mysql'
+          'CONCAT('
+        else
+          ''
+      end
+    end
+
     def build_column_button(column,j)
       buttons     = @items['buttons'][column]
       columnValue = @results[column.upcase][j]
@@ -1720,64 +1764,18 @@ module WidgetList
               else
                 cleanData = strip_tags(@results[column.upcase][j].to_s)
 
-                if cleanData.length > @items['strlength']
-=begin
-                 $contentTitle = $cleanData;
+                #
+                # For now disable length parser
+                #
+                if false && cleanData.length > @items['strlength']
 
-                 $possibleMatches = array("/(.*)(\(<a.*?>.*?<\/a>\)\s)(.*)/i" => array(3), #<a>(id)</a> Text
-                                          "/(.*)(<a.*?>)(.*)(<\/a>)(.*)/i"    => array(3)  #<a>Text</a> other text
-                                         );
-
-                 foreach($possibleMatches as $regex => $toFix)
-                 {
-                    $matched = preg_match_all($regex, @results[strtoupper($column)][$j], $matches, PREG_PATTERN_ORDER);
-
-                    if(! empty($matched))
-                    {
-                       $pieces = {};
-
-                       unset($matches[0]);
-
-                       foreach($matches as $key => $theText)
-                       {
-                          $fixedText = '';
-
-                          if(in_array($key, $toFix))
-                          {
-                             $fixedText = substr($theText[0], 0, @items['strlength']) . '...';
-                          }
-                          else
-                          {
-                             $fixedText = $theText[0];
-                          }
-
-                          $pieces[] = $fixedText;
-                       }
-
-                       $content = implode('', $pieces);
-
-                       break;
-                    }
-                 }
-
-                 if(empty($matched))
-                 {
-                    if ((strpos(@results[strtoupper($column)][$j],'&#') !== false && strpos(@results[strtoupper($column)][$j],';') !== false))
-                    {
-                       $content = @results[strtoupper($column)][$j];
-                    }
-                    else
-                    {
-                       $content = substr(@results[strtoupper($column)][$j], 0, @items['strlength']) . '...';
-                    }
-                 }
-=end
                   content = @results[column.upcase][j].to_s[ 0, @items['strlength'] ] + '...'
 
                 else
                   content = @results[column.upcase][j].to_s
                 end
 
+                #
                 #Strip HTML
                 #
                 if !@items['allowHTML']
