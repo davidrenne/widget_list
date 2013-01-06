@@ -1895,11 +1895,18 @@ module WidgetList
           @templateFill['<!--DATA-->'] = rows.join('')
 
         else
-          @templateFill['<!--DATA-->'] = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output() + @items['noDataMessage'] + '</div></td></tr>'
+          
+          err_message = (WidgetList::List.get_database.errors) ? @items['noDataMessage'] + ' <span style="color:red">(An error occurred)</span>' : @items['noDataMessage']
+          
+          @templateFill['<!--DATA-->'] = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output() + err_message + '</div></td></tr>'
+        
         end
 
       else
-        @templateFill['<!--DATA-->'] = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output() + @items['noDataMessage'] + '</div></td></tr>'
+        
+        err_message = (WidgetList::List.get_database.errors) ? @items['noDataMessage'] + ' <span style="color:red">(An error occurred)</span>' : @items['noDataMessage']
+        
+        @templateFill['<!--DATA-->'] = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output() + err_message + '</div></td></tr>'
       end
 
     end
