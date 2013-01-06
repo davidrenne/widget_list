@@ -14,16 +14,16 @@ module WidgetList
           file.write("  :secondary:   sqlite:/\n")
           file.write("\n")
           file.write("test:\n")
-          file.write("  :primary:     mysql://root:root@localhost:3306/my_database\n")
-          file.write("  :secondary:   mysql://root:root@localhost:3306/my_database\n")
+          file.write("  :primary:     sqlite:/\n")
+          file.write("  :secondary:   sqlite:/\n")
           file.write("\n")
           file.write("release:\n")
-          file.write("  :primary:     mysql://root:root@localhost:3306/my_database\n")
-          file.write("  :secondary:   mysql://root:root@localhost:3306/my_database\n")
+          file.write("  :primary:     sqlite:/\n")
+          file.write("  :secondary:   sqlite:/\n")
           file.write("\n")
           file.write("production:\n")
-          file.write("  :primary:     mysql://root:root@localhost:3306/my_database\n")
-          file.write("  :secondary:   mysql://root:root@localhost:3306/my_database\n")
+          file.write("  :primary:     sqlite:/\n")
+          file.write("  :secondary:   sqlite:/\n")
         }
       end
     end
