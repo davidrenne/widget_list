@@ -6,6 +6,10 @@ module WidgetList
       true if Float(object) rescue false
     end
 
+    def self.date?(object)
+      true if Date.parse(object) rescue false
+    end
+
     #JsonEncode
     def self.json_encode(arr,return_string = false)
       if return_string
