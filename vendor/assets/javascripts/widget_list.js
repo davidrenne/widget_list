@@ -192,6 +192,11 @@ function ListDrillDown(mode,data,listId)
    });
 }
 
+function ListExport(listId)
+{
+   document.location = jQuery('#' + listId + '_jump_url').val() + '&export_widget_list=1';
+}
+
 
 /**
 * ListJumpResponse()

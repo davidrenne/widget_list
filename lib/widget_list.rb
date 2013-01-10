@@ -6,6 +6,7 @@ require 'widget_list/utils'
 require 'widget_list/tpl'
 require 'widget_list/widgets'
 require 'widget_list/railtie'
+require 'csv'
 require 'json'
 require 'uri'
 require 'extensions/action_controller_base'
@@ -142,6 +143,10 @@ module WidgetList
         'searchFieldsIn'      => {},            #White list of fields to include in a alpha-numeric based search
         'searchFieldsOut'     => {'id'=>true},  #Black list of fields to include in a alpha-numeric based search (default `id` to NEVER search when alpha seach)
 
+        #
+        #  Export
+        #
+        'showExport'          => true,
 
         #
         # Group By Box
@@ -210,6 +215,8 @@ module WidgetList
         'row_hooks'           => {}
       }
 
+      @csv          = []
+      @csv          << []
       @totalRowCount= 0
       @totalPages   = 0
       @fixHtmlLinksReplace = {}
@@ -536,7 +543,6 @@ module WidgetList
               fieldsToSearch.each { |fieldName,fieldTitle|
 
                 # new lodgette. if fieldFunction exists, find all matches and skip them
-                skip = false
 
                 if @items['fieldFunction'].key?(fieldName)
                   theField = @items['fieldFunction'][fieldName]  + cast_col()
@@ -544,15 +550,8 @@ module WidgetList
                   theField = tick_field() + "#{fieldName}" + cast_col() + tick_field()
                 end
 
-                (@items['inputs']||{}).each { |k,v|
-                  if fieldName == k
-                    skip = true
-                  end
-                }
-
-                if @items['buttons'].key?(fieldName)
-                  skip = true
-                end
+                skip = false
+                skip = skip_column(fieldName)
 
                 #buttons must ALWAYS BE ON THE RIGHT SIDE IN ORDER FOR THIS NOT TO SEARCH A NON-EXISTENT COLUMN  (used to be hard coded to 'features' as a column to remove)
                 if skip
@@ -659,6 +658,20 @@ module WidgetList
       rescue Exception => e
         @templateFill['<!--DATA-->']  = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output(e) + @items['noDataMessage'] + '</div></td></tr>'
       end
+    end
+
+    def skip_column(fieldName)
+      skip = false
+      (@items['inputs']||{}).each { |k,v|
+        if fieldName == k
+          skip = true
+        end
+      }
+
+      if @items['buttons'].key?(fieldName)
+        skip = true
+      end
+      return skip
     end
 
     def tick_field()
@@ -1019,9 +1032,15 @@ module WidgetList
                 @templateFill['<!--FILTER_HEADER-->'] = ''
               end
               @templateFill['<!--FILTER_HEADER-->']  += '<div class="fake-select"><div class="label">' + @items['groupByLabel'] + ':</div> ' + WidgetList::Widgets::widget_input(list_group) + '</div>'
+
+              if @items['showExport']
+                @templateFill['<!--FILTER_HEADER-->']  +=  WidgetList::Widgets::widget_button('Export CSV', {'onclick' => 'ListExport(\'' + @items['name'] + '\');'}, true)
+              end
+
             end
           end
         end
+
       rescue Exception => e
         out = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output(e) + @items['noDataMessage'] + '</div></td></tr>'
         if !@templateFill.key?('<!--DATA-->')
@@ -1031,8 +1050,15 @@ module WidgetList
         end
       end
 
-      return WidgetList::Utils::fill(@templateFill, @items['template'])
-
+      if $_REQUEST.key?('export_widget_list')
+        csv = ''
+        @csv.each{ |v|
+          csv += v.to_csv
+        }
+        return csv
+      else
+        return WidgetList::Utils::fill(@templateFill, @items['template'])
+      end
     end
 
     def build_pagination()
@@ -1292,6 +1318,12 @@ module WidgetList
           #
           fieldTitle = build_column_input(fieldTitle)
 
+        else
+
+          if $_REQUEST.key?('export_widget_list') && !skip_column(field)
+            @csv[0] << fieldTitle
+          end
+
         end
 
         if (@items['useSort'] && (@items['columnSort'].include?(field) || (@items['columnSort'].key?(field)) && !@items['columnNoSort'].include?(field)) || (@items['columnSort'].empty? && !@items['columnNoSort'].include?(field)))
@@ -1384,6 +1416,7 @@ module WidgetList
 
           headers << WidgetList::Utils::fill(pieces, @items[templateIdx])
         end
+
       }
 
       @templateFill['<!--COLSPAN_FULL-->'] = headers.count()
@@ -1714,7 +1747,8 @@ module WidgetList
           rows = []
           j    = 0
           for j in j..max
-            columns = []
+            columns        = []
+            row_values     = []
             customRowColor = ''
             customRowStyle = ''
 
@@ -1742,11 +1776,12 @@ module WidgetList
               #
               if @items['links'].key?(column) && @items['links'][column].class.name == 'Hash'
                 onClick = build_column_link(column,j)
+              end
 
-                #
-                # Column is a Button
-                #
-              elsif @items['buttons'].key?(column) && @items['buttons'][column].class.name == 'Hash'
+              #
+              # Column is a Button
+              #
+              if @items['buttons'].key?(column) && @items['buttons'][column].class.name == 'Hash'
                 content = build_column_button(column, j)
 
 
@@ -1764,13 +1799,13 @@ module WidgetList
               else
                 cleanData = strip_tags(@results[column.upcase][j].to_s)
 
+                row_values << cleanData
+
                 #
                 # For now disable length parser
                 #
                 if false && cleanData.length > @items['strlength']
-
                   content = @results[column.upcase][j].to_s[ 0, @items['strlength'] ] + '...'
-
                 else
                   content = @results[column.upcase][j].to_s
                 end
@@ -1781,6 +1816,7 @@ module WidgetList
                 if !@items['allowHTML']
                   content = strip_tags(content)
                 end
+
                 content = WidgetList::List.get_database._bind(content, @items['bindVarsLegacy'])
 
                 # Column color
@@ -1854,12 +1890,17 @@ module WidgetList
               colPieces['<!--ONCLICK-->'] = onClick
               colPieces['<!--TITLE-->']   = contentTitle #todo htmlentities needed ?
               colPieces['<!--CONTENT-->'] = content
+
               #
               # Assemble the Column
               #
               columns << WidgetList::Utils::fill(colPieces, @items['col'])
-
             }
+
+
+            if $_REQUEST.key?('export_widget_list')
+              @csv << row_values
+            end
 
             #Draw the row
             #
@@ -1895,17 +1936,17 @@ module WidgetList
           @templateFill['<!--DATA-->'] = rows.join('')
 
         else
-          
+
           err_message = (WidgetList::List.get_database.errors) ? @items['noDataMessage'] + ' <span style="color:red">(An error occurred)</span>' : @items['noDataMessage']
-          
+
           @templateFill['<!--DATA-->'] = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output() + err_message + '</div></td></tr>'
-        
+
         end
 
       else
-        
+
         err_message = (WidgetList::List.get_database.errors) ? @items['noDataMessage'] + ' <span style="color:red">(An error occurred)</span>' : @items['noDataMessage']
-        
+
         @templateFill['<!--DATA-->'] = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output() + err_message + '</div></td></tr>'
       end
 
