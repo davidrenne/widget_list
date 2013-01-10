@@ -20,6 +20,7 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 * Session rememberance for each list/view of what was last sorted, which page the person was on, the limit and search filters
 * Ability to set a cool custom HTML arrow which draws a hidden DIV intended for someone to put custom widgets inside of to pass new filters to the list before it executes
 * Buttons for each row and areas on the bottom of the grid where you can add "Action buttons"
+* Export visible data as CSV
 
 ## Screenshots
 
@@ -50,6 +51,8 @@ Or install it yourself as:
 ## Usage/Examples
 
 You can either follow the below instructions or take a look at the changes here https://github.com/davidrenne/widget_list_example/commit/e4e8ab54edcf8bc4538b1850ee762c13bc6f5316
+
+I recommend if you use widget_list in production that you use config.consider_all_requests_local = true as errors will be handled but the base lists will still draw.
 
 ### #1 - Add widget_list CSS and JS to your application css and js
 
@@ -340,6 +343,11 @@ You can either follow the below instructions or take a look at the changes here 
     # If AJAX, send back JSON
     #
     if $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['LIST_NAME'] == list_parms['name']
+      if $_REQUEST.key?('export_widget_list')
+        send_data(list.render(), :filename => list_parms['name'] + '.csv')
+        return
+      end
+      
       ret = {}
       ret['list']     = WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
       ret['list_id']  = list_parms['name']
