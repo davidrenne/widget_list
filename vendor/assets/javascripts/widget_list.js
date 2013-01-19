@@ -187,7 +187,12 @@ function ListChangeGrouping(listId)
 function ListDrillDown(mode,data,listId)
 {
    jQuery('#list_search_id_' + listId).val('');
-   ListJumpMin(jQuery('#' + listId + '_jump_url').val() + '&drill_down=' + mode + '&filter=' + data + '&search_filter=', listId, function(){
+   var grouping = ''
+   if (jQuery('#list_group_id_' + listId))
+   {
+      grouping = '&switch_grouping=' + jQuery('#list_group_id_' + listId).val();
+   }
+   ListJumpMin(jQuery('#' + listId + '_jump_url').val() + '&drill_down=' + mode + '&filter=' + data + '&search_filter=', listId + grouping, function(){
       InitInfoFields(jQuery('#list_search_id_' + listId));
    });
 }
