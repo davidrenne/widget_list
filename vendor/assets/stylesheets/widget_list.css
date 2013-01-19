@@ -1,3 +1,8 @@
+.widget_list_outer
+{
+   padding-left: 15px;
+   padding-right: 15px;
+}
 
 .horizontal_rule
 {
@@ -7,13 +12,13 @@
    height:3px;
 }
 
-table.list
+table.widget_list
 {
    border: 1px solid #CCCCCC;
 }
 
 
-table.list tbody tr td span
+table.widget_list tbody tr td span
 {
    width:auto;
 }
@@ -99,7 +104,7 @@ div.btn_sml_outer
 
 div.btn_sml_outer div.btn_sml_inner
 {
-    background: transparent url('../assets/images/buttons/small/green/leftside-small-btn.png') no-repeat;
+    background: transparent url('../assets/imagesll/green/leftside-small-btn.png') no-repeat;
     display: block;
     line-height: 8px;
     padding: 5px 0 0px 8px;
@@ -240,14 +245,14 @@ ul#pagination li div.active
    background: transparent;
 }
 
-.listContainer table.list, .listContainerPassive table.list
+.listContainer table.list, .listContainerPassive table.widget_list
 {
    position:relative;
    margin:0px;
    padding:0px;
 }
 
-.listContainer table.list tr.list_header, .listContainerPassive table.list tr.list_header
+.listContainer table.widget_list tr.widget_list_header, .listContainerPassive table.widget_list tr.widget_list_header
 {
    color:#4B4B4B;
    /*background-color:#acacac; */
@@ -257,7 +262,7 @@ ul#pagination li div.active
    /*background: transparent url('../assets/images/catbar-bg.png') repeat-x bottom;*/
 }
 
-.listContainer table.list td, .listContainerPassive table.list td
+.listContainer table.widget_list td, .listContainerPassive table.widget_list td
 {
    padding:5px;
 }
@@ -305,14 +310,14 @@ div#noListResults
   opacity: 0.40;*/
 }
 
-.listContainerPassive table.list td
+.listContainerPassive table.widget_list td
 {
    text-align:center;
    border-bottom:1px solid #CCCCCC;
    padding:10px;
 }
 
-.listContainerPassive table.list tr.list_header
+.listContainerPassive table.widget_list tr.widget_list_header
 {
     /*background: url("../assets/images/th_header.gif") repeat-x scroll left center transparent;  */
     padding: 4px;
