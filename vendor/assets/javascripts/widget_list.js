@@ -187,7 +187,7 @@ function ListChangeGrouping(listId)
 function ListDrillDown(mode,data,listId)
 {
    jQuery('#list_search_id_' + listId).val('');
-   var grouping = ''
+   var grouping = '';
    if (jQuery('#list_group_id_' + listId))
    {
       grouping = '&switch_grouping=' + jQuery('#list_group_id_' + listId).val();
