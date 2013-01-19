@@ -2021,12 +2021,16 @@ module WidgetList
         pieces['<!--GROUPBY-->'] += ' GROUP BY ' + @items['groupBy']
       end
 
-      if !@items['LIST_COL_SORT'].empty? || $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
+      if !@items['LIST_COL_SORT'].empty? || ($_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash))
         if ! @items['LIST_COL_SORT'].empty?
-          pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + @items['LIST_COL_SORT'] + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
+          if @items['fields'].key?(@items['LIST_COL_SORT'])
+            pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + @items['LIST_COL_SORT'] + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
+          end
         else
           $_SESSION['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
-            pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + order[0] + tick_field() +  " " + order[1]
+            if @items['fields'].key?(order[0])
+              pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + order[0] + tick_field() +  " " + order[1]
+            end
           } if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
         end
 
