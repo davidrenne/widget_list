@@ -231,25 +231,28 @@ module WidgetList
       @templateFill = {}
       @results      = {}
 
+      #the main template and outer shell
       @items.deep_merge!({'template' =>
                             '
-                                          <!--HEADER-->
-                                          <div class="<!--CLASS-->" id="<!--NAME-->">
-                                             <table class="list <!--TABLE_CLASS-->" style="<!--INLINE_STYLE-->" border="0" width="100%" cellpadding="0" cellspacing="0">
-                                                <!--LIST_TITLE-->
-                                                <tr class="list_header"><!--HEADERS--></tr>
-                                                   <!--DATA-->
-                                                <tr>
-                                                   <td colspan="<!--COLSPAN_FULL-->" align="left" style="padding:0px;margin:0px;text-align:left">
-                                                      <div style="background-color:#ECECEC;height:50px;"><div style="padding:10px"><!--CUSTOM_CONTENT--></div>
-                                                   </td>
-                                                </tr>
-                                             </table>
-                                             <div class="pagination" style="float:left;text-align:left;width:100%;margin:0px;padding:0px;"><div style="margin:auto;float:left;margin:0px;padding:0px;"><!--PAGINATION_LIST--></div></div>
-                                             <!--FILTER-->
-                                             <input type="hidden" name="<!--JUMP_URL_NAME-->" id="<!--JUMP_URL_NAME-->" value="<!--JUMP_URL-->">
-                                          </div>
-                                       '
+                            <div class="' + ((!$_REQUEST.key?('BUTTON_VALUE')) ? 'widget_list_outer' : '') + '">
+                              <!--HEADER-->
+                              <div class="<!--CLASS-->" id="<!--NAME-->">
+                                 <table class="widget_list <!--TABLE_CLASS-->" style="<!--INLINE_STYLE-->" border="0" width="100%" cellpadding="0" cellspacing="0">
+                                    <!--LIST_TITLE-->
+                                    <tr class="widget_list_header"><!--HEADERS--></tr>
+                                       <!--DATA-->
+                                    <tr>
+                                       <td colspan="<!--COLSPAN_FULL-->" align="left" style="padding:0px;margin:0px;text-align:left">
+                                          <div style="background-color:#ECECEC;height:50px;"><div style="padding:10px"><!--CUSTOM_CONTENT--></div>
+                                       </td>
+                                    </tr>
+                                 </table>
+                                 <div class="pagination" style="float:left;text-align:left;width:100%;margin:0px;padding:0px;"><div style="margin:auto;float:left;margin:0px;padding:0px;"><!--PAGINATION_LIST--></div></div>
+                                 <!--FILTER-->
+                                 <input type="hidden" name="<!--JUMP_URL_NAME-->" id="<!--JUMP_URL_NAME-->" value="<!--JUMP_URL-->">
+                              </div>
+                            </div>
+                             '
                          })
 
       @items.deep_merge!({'row' =>
@@ -1570,8 +1573,7 @@ module WidgetList
       case WidgetList::List.get_database.db_type
         when 'mysql'
           ' , '
-        when 'oracle'
-        when 'sqlite'
+        when 'oracle' || 'sqlite'
           ' || '
         else
           ','
@@ -1582,8 +1584,7 @@ module WidgetList
       case WidgetList::List.get_database.db_type
         when 'mysql'
           '\\"'
-        when 'oracle'
-        when 'sqlite'
+        when 'oracle' || 'sqlite'
           '""'
         else
           '"'
