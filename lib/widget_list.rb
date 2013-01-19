@@ -1573,7 +1573,7 @@ module WidgetList
       case WidgetList::List.get_database.db_type
         when 'mysql'
           ' , '
-        when 'oracle' || 'sqlite'
+        when 'oracle','sqlite'
           ' || '
         else
           ','
@@ -1584,7 +1584,7 @@ module WidgetList
       case WidgetList::List.get_database.db_type
         when 'mysql'
           '\\"'
-        when 'oracle' || 'sqlite'
+        when 'oracle','sqlite'
           '""'
         else
           '"'
