@@ -192,6 +192,24 @@ div.required
  * Legacy Pagination
  */
 
+.summary .header
+{
+   background: url("../assets/images/head-gradient.gif") repeat-x scroll 0 0 transparent;
+   height:23px;
+   font-size:14px;
+   font-weight:800;
+}
+
+.goback
+{
+   background: url('../assets/images/gobblecons/teal/share-arrows-24-left.png') no-repeat;
+   margin-right: 15px;
+   width: 24px;
+   height: 19px;
+   cursor: pointer;
+   float: left;
+}
+
 ul#pagination
 {
    float:left;
