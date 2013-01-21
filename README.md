@@ -82,6 +82,9 @@ I recommend if you use widget_list in production that you use config.consider_al
   
   Add config/routes.rb if it is not in there:
     match ':controller(/:action)'
+
+  Ensure that sessions are loaded into active record because widget_list keeps track of several settings on each list for each session
+    config.session_store :active_record_store
   
   Add the example shown below to app/controllers/widget_list_examples_controller.rb#ruby_items
   
@@ -93,21 +96,22 @@ I recommend if you use widget_list in production that you use config.consider_al
     #
     # Load Sample "items" Data. Comment out in your first time executing a widgetlist to create the items table
     #
-    begin 
+    begin
         WidgetList::List.get_database.create_table :items do
           primary_key :id
           String :name
           Float :price
-          Int :sku
+          Fixnum :sku
+          String :active
           Date :date_added
         end
         items = WidgetList::List.get_database[:items]
         100.times {
-          items.insert(:name => 'abc', :price => rand * 100, :date_added => '2008-02-01', :sku => 12345)
-          items.insert(:name => '123', :price => rand * 100, :date_added => '2008-02-02', :sku => 54321)
-          items.insert(:name => 'asdf', :price => rand * 100, :date_added => '2008-02-03', :sku => 67895)
-          items.insert(:name => 'qwerty', :price => rand * 100, :date_added => '2008-02-04', :sku => 66666)
-          items.insert(:name => 'poop', :price => rand * 100, :date_added => '2008-02-05', :sku => 77777)
+          items.insert(:name => 'ab\'c_quoted_'    + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-01', :sku => rand(9999), :active => 'Yes')
+          items.insert(:name => '12"3_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-02', :sku => rand(9999), :active => 'Yes')
+          items.insert(:name => 'asdf_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-03', :sku => rand(9999), :active => 'Yes')
+          items.insert(:name => 'qwerty_'          + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-04', :sku => rand(9999), :active => 'No')
+          items.insert(:name => 'meow_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-05', :sku => rand(9999), :active => 'No')
         }
     rescue Exception => e
       #
@@ -115,250 +119,267 @@ I recommend if you use widget_list in production that you use config.consider_al
       #
       logger.info "Test table in items already exists? " + e.to_s
     end
-    
-    list_parms   = {}
 
-    #
-    # Give it a name, some SQL to feed widget_list and set a noDataMessage
-    #
-    list_parms['name']          = 'ruby_items_yum'
+    begin
 
-    #
-    # Handle Dynamic Filters
-    #
-    if $_REQUEST.key?('switch_grouping') && $_REQUEST['switch_grouping'] == 'Item Name'
-      groupByFilter       = 'item'
-      countSQL            = 'COUNT(1) as cnt,'
-      groupBySQL          = 'GROUP BY name'
-    elsif  $_REQUEST.key?('switch_grouping') && $_REQUEST['switch_grouping'] == 'Sku Number'
-      groupByFilter       = 'sku'
-      countSQL            = 'COUNT(1) as cnt,'
-      groupBySQL          = 'GROUP BY sku'
-    else
-      groupByFilter       = 'none'
-      countSQL            = ''
-      groupBySQL          = ''
-    end
+      list_parms   = {}
 
-    list_parms['filter']    = []
-    drillDown, filterValue  = WidgetList::List::get_filter_and_drilldown(list_parms['name'])
+      #
+      # Give it a name, some SQL to feed widget_list and set a noDataMessage
+      #
+      list_parms['name']          = 'ruby_items_yum'
 
-    case drillDown
-      when 'filter_by_name'
-        list_parms['filter'] << " name = '" + filterValue + "'"
-      when 'filter_by_sku'
-        list_parms['filter'] << " sku =  '" + filterValue + "'"
-    end
-
-
-
-    #
-    # Setup your first widget_list
-    #
-
-    button_column_name = 'actions'
-
-    #
-    # action_buttons will add buttons to the bottom of the list.
-    #
-
-    action_buttons =  WidgetList::Widgets::widget_button('Add New Item', {'page' => '/add/'} ) + WidgetList::Widgets::widget_button('Do something else', {'page' => '/else/'} )
-
-    #
-    # Give some SQL to feed widget_list and set a noDataMessage
-    #
-    list_parms['searchIdCol']   = ['id','sku']
-    list_parms['view']          = '(
-                                     SELECT
-                                           ' + countSQL + '
-                                           ' + WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_name','a.name','a.name','name_linked') + '
-                                           ' + WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_sku','a.sku','a.sku','sku_linked') + '
-                                           \'\'    AS checkbox,
-                                           a.id    AS id,
-                                           a.name  AS name,
-                                           a.sku   AS sku,
-                                           a.price AS price,
-                                           a.date_added AS date_added
-                                       FROM
-                                           items a
-                                     ' + groupBySQL + '
-                                   ) a'
-    list_parms['noDataMessage'] = 'No Ruby Items Found'
-    list_parms['title']         = 'Ruby Items!!!'
-
-    #
-    # Create small button array and pass to the buttons key
-    #
-
-    mini_buttons = {}
-    mini_buttons['button_edit'] = {'page'       => '/edit',
-                                   'text'       => 'Edit',
-                                   'function'   => 'Redirect',
-                                   #pass tags to pull from each column when building the URL
-                                   'tags'       => {'my_key_name' => 'name','value_from_database'=>'price'}}
-
-    mini_buttons['button_delete'] = {'page'       => '/delete',
-                                     'text'       => 'Delete',
-                                     'function'   => 'alert',
-                                     'innerClass' => 'danger'}
-    list_parms['buttons']                                            = {button_column_name => mini_buttons}
-    list_parms['fieldFunction']                                      = {
-      button_column_name => "''",
-      'date_added'  => ['postgres','oracle'].include?(WidgetList::List.get_database.db_type) ? "TO_CHAR(date_added, 'MM/DD/YYYY')" : "date_added"
-    }
-    list_parms['groupByItems']    = ['All Records','Item Name', 'Sku Number']
-
-    #
-    # Generate a template for the DOWN ARROW for CUSTOM FILTER
-    #
-
-    template = {}
-    input = {}
-
-    input['id']          = 'comments'
-    input['name']        = 'comments'
-    input['width']       = '170'
-    input['max_length']  = '500'
-    input['input_class'] = 'info-input'
-    input['title']       = 'Optional CSV list'
-
-    button_search = {}
-    button_search['innerClass']   = "success btn-submit"
-    button_search['onclick']      = "alert('This would search, but is not coded.  That is for you to do')"
-
-    list_parms['list_search_form'] = WidgetList::Utils::fill( {
-                                                                '<!--COMMENTS-->'            => WidgetList::Widgets::widget_input(input),
-                                                                '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', button_search),
-                                                                '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)" } ,
-                                                              '
-    <div id="advanced-search-container">
-    <div class="widget-search-drilldown-close" onclick="<!--BUTTON_CLOSE-->">X</div>
-      <ul class="advanced-search-container-inline" id="search_columns">
-        <li>
-           <div>Search Comments</div>
-           <!--COMMENTS-->
-        </li>
-      </ul>
-    <br/>
-    <div style="text-align:right;width:100%;height:30px;" class="advanced-search-container-buttons"><!--BUTTON_RESET--><!--BUTTON_SEARCH--></div>
-    </div>')
-
-    #
-    # Map out the visible fields
-    #
-
-    list_parms.deep_merge!({'fields' =>
-                              {
-                                'checkbox'=> 'checkbox_header',
-                              }
-                           })
-
-    list_parms.deep_merge!({'fields' =>
-                              {
-                                'cnt'=> 'Total Items In Group',
-                              }
-                           }) if groupByFilter != 'none'
-
-    list_parms.deep_merge!({'fields' =>
-                              {
-                                'id'=> 'Item Id',
-                              }
-                           }) if groupByFilter == 'none'
-
-    list_parms.deep_merge!({'fields' =>
-                              {
-                                'name_linked'=> 'Name',
-                              }
-                           }) if groupByFilter == 'none' or groupByFilter == 'item'
-
-    list_parms.deep_merge!({'fields' =>
-                              {
-                                'price'=> 'Price of Item',
-                              }
-                           }) if groupByFilter == 'none'
-
-    list_parms.deep_merge!({'fields' =>
-                              {
-                                'sku_linked'=> 'Sku #',
-                              }
-                           }) if groupByFilter == 'none' or groupByFilter == 'sku'
-
-    list_parms.deep_merge!({'fields' =>
-                              {
-                                'date_added'=> 'Date Added',
-                              }
-                           }) if groupByFilter == 'none'
-
-    list_parms.deep_merge!({'fields' =>
-                              {
-                                button_column_name => button_column_name.capitalize,
-                              }
-                           })
-
-    #
-    # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
-    #
-
-    list_parms.deep_merge!({'inputs' =>
-                              {'checkbox'=>
-                                 {'type' => 'checkbox'
-                                 }
-                              }
-                           })
-
-    list_parms.deep_merge!({'inputs' =>
-                              {'checkbox'=>
-                                 {'items' =>
-                                    {
-                                      'name'          => 'visible_checks[]',
-                                      'value'         => 'id', #the value should be a column name mapping
-                                      'class_handle'  => 'info_tables',
-                                    }
-                                 }
-                              }
-                           })
-
-    list_parms.deep_merge!({'inputs' =>
-                              {'checkbox_header'=>
-                                 {'type' => 'checkbox'
-                                 }
-                              }
-                           })
-
-    list_parms.deep_merge!({'inputs' =>
-                              {'checkbox_header'=>
-                                 {'items' =>
-                                    {
-                                      'check_all'     => true,
-                                      'id'            => 'info_tables_check_all',
-                                      'class_handle'  => 'info_tables',
-                                    }
-                                 }
-                              }
-                           })
-
-    list = WidgetList::List.new(list_parms)
-
-    #
-    # If AJAX, send back JSON
-    #
-    if $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['LIST_NAME'] == list_parms['name']
-      if $_REQUEST.key?('export_widget_list')
-        send_data(list.render(), :filename => list_parms['name'] + '.csv')
-        return
+      #
+      # Handle Dynamic Filters
+      #
+      if $_REQUEST.key?('switch_grouping') && $_REQUEST['switch_grouping'] == 'Item Name'
+        groupByFilter                  = 'item'
+        countSQL                       = 'COUNT(1) as cnt,'
+        groupBySQL                     = 'GROUP BY name'
+        groupByDesc                    = ' (Grouped By Name)'
+      elsif  $_REQUEST.key?('switch_grouping') && $_REQUEST['switch_grouping'] == 'Sku Number'
+        groupByFilter                  = 'sku'
+        countSQL                       = 'COUNT(1) as cnt,'
+        groupBySQL                     = 'GROUP BY sku'
+        groupByDesc                    = ' (Grouped By Sku Number)'
+      else
+        groupByFilter                  = 'none'
+        countSQL                       = ''
+        groupBySQL                     = ''
+        groupByDesc                    = ''
       end
-      
-      ret = {}
-      ret['list']     = WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
-      ret['list_id']  = list_parms['name']
-      ret['callback'] = 'ListSearchAheadResponse'
-      return render :inline => WidgetList::Utils::json_encode(ret)
-    else
+
+      list_parms['filter']    = []
+      list_parms['bindVars']  = []
+      drillDown, filterValue  = WidgetList::List::get_filter_and_drilldown(list_parms['name'])
+
+      case drillDown
+        when 'filter_by_name'
+          list_parms['filter']   << " name = ? "
+          list_parms['bindVars'] << filterValue
+          list_parms['listDescription']   = WidgetList::List::drill_down_back(list_parms['name']) + ' Filtered by Name (' + filterValue + ')' + groupByDesc
+        when 'filter_by_sku'
+          list_parms['filter']   << " sku = ? "
+          list_parms['bindVars'] << filterValue
+          list_parms['listDescription']   = WidgetList::List::drill_down_back(list_parms['name']) + ' Filtered by SKU (' + filterValue + ')' + groupByDesc
+        else
+          list_parms['listDescription']   = ''
+          list_parms['listDescription']   = WidgetList::List::drill_down_back(list_parms['name']) if !groupByDesc.empty?
+          list_parms['listDescription']  += 'Showing All Ruby Items' + groupByDesc
+      end
+
+
+
       #
-      # Else assign to variable for view
+      # Setup your first widget_list
       #
+
+      button_column_name = 'actions'
+
+      #
+      # action_buttons will add buttons to the bottom of the list.
+      #
+
+      action_buttons =  WidgetList::Widgets::widget_button('Add New Item', {'page' => '/add/'} ) + WidgetList::Widgets::widget_button('Do something else', {'page' => '/else/'} )
+
+      #
+      # Give some SQL to feed widget_list and set a noDataMessage
+      #
+      list_parms['searchIdCol']   = ['id','sku']
+      list_parms['view']          = '(
+                                       SELECT
+                                             ' + countSQL + '
+                                             \'\'     AS checkbox,
+                                             ' + WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_name','a.name','a.name','name_linked') + '
+                                             ' + WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_sku','a.sku','a.sku','sku_linked') + '
+                                             a.id         AS id,
+                                             a.active     AS active,
+                                             a.name       AS name,
+                                             a.sku        AS sku,
+                                             a.price      AS price,
+                                             a.date_added AS date_added
+                                         FROM
+                                             items a
+                                       ' + groupBySQL + '
+                                     ) a'
+      list_parms['noDataMessage'] = 'No Ruby Items Found'
+      list_parms['title']         = 'Ruby Items!!!'
+
+      #
+      # Create small button array and pass to the buttons key
+      #
+
+      mini_buttons = {}
+      mini_buttons['button_edit'] = {'page'       => '/edit',
+                                     'text'       => 'Edit',
+                                     'function'   => 'Redirect',
+                                     #pass tags to pull from each column when building the URL
+                                     'tags'       => {'my_key_name' => 'name','value_from_database'=>'price'}}
+
+      mini_buttons['button_delete'] = {'page'       => '/delete',
+                                       'text'       => 'Delete',
+                                       'function'   => 'alert',
+                                       'innerClass' => 'danger'}
+      list_parms['buttons']                                            = {button_column_name => mini_buttons}
+      list_parms['fieldFunction']                                      = {
+        button_column_name => "''",
+        'date_added'  => ['postgres','oracle'].include?(WidgetList::List.get_database.db_type) ? "TO_CHAR(date_added, 'MM/DD/YYYY')" : "date_added"
+      }
+
+      list_parms['groupByItems']    = ['All Records', 'Item Name', 'Sku Number']
+
+      #
+      # Generate a template for the DOWN ARROW for CUSTOM FILTER
+      #
+      input = {}
+
+      input['id']          = 'comments'
+      input['name']        = 'comments'
+      input['width']       = '170'
+      input['max_length']  = '500'
+      input['input_class'] = 'info-input'
+      input['title']       = 'Optional CSV list'
+
+      button_search = {}
+      button_search['onclick']      = "alert('This would search, but is not coded.  That is for you to do')"
+
+      list_parms['list_search_form'] = WidgetList::Utils::fill( {
+                                                                  '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', button_search),
+                                                                  '<!--COMMENTS-->'            => WidgetList::Widgets::widget_input(input),
+                                                                  '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)" } ,
+                                                                '
+      <div id="advanced-search-container">
+      <div class="widget-search-drilldown-close" onclick="<!--BUTTON_CLOSE-->">X</div>
+        <ul class="advanced-search-container-inline" id="search_columns">
+          <li>
+             <div>Search Comments</div>
+             <!--COMMENTS-->
+          </li>
+        </ul>
+      <br/>
+      <div style="text-align:right;width:100%;height:30px;" class="advanced-search-container-buttons"><!--BUTTON_RESET--><!--BUTTON_SEARCH--></div>
+      </div>')
+
+      #
+      # Control widths of special fields
+      #
+
+      list_parms['columnWidth']    = {
+                                        'date_added'=>'200px',
+                                        'sku_linked'=>'20px',
+                                     }
+
+      #
+      # If certain statuses of records are shown, visualize
+      #
+
+      list_parms.deep_merge!({'rowStylesByStatus' =>
+                                  {'active'=>
+                                       {'Yes' => '' }
+                                  }
+                             })
+      list_parms.deep_merge!({'rowStylesByStatus' =>
+                                  {'active'=>
+                                       {'No'  => 'font-style:italic;color:red;' }
+                                  }
+                             })
+
+      #
+      # Map out the visible fields
+      #
+      list_parms['fields'] = {}
+      list_parms['fields']['checkbox']         = 'checkbox_header'
+      list_parms['fields']['cnt']              = 'Total Items In Group'         if groupByFilter != 'none'
+      list_parms['fields']['id']               = 'Item Id'                      if groupByFilter == 'none'
+      list_parms['fields']['name_linked']      = 'Name'                         if groupByFilter == 'none' or groupByFilter == 'item'
+      list_parms['fields']['price']            = 'Price of Item'                if groupByFilter == 'none'
+      list_parms['fields']['sku_linked']       = 'Sku #'                        if groupByFilter == 'none' or groupByFilter == 'sku'
+      list_parms['fields']['date_added']       = 'Date Added'                   if groupByFilter == 'none'
+      list_parms['fields']['active']           = 'Active Item'                  if groupByFilter == 'none'
+      list_parms['fields'][button_column_name] = button_column_name.capitalize  if groupByFilter == 'none'
+
+
+      list_parms['columnPopupTitle'] = {}
+      list_parms['columnPopupTitle']['checkbox']         = 'Select any record'
+      list_parms['columnPopupTitle']['cnt']              = 'Total Count'
+      list_parms['columnPopupTitle']['id']               = 'The primary key of the item'
+      list_parms['columnPopupTitle']['name_linked']      = 'Name (Click to drill down)'
+      list_parms['columnPopupTitle']['price']            = 'Price of item (not formatted)'
+      list_parms['columnPopupTitle']['sku_linked']       = 'Sku # (Click to drill down)'
+      list_parms['columnPopupTitle']['date_added']       = 'The date the item was added to the database'
+      list_parms['columnPopupTitle']['active']           = 'Is the item active?'
+      #
+      # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
+      #
+
+      list_parms.deep_merge!({'inputs' =>
+                                {'checkbox'=>
+                                   {'type' => 'checkbox'
+                                   }
+                                }
+                             })
+
+      list_parms.deep_merge!({'inputs' =>
+                                {'checkbox'=>
+                                   {'items' =>
+                                      {
+                                        'name'          => 'visible_checks[]',
+                                        'value'         => 'id', #the value should be a column name mapping
+                                        'class_handle'  => 'info_tables',
+                                      }
+                                   }
+                                }
+                             })
+
+      list_parms.deep_merge!({'inputs' =>
+                                {'checkbox_header'=>
+                                   {'type' => 'checkbox'
+                                   }
+                                }
+                             })
+
+      list_parms.deep_merge!({'inputs' =>
+                                {'checkbox_header'=>
+                                   {'items' =>
+                                      {
+                                        'check_all'     => true,
+                                        'id'            => 'info_tables_check_all',
+                                        'class_handle'  => 'info_tables',
+                                      }
+                                   }
+                                }
+                             })
+      list = WidgetList::List.new(list_parms)
+
+      #
+      # If AJAX, send back JSON
+      #
+      if $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['LIST_NAME'] == list_parms['name']
+
+        if $_REQUEST.key?('export_widget_list')
+          send_data(list.render(), :filename => list_parms['name'] + '.csv')
+          return
+        end
+
+        ret = {}
+        ret['list']     = WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
+        ret['list_id']  = list_parms['name']
+        ret['callback'] = 'ListSearchAheadResponse'
+        return render :inline => WidgetList::Utils::json_encode(ret)
+      else
+        #
+        # Else assign to variable for view
+        #
+        @output =  WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
+      end
+
+    rescue Exception => e
+
+      list = WidgetList::List.new(list_parms)
       @output =  WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
+
     end
+
 
 ## Contributing
 

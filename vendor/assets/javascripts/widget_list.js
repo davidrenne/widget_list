@@ -203,6 +203,11 @@ function ListDrillDown(mode,data,listId)
    });
 }
 
+function ListDrillDownGetRowValue(obj)
+{
+   return (typeof(jQuery(obj).next(".val-db").html()) != 'undefined') ? jQuery(obj).next(".val-db").html() : '';
+}
+
 function ListExport(listId)
 {
    document.location = jQuery('#' + listId + '_jump_url').val() + '&export_widget_list=1';
