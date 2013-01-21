@@ -118,12 +118,6 @@ module WidgetList
           'force_query_sql'     => '',
 
           #
-          # Counts
-          #
-          'count_cache_time'    => 180, #
-          'cachedCount'         => -1,  #pass the count
-
-          #
           # Ajax
           #
           'ajax_action'         => '',
@@ -174,6 +168,12 @@ module WidgetList
           'columnFilter'        => {},
 
           #
+          # Column Border (on right)
+          #
+          'borderedColumns'     => false,
+          'borderColumnStyle'   => '1px solid #CCCCCC',
+
+          #
           # Row specifics
           #
           'rowColor'            => '#FFFFFF',
@@ -184,7 +184,7 @@ module WidgetList
           'rowOffsets'          => ['FFFFFF','FFFFFF'],
 
           'class'               => 'listContainerPassive',
-          'tableclass'          => '',
+          'tableclass'          => 'tableBlowOutPreventer',
           'noDataMessage'       => 'Currently no data.',
           'useSort'             => true,
           'headerClass'         => {},
@@ -234,8 +234,7 @@ module WidgetList
       #the main template and outer shell
       @items.deep_merge!({'template' =>
                               '
-                            <div class="' + ((!$_REQUEST.key?('BUTTON_VALUE')) ? 'widget_list_outer' : '') + '">
-                              <input type="hidden" id="<!--NAME-->_jump_url_original" value="<!--JUMP_URL-->"/>
+                              <!--WRAP_START-->
                               <!--HEADER-->
                               <div class="<!--CLASS-->" id="<!--NAME-->">
                                  <table class="widget_list <!--TABLE_CLASS-->" style="<!--INLINE_STYLE-->" border="0" width="100%" cellpadding="0" cellspacing="0">
@@ -252,14 +251,14 @@ module WidgetList
                                  <!--FILTER-->
                                  <input type="hidden" name="<!--JUMP_URL_NAME-->" id="<!--JUMP_URL_NAME-->" value="<!--JUMP_URL-->">
                               </div>
-                            </div>
+                            <!--WRAP_END-->
                              '
                          })
 
       @items.deep_merge!({'row' =>
                               '
                                           <tr style="background-color:<!--BGCOLOR-->;<!--ROWSTYLE-->" class="<!--ROWCLASS-->"><!--CONTENT--></tr>
-                                       '
+                              '
                          })
 
       @items.deep_merge!({'list_description' =>
@@ -267,40 +266,40 @@ module WidgetList
                                           <tr class="summary">
                                              <td id="<!--LIST_NAME-->_list_description" class="header" style="text-align: left;padding-bottom: 2px;padding-top: 7px;font-size: 20px;" colspan="<!--COLSPAN-->"><!--LIST_DESCRIPTION--></td>
                                           </tr>
-                                       '
+                              '
                          })
 
       @items.deep_merge!({'col' =>
                               '
                                           <td class="<!--CLASS-->" align="<!--ALIGN-->" title="<!--TITLE-->" onclick="<!--ONCLICK-->" style="<!--STYLE-->"><!--CONTENT--></td>
-                                       '
+                              '
                          })
 
       @items.deep_merge!({'templateSequence' =>
                               '
                                           <!--LIST_SEQUENCE--> of <!--TOTAL_PAGES-->
-                                       '
+                              '
                          })
       #Sorting
       #
       @items.deep_merge!({'templateSortColumn' =>
                               '
-                                          <td style="font-weight:bold;<!--INLINE_STYLE-->" id="<!--COL_HEADER_ID-->" class="<!--COL_HEADER_CLASS-->" valign="middle"><span onclick="<!--FUNCTION-->(\'<!--COLSORTURL-->\',\'<!--NAME-->\')" style="cursor:pointer;background:none;" title="<!--TITLE_POPUP-->"><!--TITLE--><!--COLSORTICON-></span></td>
-                                       '
+                                          <td style="font-weight:bold;<!--INLINE_STYLE--><!--INLINE_STYLE-->" id="<!--COL_HEADER_ID-->" class="<!--COL_HEADER_CLASS-->" valign="middle"><span onclick="<!--FUNCTION-->(\'<!--COLSORTURL-->\',\'<!--NAME-->\')" style="cursor:pointer;background:none;" title="<!--TITLE_POPUP-->"><!--TITLE--><!--COLSORTICON-></span></td>
+                              '
                          })
 
       @items.deep_merge!({'templateNoSortColumn' =>
                               '
                                           <td style="font-weight:bold;<!--INLINE_STYLE-->" title="<!--TITLE_POPUP-->" id="<!--COL_HEADER_ID-->" class="<!--COL_HEADER_CLASS-->" valign="middle"><span style="background:none;"><!--TITLE--></span></td>
-                                       '
+                              '
                          })
 
       @items.deep_merge!({'statement' =>
                               {'select'=>
                                    {'view' =>
                                         '
-                                  SELECT <!--FIELDS--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
-                                  '
+                                   SELECT <!--FIELDS--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
+                                   '
                                    }
                               }
                          })
@@ -309,8 +308,8 @@ module WidgetList
                               {'count'=>
                                    {'view' =>
                                         '
-                                  SELECT count(1) total FROM <!--VIEW--> <!--WHERE-->
-                                  '
+                                   SELECT count(1) total FROM <!--VIEW--> <!--WHERE-->
+                                   '
                                    }
                               }
                          })
@@ -322,7 +321,7 @@ module WidgetList
                               '
                               <ul id="pagination" class="page_legacy">
                                  Page <!--PREVIOUS_BUTTON-->
-                                 <input type="text" value="<!--SEQUENCE-->" size="1" style="width:15px;padding:0px;font-size:10px;">
+                                 <input type="text" value="<!--SEQUENCE-->" size="1" style="width:15px;padding:0px;font-size:10px;" onblur="">
                                  <input type="hidden" id="<!--LIST_NAME-->_total_rows" value="<!--TOTAL_ROWS-->">
                                  <!--NEXT_BUTTON--> of <!--TOTAL_PAGES--> pages <span style="margin-left:20px">Total <!--TOTAL_ROWS--> records found</span>
                                  <span style="padding-left:20px;">Show <!--PAGE_SEQUENCE_JUMP_LIST--> per page</span>
@@ -376,8 +375,8 @@ module WidgetList
                                 {'select'=>
                                      {'view' =>
                                           '
-                                    SELECT <!--FIELDS-->, rn FROM ( SELECT ' + ( (!@items['view'].include?('(')) ? '<!--SOURCE-->' : @items['view'].strip.split(" ").last ) + '.*, rank() over (<!--ORDERBY-->) rn FROM <!--SOURCE--> ) a <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
-                                    '
+                                        SELECT <!--FIELDS-->, rn FROM ( SELECT ' + ( (!@items['view'].include?('(')) ? '<!--SOURCE-->' : @items['view'].strip.split(" ").last ) + '.*, rank() over (<!--ORDERBY-->) rn FROM <!--SOURCE--> ) a <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
+                                        '
                                      }
                                 }
                            })
@@ -608,17 +607,13 @@ module WidgetList
 
         if ! $_REQUEST.key?('BUTTON_VALUE') && !@items['title'].empty?
           @items['templateHeader'] = '
-         <h1><!--TITLE--></h1><div class="horizontal_rule"></div>
-         <!--FILTER_HEADER-->
-         '
-        else
-          if !$_REQUEST.key?('BUTTON_VALUE')
-            # Only if not in ajax would we want to output the filter header
-            #
-            @items['templateHeader'] = '
-           <!--FILTER_HEADER-->
-           '
-          end
+                                       <h1><!--TITLE--></h1><div class="horizontal_rule"></div>
+                                       <!--FILTER_HEADER-->
+                                     '
+        elsif !$_REQUEST.key?('BUTTON_VALUE')
+          # Only if not in ajax would we want to output the filter header
+          #
+          @items['templateHeader'] = '<!--FILTER_HEADER-->'
         end
 
         # Build the filter (If any)
@@ -921,6 +916,18 @@ module WidgetList
         if $_REQUEST.key?('switch_grouping')
           listJumpUrl['switch_grouping'] = $_REQUEST['switch_grouping']
         end
+
+
+
+
+        @templateFill['<!--WRAP_START-->']    = ''
+        @templateFill['<!--WRAP_END-->']      = ''
+        if !$_REQUEST.key?('BUTTON_VALUE')
+          @templateFill['<!--WRAP_START-->']  = '<div class="widget_list_outer">
+                                                   <input type="hidden" id="<!--NAME-->_jump_url_original" value="<!--JUMP_URL-->"/>'
+          @templateFill['<!--WRAP_END-->']    = '</div>'
+        end
+
         @templateFill['<!--HEADER-->']        = @items['templateHeader']
         @templateFill['<!--TITLE-->']         = @items['title']
         @templateFill['<!--NAME-->']          = @items['name']
@@ -934,6 +941,7 @@ module WidgetList
         else
           @templateFill['<!--INLINE_STYLE-->'] = 'table-layout:auto;'
         end
+
         #Filter form
         #
         if @items['showSearch'] === true
@@ -1301,6 +1309,10 @@ module WidgetList
           end
         end
 
+        if @items['borderedColumns']
+          colWidthStyle += 'border-right: ' + @items['borderColumnStyle'] + ';'
+        end
+
         $_SESSION.deep_merge!({'LIST_SEQUENCE' => { @sqlHash => @sequence} })
 
         #Hover Title
@@ -1584,6 +1596,10 @@ module WidgetList
       return content
     end
 
+    def self.drill_down_back(list_name='')
+      '<div class="goback" onclick="ListHome(\'' + list_name + '\');" title="Go Back"></div>'
+    end
+
     def self.build_drill_down_link(listId,drillDownName,dataToPassFromView,columnToShow,columnAlias='',functionName='ListDrillDown',columnClass='',color='blue')
       if columnAlias.empty?
         columnAlias = columnToShow
@@ -1593,7 +1609,7 @@ module WidgetList
         columnClass = ' "' + WidgetList::List::concat_string() + columnClass + WidgetList::List::concat_string() + '"'
       end
 
-      link = %[#{WidgetList::List::concat_inner()}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote()}#{drillDownName}#{WidgetList::List::double_quote()},#{WidgetList::List::double_quote()}"#{WidgetList::List::concat_string()} #{dataToPassFromView} #{WidgetList::List::concat_string()} "#{WidgetList::List::double_quote()},#{WidgetList::List::double_quote()}#{listId}#{WidgetList::List::double_quote()});'>"#{WidgetList::List::concat_string()}#{columnToShow}#{WidgetList::List::concat_string()}"</a>"#{WidgetList::List::concat_outer()}  as #{columnAlias},]
+      link = %[#{WidgetList::List::concat_inner()}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote()}#{drillDownName}#{WidgetList::List::double_quote()}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote()}#{listId}#{WidgetList::List::double_quote()});'>"#{WidgetList::List::concat_string()}#{columnToShow}#{WidgetList::List::concat_string()}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string()} #{dataToPassFromView} #{WidgetList::List::concat_string()}"</script>"#{WidgetList::List::concat_outer()}  as #{columnAlias},]
     end
 
     def self.concat_string
@@ -1904,7 +1920,7 @@ module WidgetList
               if !@items['rowStylesByStatus'].empty? && @items['rowStylesByStatus'].key?(column) &&  !@items['rowStylesByStatus'][column].empty?
                 @items['rowStylesByStatus'][column].each { |status,inlineStyle|
                   if status === content
-                    customRowStyle = color
+                    customRowStyle = inlineStyle
                   end
                 }
               end
@@ -1915,6 +1931,11 @@ module WidgetList
               colPieces['<!--CLASS-->']   = colClass
               colPieces['<!--ALIGN-->']   = @items['collAlign']
               colPieces['<!--STYLE-->']   = theStyle  + colWidthStyle
+
+              if @items['borderedColumns']
+                colPieces['<!--STYLE-->'] += 'border-right: ' + @items['borderColumnStyle'] + ';'
+              end
+
               colPieces['<!--ONCLICK-->'] = onClick
               colPieces['<!--TITLE-->']   = contentTitle #todo htmlentities needed ?
               colPieces['<!--CONTENT-->'] = content
@@ -1954,7 +1975,7 @@ module WidgetList
               pieces['<!--ROWCLASS-->'] = @items['rowClass']
             else
               pieces['<!--BGCOLOR-->']   = !customRowColor.empty? ? customRowColor : @items['rowColor']
-              pieces['<!--ROWSTYLE-->']  = customRowStyle.empty? ? customRowStyle : ''
+              pieces['<!--ROWSTYLE-->']  = !customRowStyle.empty? ? customRowStyle : ''
               pieces['<!--ROWCLASS-->']  = @items['rowClass']
             end
             rows << WidgetList::Utils::fill(pieces, @items['row'])
@@ -2134,7 +2155,7 @@ module WidgetList
 
       if ! sql.empty?
         if @items['showPagination']
-          if WidgetList::List.get_database._select(sql, [], @items['bindVarsLegacy']) > 0
+          if WidgetList::List.get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy']) > 0
             rows = WidgetList::List.get_database.final_results['TOTAL'][0]
           else
             rows = 0
