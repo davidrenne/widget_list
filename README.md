@@ -97,22 +97,22 @@ I recommend if you use widget_list in production that you use config.consider_al
     # Load Sample "items" Data. Comment out in your first time executing a widgetlist to create the items table
     #
     begin
-        WidgetList::List.get_database.create_table :items do
-          primary_key :id
-          String :name
-          Float :price
-          Fixnum :sku
-          String :active
-          Date :date_added
-        end
-        items = WidgetList::List.get_database[:items]
-        100.times {
-          items.insert(:name => 'ab\'c_quoted_'    + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-01', :sku => rand(9999), :active => 'Yes')
-          items.insert(:name => '12"3_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-02', :sku => rand(9999), :active => 'Yes')
-          items.insert(:name => 'asdf_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-03', :sku => rand(9999), :active => 'Yes')
-          items.insert(:name => 'qwerty_'          + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-04', :sku => rand(9999), :active => 'No')
-          items.insert(:name => 'meow_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-05', :sku => rand(9999), :active => 'No')
-        }
+      WidgetList::List.get_database.create_table :items do
+        primary_key :id
+        String :name
+        Float :price
+        Fixnum :sku
+        String :active
+        Date :date_added
+      end
+      items = WidgetList::List.get_database[:items]
+      100.times {
+        items.insert(:name => 'ab\'c_quoted_'    + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-01', :sku => rand(9999), :active => 'Yes')
+        items.insert(:name => '12"3_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-02', :sku => rand(9999), :active => 'Yes')
+        items.insert(:name => 'asdf_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-03', :sku => rand(9999), :active => 'Yes')
+        items.insert(:name => 'qwerty_'          + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-04', :sku => rand(9999), :active => 'No')
+        items.insert(:name => 'meow_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-05', :sku => rand(9999), :active => 'No')
+      }
     rescue Exception => e
       #
       # Table already exists
@@ -168,8 +168,7 @@ I recommend if you use widget_list in production that you use config.consider_al
           list_parms['listDescription']  += 'Showing All Ruby Items' + groupByDesc
       end
 
-
-
+      # put <%= @output %> inside your view for initial load nothing to do here other than any custom concatenation of multiple lists
       #
       # Setup your first widget_list
       #
@@ -177,21 +176,30 @@ I recommend if you use widget_list in production that you use config.consider_al
       button_column_name = 'actions'
 
       #
-      # action_buttons will add buttons to the bottom of the list.
+      # customFooter will add buttons to the bottom of the list.
       #
 
-      action_buttons =  WidgetList::Widgets::widget_button('Add New Item', {'page' => '/add/'} ) + WidgetList::Widgets::widget_button('Do something else', {'page' => '/else/'} )
+      list_parms['customFooter'] =  WidgetList::Widgets::widget_button('Add New Item', {'page' => '/add/'} ) + WidgetList::Widgets::widget_button('Do something else', {'page' => '/else/'} )
 
       #
       # Give some SQL to feed widget_list and set a noDataMessage
       #
       list_parms['searchIdCol']   = ['id','sku']
+
+      #
+      # Because sku_linked column is being used and the raw SKU is hidden, we need to make this available for searching via fields_hidden
+      #
+      list_parms['fields_hidden'] = ['sku']
+
+      drill_downs = []
+      drill_downs << WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_name','a.name','a.name','name_linked')
+      drill_downs << WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_sku','a.sku','a.sku','sku_linked')
+
       list_parms['view']          = '(
                                        SELECT
                                              ' + countSQL + '
+                                             ' + drill_downs.join(' , ') + ',
                                              \'\'     AS checkbox,
-                                             ' + WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_name','a.name','a.name','name_linked') + '
-                                             ' + WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_sku','a.sku','a.sku','sku_linked') + '
                                              a.id         AS id,
                                              a.active     AS active,
                                              a.name       AS name,
@@ -202,6 +210,22 @@ I recommend if you use widget_list in production that you use config.consider_al
                                              items a
                                        ' + groupBySQL + '
                                      ) a'
+
+      #
+      # Map out the visible fields
+      #
+      list_parms['fields'] = {}
+      list_parms['fields']['checkbox']         = 'checkbox_header'
+      list_parms['fields']['cnt']              = 'Total Items In Group'         if groupByFilter != 'none'
+      list_parms['fields']['id']               = 'Item Id'                      if groupByFilter == 'none'
+      list_parms['fields']['name_linked']      = 'Name'                         if groupByFilter == 'none' or groupByFilter == 'item'
+      list_parms['fields']['price']            = 'Price of Item'                if groupByFilter == 'none'
+      list_parms['fields']['sku_linked']       = 'Sku #'                        if groupByFilter == 'none' or groupByFilter == 'sku'
+      list_parms['fields']['date_added']       = 'Date Added'                   if groupByFilter == 'none'
+      list_parms['fields']['active']           = 'Active Item'                  if groupByFilter == 'none'
+      list_parms['fields'][button_column_name] = button_column_name.capitalize  if groupByFilter == 'none'
+
+
       list_parms['noDataMessage'] = 'No Ruby Items Found'
       list_parms['title']         = 'Ruby Items!!!'
 
@@ -227,6 +251,12 @@ I recommend if you use widget_list in production that you use config.consider_al
       }
 
       list_parms['groupByItems']    = ['All Records', 'Item Name', 'Sku Number']
+
+
+      #
+      # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
+      #
+      list_parms = WidgetList::List.checkbox_helper(list_parms,'id')
 
       #
       # Generate a template for the DOWN ARROW for CUSTOM FILTER
@@ -258,45 +288,44 @@ I recommend if you use widget_list in production that you use config.consider_al
         </ul>
       <br/>
       <div style="text-align:right;width:100%;height:30px;" class="advanced-search-container-buttons"><!--BUTTON_RESET--><!--BUTTON_SEARCH--></div>
-      </div>')
+      </div>'
+      # or to keep HTML out of controller render_to_string(:partial => 'partials/form_xxx')
+      )
 
       #
       # Control widths of special fields
       #
 
       list_parms['columnWidth']    = {
-                                        'date_added'=>'200px',
-                                        'sku_linked'=>'20px',
-                                     }
+        'date_added'=>'200px',
+        'sku_linked'=>'20px',
+      }
 
       #
       # If certain statuses of records are shown, visualize
       #
 
       list_parms.deep_merge!({'rowStylesByStatus' =>
-                                  {'active'=>
-                                       {'Yes' => '' }
-                                  }
+                                {'active'=>
+                                   {'Yes' => '' }
+                                }
                              })
       list_parms.deep_merge!({'rowStylesByStatus' =>
-                                  {'active'=>
-                                       {'No'  => 'font-style:italic;color:red;' }
-                                  }
+                                {'active'=>
+                                   {'No'  => 'font-style:italic;color:red;' }
+                                }
                              })
 
-      #
-      # Map out the visible fields
-      #
-      list_parms['fields'] = {}
-      list_parms['fields']['checkbox']         = 'checkbox_header'
-      list_parms['fields']['cnt']              = 'Total Items In Group'         if groupByFilter != 'none'
-      list_parms['fields']['id']               = 'Item Id'                      if groupByFilter == 'none'
-      list_parms['fields']['name_linked']      = 'Name'                         if groupByFilter == 'none' or groupByFilter == 'item'
-      list_parms['fields']['price']            = 'Price of Item'                if groupByFilter == 'none'
-      list_parms['fields']['sku_linked']       = 'Sku #'                        if groupByFilter == 'none' or groupByFilter == 'sku'
-      list_parms['fields']['date_added']       = 'Date Added'                   if groupByFilter == 'none'
-      list_parms['fields']['active']           = 'Active Item'                  if groupByFilter == 'none'
-      list_parms['fields'][button_column_name] = button_column_name.capitalize  if groupByFilter == 'none'
+      list_parms.deep_merge!({'rowColorByStatus' =>
+                                {'active'=>
+                                   {'Yes' => '' }
+                                }
+                             })
+      list_parms.deep_merge!({'rowColorByStatus' =>
+                                {'active'=>
+                                   {'No'  => '#EBEBEB' }
+                                }
+                             })
 
 
       list_parms['columnPopupTitle'] = {}
@@ -308,78 +337,39 @@ I recommend if you use widget_list in production that you use config.consider_al
       list_parms['columnPopupTitle']['sku_linked']       = 'Sku # (Click to drill down)'
       list_parms['columnPopupTitle']['date_added']       = 'The date the item was added to the database'
       list_parms['columnPopupTitle']['active']           = 'Is the item active?'
-      #
-      # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
-      #
 
-      list_parms.deep_merge!({'inputs' =>
-                                {'checkbox'=>
-                                   {'type' => 'checkbox'
-                                   }
-                                }
-                             })
+      output_type, output  = WidgetList::List.build_list(list_parms)
 
-      list_parms.deep_merge!({'inputs' =>
-                                {'checkbox'=>
-                                   {'items' =>
-                                      {
-                                        'name'          => 'visible_checks[]',
-                                        'value'         => 'id', #the value should be a column name mapping
-                                        'class_handle'  => 'info_tables',
-                                      }
-                                   }
-                                }
-                             })
-
-      list_parms.deep_merge!({'inputs' =>
-                                {'checkbox_header'=>
-                                   {'type' => 'checkbox'
-                                   }
-                                }
-                             })
-
-      list_parms.deep_merge!({'inputs' =>
-                                {'checkbox_header'=>
-                                   {'items' =>
-                                      {
-                                        'check_all'     => true,
-                                        'id'            => 'info_tables_check_all',
-                                        'class_handle'  => 'info_tables',
-                                      }
-                                   }
-                                }
-                             })
-      list = WidgetList::List.new(list_parms)
-
-      #
-      # If AJAX, send back JSON
-      #
-      if $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['LIST_NAME'] == list_parms['name']
-
-        if $_REQUEST.key?('export_widget_list')
-          send_data(list.render(), :filename => list_parms['name'] + '.csv')
+      case output_type
+        when 'html'
+          # put <%= @output %> inside your view for initial load nothing to do here other than any custom concatenation of multiple lists
+          @output = output
+        when 'json'
+          return render :inline => output
+        when 'export'
+          send_data(output, :filename => list_parms['name'] + '.csv')
           return
-        end
-
-        ret = {}
-        ret['list']     = WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
-        ret['list_id']  = list_parms['name']
-        ret['callback'] = 'ListSearchAheadResponse'
-        return render :inline => WidgetList::Utils::json_encode(ret)
-      else
-        #
-        # Else assign to variable for view
-        #
-        @output =  WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
       end
 
     rescue Exception => e
 
-      list = WidgetList::List.new(list_parms)
-      @output =  WidgetList::Utils::fill({ '<!--CUSTOM_CONTENT-->' =>  action_buttons } , list.render() )
+      Rails.logger.info e.to_s + "\n\n" + $!.backtrace.join("\n\n")
+
+      #really this block is just to catch initial ruby errors in setting up your list_parms
+      #I suggest taking out this rescue when going to production
+      output_type, output  = WidgetList::List.build_list(list_parms)
+
+      case output_type
+        when 'html'
+          @output = output
+        when 'json'
+          return render :inline => output
+        when 'export'
+          send_data(output, :filename => list_parms['name'] + '.csv')
+          return
+      end
 
     end
-
 
 ## Contributing
 

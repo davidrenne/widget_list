@@ -19,7 +19,7 @@ echo 'Next Add *= require '$GEMNAME' to application.css in your rails applicatio
 echo 'module '$CAMELCASE > lib/$GEMNAME/engine.rb
 echo '  class Engine < Rails::Engine' >> lib/$GEMNAME/engine.rb
 echo '    # auto wire' >> lib/$GEMNAME/engine.rb
-echo "    initializer 'static_assets.load_static_assets' do |app|" >> lib/$GEMNAME/engine.rb
+echo "    initializer '""$GEMNAME"".load_static_assets' do |app|" >> lib/$GEMNAME/engine.rb
 echo '      app.middleware.use ::ActionDispatch::Static, "#{root}/vendor"' >> lib/$GEMNAME/engine.rb
 echo '    end' >> lib/$GEMNAME/engine.rb
 echo '  end' >> lib/$GEMNAME/engine.rb

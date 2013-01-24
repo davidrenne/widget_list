@@ -174,13 +174,17 @@ function ajaxStatus(eToHide, fadeInOut)
 }
 
 
-function ListChangeGrouping(listId)
+function ListChangeGrouping(listId, obj, extra)
 {
+   if (typeof(extra) == 'undefined')
+   {
+      var extra = '';
+   }
    ajaxStatus(listId, 1);
    HideAdvancedSearch(jQuery('#' + listId + '-group'));
    jQuery('#list_search_id_' + listId ).val('');
    InitInfoFields(jQuery('#list_search_id_' + listId));
-   ListJumpMin(jQuery('#' + listId + '_jump_url').val() + '&searchClear=1&switch_grouping=' + jQuery('#list_group_id_' + listId ).val(), listId);
+   ListJumpMin(jQuery('#' + listId + '_jump_url').val() + '&searchClear=1&switch_grouping=' + jQuery('#list_group_id_' + listId ).val() + '&group_row_id=' + jQuery(obj).attr('id') + extra , listId);
 }
 
 function ListHome(listId)
@@ -190,7 +194,7 @@ function ListHome(listId)
    });
 }
 
-function ListDrillDown(mode,data,listId)
+function ListDrillDown(mode, data, listId, extra)
 {
    jQuery('#list_search_id_' + listId).val('');
    var grouping = '';
@@ -198,7 +202,7 @@ function ListDrillDown(mode,data,listId)
    {
       grouping = '&switch_grouping=' + jQuery('#list_group_id_' + listId).val();
    }
-   ListJumpMin(jQuery('#' + listId + '_jump_url').val() + '&drill_down=' + mode + '&filter=' + data + grouping + '&search_filter=', listId, function(){
+   ListJumpMin(jQuery('#' + listId + '_jump_url').val() + '&drill_down=' + mode + '&filter=' + data + grouping + '&search_filter=' + extra, listId, function(){
       InitInfoFields(jQuery('#list_search_id_' + listId));
    });
 }
