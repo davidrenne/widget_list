@@ -54,6 +54,15 @@ You can either follow the below instructions or take a look at the changes here 
 
 I recommend if you use widget_list in production that you use config.consider_all_requests_local = true as errors will be handled but the base lists will still draw.
 
+
+## Feature Configurations
+
+`name` - The unique name/id's of all the pieces that make up your widget list (`default ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join`)
+
+`database` - You can pass which DB connection you would like to use for each list.  Only two values/db connections are supported ('primary' or 'secondary') (`default='primary'`)
+
+`title` - This adds an H1 title and horizontal rule on top of your list (`default=''`)
+
 ### #1 - Add widget_list CSS and JS to your application css and js
 
     Change application.css to:

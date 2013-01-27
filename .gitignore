@@ -21,3 +21,7 @@ tmp
 .idea/widget_list.iml
 
 .idea/workspace.xml
+
+.DS_Store
+
+lib/widget_list (Autosaved).txt
