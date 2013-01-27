@@ -79,7 +79,7 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `fields` - The visible fields shown in the current list.  KEY=column name VALUE= displayed column header `default={}`
 
-`fields_hidden` - The non-visible fields in the current list.  Typically used when you wish to search on this column, but the main column is a drilldown or some HTML value that isnt easily searchable.  VALUE=column name `default=[]`
+`fieldsHidden` - The non-visible fields in the current list.  Typically used when you wish to search on this column, but the main column is a drilldown or some HTML value that isnt easily searchable.  VALUE=column name `default=[]`
 
 `bindVars` - bindVars that are passed to _select() sequel extension I wrote.  Which will replace "?" in your query with the associated bindVar `default=[]`
 
@@ -119,11 +119,9 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `customHeader` -  Add buttons or HTML at top area of list above all headers (such as TABS to delineate Summary/Details) `default=''`
 
-`ajax_function_all` -  Custom javascript called asychronously during each click of each event someone interacts with on the list `default=''`
+`ajaxFunctionAll` -  Custom javascript called asychronously during each click of each event someone interacts with on the list `default=''`
 
-`ajax_function` -  Mostly an internal setting `default='ListJumpMin'`
-
-`ajax_search_function` -  Mostly an internal setting `default='ListJumpMin'`
+`ajaxFunction` -  Mostly an internal setting `default='ListJumpMin'`
 
 `showSearch` -  Show top search bar `default=true`
 
@@ -155,11 +153,7 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `groupByClickDefault` -  Default group by handler inside widget_list.js `default="ListChangeGrouping('<!--NAME-->', this);"`
 
-`list_search_form` -  Allows you to pass a custom form for the ARROW drop down for advanced searching `default=''`
-
-`list_search_attribs` -  Additional input configs for the widget_input built for the searching `default={}`
-
-`list_search_attribs` -  Additional input configs for the widget_input built for the searching `default={}`
+`listSearchForm` -  Allows you to pass a custom form for the ARROW drop down for advanced searching `default=''`
 
 `columnStyle` -  Column styles.  KEY=column name VALUE= the inline style applied `default={}`
 
@@ -207,9 +201,9 @@ Style a row based on the value of the column.
 
 `templateFilter` - Instead of widget list building your search box.  Pass your own HTML `default=''`
 
-`column_hooks` - Todo `default={}`
+`columnHooks` - Todo `default={}`
 
-`row_hooks` - Todo `default={}`
+`rowHooks` - Todo `default={}`
 
 
 ### #1 - Add widget_list CSS and JS to your application css and js
@@ -347,7 +341,7 @@ Style a row based on the value of the column.
       #
       # Because sku_linked column is being used and the raw SKU is hidden, we need to make this available for searching via fields_hidden
       #
-      list_parms['fields_hidden'] = ['sku']
+      list_parms['fieldsHidden'] = ['sku']
 
       drill_downs = []
       drill_downs << WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_name','a.name','a.name','name_linked')
@@ -431,7 +425,7 @@ Style a row based on the value of the column.
       button_search = {}
       button_search['onclick']      = "alert('This would search, but is not coded.  That is for you to do')"
 
-      list_parms['list_search_form'] = WidgetList::Utils::fill( {
+      list_parms['listSearchForm'] = WidgetList::Utils::fill( {
                                                                   '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', button_search),
                                                                   '<!--COMMENTS-->'            => WidgetList::Widgets::widget_input(input),
                                                                   '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)" } ,
