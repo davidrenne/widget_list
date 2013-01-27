@@ -92,19 +92,18 @@ module WidgetList
         'collClass'           => '',
         'collAlign'           => '',
         'fields'              => {},
-        'fields_hidden'       => [],
+        'fieldsHidden'        => [],
         'bindVars'            => [],
         'bindVarsLegacy'      => {},
         'links'               => {},
-        'results'             => {},
         'buttons'             => {},
         'inputs'              => {},
         'filter'              => [],
+        'groupBy'             => '',
         'rowStart'            => 0,
         'rowLimit'            => 10,
         'orderBy'             => '',
         'allowHTML'           => true,
-        'strlength'           => 30,
         'searchClear'         => false,
         'searchClearAll'      => false,
         'showPagination'      => true,
@@ -119,16 +118,14 @@ module WidgetList
         # Head/Foot
         #
 
-        'customFooter'        => '', # add buttons or HTML at bottom area of list inside the grey box
-        'customHeader'        => '', # add buttons or HTML at top area of list above all headers (such as TABS) 
+        'customFooter'        => '',
+        'customHeader'        => '',
 
         #
         # Ajax
         #
-        'ajax_action'         => '',
-        'ajax_function_all'   => '', #Custom javascript called asychronously during each click
-        'ajax_function'       => 'ListJumpMin',
-        'ajax_search_function'=> 'ListJumpMin',
+        'ajaxFunctionAll'   => '', 
+        'ajaxFunction'       => 'ListJumpMin',
 
         #
         #  Search
@@ -136,23 +133,23 @@ module WidgetList
         'showSearch'          => true,
         'searchOnkeyup'       => '',
         'searchOnclick'       => '',
-        'searchIdCol'         => 'id',         #By default `id` column is here because typically if you call your PK's id and are auto-increment
-        'searchInputLegacyCSS'=> false,
-        'searchBtnName'       => 'Search by Id or a list of Ids and more',
-        'searchTitle'         => '',
-        'searchFieldsIn'      => {},            #White list of fields to include in a alpha-numeric based search
-        'searchFieldsOut'     => {'id'=>true},  #Black list of fields to include in a alpha-numeric based search (default `id` to NEVER search when alpha seach)
+        'searchIdCol'         => 'id',    
+        'searchTitle'         => 'Search by Id or a list of Ids and more',
+        'searchFieldsIn'      => {},            
+        'searchFieldsOut'     => {'id'=>true}, 
+        'templateFilter'      => '',
 
         #
         #  Export
         #
         'showExport'          => true,
+        'exportButtonTitle'   => 'Export CSV',
 
         #
         # Group By Box
         #
-        'groupByItems'        => [],    #array of strings (each a new "select option")
-        'groupBySelected'     => false, #initially selected grouping - defaults to first in list if not
+        'groupByItems'        => [],  
+        'groupBySelected'     => false,
         'groupByLabel'        => 'Group By',
         'groupByClick'        => '',
         'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
@@ -161,8 +158,7 @@ module WidgetList
         #
         # Advanced searching
         #
-        'list_search_form'    => '', #The HTML form used for the advanced search drop down
-        'list_search_attribs' => {}, #widgetinput "search_ahead" attributes
+        'listSearchForm'    => '',
 
         #
         # Column Specific
@@ -172,8 +168,7 @@ module WidgetList
         'columnPopupTitle'    => {},
         'columnSort'          => {},
         'columnWidth'         => {},
-        'columnNoSort'        => {},
-        'columnFilter'        => {},
+        'columnNoSort'        => {}, 
 
         #
         # Column Border (on right)
@@ -183,12 +178,10 @@ module WidgetList
 
         #
         # Row specifics
-        #
-        'rowColor'            => '#FFFFFF',
+        # 
         'rowClass'            => '',
         'rowColorByStatus'    => {},
         'rowStylesByStatus'   => {},
-        'offsetRows'          => true,
         'rowOffsets'          => ['FFFFFF','FFFFFF'],
 
         'class'               => 'listContainerPassive',
@@ -196,13 +189,10 @@ module WidgetList
         'noDataMessage'       => 'Currently no data.',
         'useSort'             => true,
         'headerClass'         => {},
-        'groupBy'             => '',
         'fieldFunction'       => {},
         'buttonVal'           => 'templateListJump',
         'linkFunction'        => 'ButtonLinkPost',
         'template'            => '',
-        'templateFilter'      => '',
-        'pagerFull'          => true,
         'LIST_COL_SORT_ORDER' => 'ASC',
         'LIST_COL_SORT'       => '',
         'LIST_FILTER_ALL'     => '',
@@ -213,14 +203,14 @@ module WidgetList
         #
         # Checkbox
         #
-        'checked_class'       => 'widgetlist-checkbox',
-        'checked_flag'        => {},
+        'checkedClass'       => 'widgetlist-checkbox',
+        'checkedFlag'        => {},
 
         #
         # Hooks
         #
-        'column_hooks'        => {},
-        'row_hooks'           => {}
+        'columnHooks'        => {},
+        'rowHooks'           => {}
       }
 
       @csv          = []
@@ -475,7 +465,7 @@ module WidgetList
 
             fieldsToSearch = @items['fields'].dup
 
-            @items['fields_hidden'].each { |columnPivot|
+            @items['fieldsHidden'].each { |columnPivot|
               fieldsToSearch[columnPivot] = columnPivot
             }
 
@@ -927,11 +917,7 @@ module WidgetList
         listJumpUrl['ROW_LIMIT']           = @items['ROW_LIMIT']
         listJumpUrl['LIST_SEQUENCE']       = @sequence
         listJumpUrl['LIST_NAME']           = @items['name']
-        listJumpUrl['SQL_HASH']            = @sqlHash
-
-        if @items.key?('ajax_action')
-          listJumpUrl['list_action'] = @items['ajax_action']
-        end
+        listJumpUrl['SQL_HASH']            = @sqlHash 
 
         if $_REQUEST.key?('switch_grouping')
           listJumpUrl['switch_grouping'] = $_REQUEST['switch_grouping']
@@ -984,10 +970,7 @@ module WidgetList
               filterParameters['BUTTON_VALUE'] = searchVal
               filterParameters['PAGE_ID']      = @items['pageId']
               filterParameters['LIST_NAME']    = @items['name']
-              filterParameters['SQL_HASH']     = @sqlHash
-              if @items.key?('ajax_action') && ! @items['ajax_action'].empty?
-                filterParameters['list_action'] = @items['ajax_action']
-              end
+              filterParameters['SQL_HASH']     = @sqlHash 
 
               @items['carryOverRequsts'].each { |value|
                 if $_REQUEST.key?(value)
@@ -1015,7 +998,7 @@ module WidgetList
               list_search['list-search'] = true
               list_search['width']       = '500'
               list_search['input_class'] = 'info-input'
-              list_search['title']       = (@items['searchTitle'].empty?) ? @items['searchBtnName'] :@items['searchTitle']
+              list_search['title']       = @items['searchTitle']
               list_search['id']          = 'list_search_id_' + @items['name']
               list_search['name']        = 'list_search_name_' + @items['name']
               list_search['class']       = 'inputOuter widget-search-outer ' + @items['name'].downcase + '-search'
@@ -1023,8 +1006,8 @@ module WidgetList
                 'url'          => searchUrl,
                 'skip_queue'   => false,
                 'target'       => @items['name'],
-                'search_form'  => @items['list_search_form'],
-                'onclick'      => (! @items['searchOnclick'].empty? && ! @items['list_search_form'].empty?) ? @items['searchOnclick'] : '',
+                'search_form'  => @items['listSearchForm'],
+                'onclick'      => (! @items['searchOnclick'].empty? && ! @items['listSearchForm'].empty?) ? @items['searchOnclick'] : '',
                 'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? @items['searchOnkeyup'] : ''
               }
 
@@ -1084,7 +1067,7 @@ module WidgetList
               @templateFill['<!--FILTER_HEADER-->']  += '<div class="fake-select"><div class="label">' + @items['groupByLabel'] + ':</div> ' + WidgetList::Widgets::widget_input(list_group) + '</div>'
 
               if @items['showExport']
-                @templateFill['<!--FILTER_HEADER-->']  +=  WidgetList::Widgets::widget_button('Export CSV', {'onclick' => 'ListExport(\'' + @items['name'] + '\');'}, true)
+                @templateFill['<!--FILTER_HEADER-->']  +=  WidgetList::Widgets::widget_button(@items['exportButtonTitle'], {'onclick' => 'ListExport(\'' + @items['name'] + '\');'}, true)
               end
 
             end
@@ -1146,11 +1129,7 @@ module WidgetList
         @items['links']['paginate'].each { |tagName, tag|
           urlTags[tagName] = tag
         }
-      end
-
-      if @items.key?('ajax_action') && ! @items['ajax_action'].empty?
-        urlTags['list_action'] = @items['ajax_action']
-      end
+      end 
 
       @items['carryOverRequsts'].each { |value|
         if $_REQUEST.key?(value)
@@ -1186,8 +1165,8 @@ module WidgetList
         '<!--LIST_NAME-->'    => @items['name'],
         '<!--HTTP_SERVER-->'  => $_SERVER['rack.url_scheme'] + '://' + $_SERVER['HTTP_HOST'] + '/assets/',
         '<!--PREVIOUS_URL-->' => prevUrl,
-        '<!--FUNCTION-->'     => @items['ajax_function'],
-        '<!--FUNCTION_ALL-->' => @items['ajax_function_all'],
+        '<!--FUNCTION-->'     => @items['ajaxFunction'],
+        '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
       }
 
       templates['btn_next']     = WidgetList::Utils::fill(pieces,templates['btn_next'])
@@ -1232,7 +1211,7 @@ module WidgetList
 
       # WidgetSelect( todo)
       pageSelect = <<-EOD
-        <select onchange="#{@items['ajax_function']}(this.value,'#{@items['name']}');#{@items['ajax_function_all']}" style="width:58px">
+        <select onchange="#{@items['ajaxFunction']}(this.value,'#{@items['name']}');#{@items['ajaxFunctionAll']}" style="width:58px">
           #{options}
         </select>
       EOD
@@ -1293,8 +1272,8 @@ module WidgetList
                                                  '<!--SEQUENCE-->'     => page,
                                                  '<!--JUMP_URL-->'     => jumpUrl,
                                                  '<!--LIST_NAME-->'    => @items['name'],
-                                                 '<!--FUNCTION-->'     => @items['ajax_function'],
-                                                 '<!--FUNCTION_ALL-->' => @items['ajax_function_all'],
+                                                 '<!--FUNCTION-->'     => @items['ajaxFunction'],
+                                                 '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
                                                }, jumpTemplate)
       end
 
@@ -1468,9 +1447,6 @@ module WidgetList
             end
           }
 
-          if @items.key?('ajax_action') && ! @items['ajax_action'].empty?
-            colSort['list_action'] = @items['ajax_action']
-          end
           colSort['SQL_HASH'] = @sqlHash
 
           pieces = {      '<!--COLSORTURL-->'       => WidgetList::Utils::build_url(@items['pageId'],colSort,(!$_REQUEST.key?('BUTTON_VALUE'))),
@@ -1481,8 +1457,8 @@ module WidgetList
                           '<!--TITLE_POPUP-->'      => popupTitle,
                           '<!--COL_HEADER_CLASS-->' => colClass,
                           '<!--TITLE-->'            => fieldTitle,
-                          '<!--FUNCTION-->'         => @items['ajax_function'],
-                          '<!--FUNCTION_ALL-->'     => @items['ajax_function_all'],
+                          '<!--FUNCTION-->'         => @items['ajaxFunction'],
+                          '<!--FUNCTION_ALL-->'     => @items['ajaxFunctionAll'],
           }
           headers << WidgetList::Utils::fill(pieces, @items[templateIdx])
         else
@@ -1596,9 +1572,9 @@ module WidgetList
           #
           # Checkbox is checked or not per query value
           #
-          if ! @items['checked_flag'].empty?
-            if @items['checked_flag'].key?(column)
-              input['checked'] =  !!@results[ @items['checked_flag'][column].upcase ][row]
+          if ! @items['checkedFlag'].empty?
+            if @items['checkedFlag'].key?(column)
+              input['checked'] =  !!@results[ @items['checkedFlag'][column].upcase ][row]
             end
           end
 
@@ -1829,19 +1805,7 @@ module WidgetList
       links      = @items['links'][column]
       url        = {'PAGE_ID' => @items['pageId']}
       function   = @items['linkFunction']
-      parameters = ''
-
-      if links.key?('PAGE_ID') && ! links['PAGE_ID'].empty?
-        url['PAGE_ID'] = links['PAGE_ID']
-      end
-
-      if links.key?('ACTION') && ! links['ACTION'].empty?
-        url['list_action'] = links['ACTION']
-      end
-
-      if links.key?('BUTTON_VALUE') && ! links['BUTTON_VALUE'].empty?
-        url['BUTTON_VALUE'] = links['BUTTON_VALUE']
-      end
+      parameters = ''  
 
       #todo unit test this and all of column links
       if links.key?('tags')
@@ -1866,11 +1830,7 @@ module WidgetList
             end
           }
         end
-      end
-
-      if @items.key?('ajax_action') && !@items['ajax_action'].empty?
-        url['list_action'] = @items['ajax_action']
-      end
+      end 
 
       url['SQL_HASH']      = @sqlHash
       linkUrl = WidgetList::Utils::build_url(@items['pageId'], url, (!$_REQUEST.key?('BUTTON_VALUE')))
@@ -1942,7 +1902,7 @@ module WidgetList
                 # Column is an input
                 #
               elsif @items['inputs'].key?(column) && @items['inputs'][column].class.name == 'Hash'
-                colClasses << @items['checked_class']
+                colClasses << @items['checkedClass']
                 content = build_column_input(column, j)
 
 
@@ -2067,15 +2027,12 @@ module WidgetList
             if @items['rowColorByStatus'].empty? &&  @items['rowStylesByStatus'].empty?
               #Set the row color
               #
-              rowColor = @items['rowColor']
-
-              if @items['offsetRows']
-                if( j % 2 ==0)
-                  rowColor = @items['rowOffsets'][1]
-                else
-                  rowColor = @items['rowOffsets'][0]
-                end
-              end
+ 
+              if( j % 2 ==0)
+                rowColor = @items['rowOffsets'][1]
+              else
+                rowColor = @items['rowOffsets'][0]
+              end 
 
               #Draw default color
               #
