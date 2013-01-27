@@ -57,14 +57,159 @@ I recommend if you use widget_list in production that you use config.consider_al
 
 ## Feature Configurations
 
-`name` - The unique name/id's of all the pieces that make up your widget list `(default=([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join)`
+widget_list features and configurations primarily work by a single large hash passed to the constructor with the features you need for the given request which changes how the list is displayed or filtered.
 
-`database` - You can pass which DB connection you would like to use for each list.  Only two values/db connections are supported ('primary' or 'secondary') `(default='primary')`
+`name` - The unique name/id's of all the pieces that make up your widget list `default=([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join`
 
-`title` - This adds an H1 title and horizontal rule on top of your list `(default='')`
+`database` - You can pass which DB connection you would like to use for each list.  Only two values/db connections are supported ('primary' or 'secondary') `default='primary'`
 
-`listDescription` - This adds a grey header box.  It is useful for describing the main query `(default='')`
+`title` - This adds an H1 title and horizontal rule on top of your list `default=''`
 
+`listDescription` - This adds a grey header box.  It is useful for describing the main query `default=''`
+
+`pageId` - Base path for requests (typically you never need to change this) `default=$_SERVER['PATH_INFO']`
+
+`view` - A sub-select query to your database (ALWAYS ALIASED) `default=''`
+
+`data` - A "sequel" formatted resultset like would be returned from _select() method.  Instead of running a SQL query, you can pass an array to populate the list `default={}`
+
+`collClass` - Your custom <td> class for all <td>'s `default=''`
+
+`align` - <td> align attribute for all <td>'s `default=''`
+
+`fields` - The visible fields shown in the current list.  KEY=column name VALUE= displayed column header `default={}`
+
+`fields_hidden` - The non-visible fields in the current list.  Typically used when you wish to search on this column, but the main column is a drilldown or some HTML value that isnt easily searchable.  VALUE=column name `default=[]`
+
+`bindVars` - bindVars that are passed to _select() sequel extension I wrote.  Which will replace "?" in your query with the associated bindVar `default=[]`
+
+`bindVarsLegacy` - A Hash whose KEYS ARE CAPITALIZED and whose value is the replacement string.  Inside the "view" you would use :MY_KEY as the template to be replaced `default={}`
+
+`links` - Turn text based record value into a link.  KEY=column name VALUE=hash of link Config.  Links should most likely pass ['tags']['field_name'] = 'get_var_name' (would yeild get_var_name=1234 for that field value 1234).  You can pass ['tags']['onclick'] if you dont want to call ButtonLinkPost which will redirect to the URL built.  If you pass ['onclick']['tags'], each field passed will be passed as a parameter for the function you designate   `default={}`
+
+`buttons` -  Buttons to generate for each row.  KEY=column name VALUE=Hash of widget_button attributes `default={}`
+
+`inputs` -  widget_check is the only one supported so far. (See examples) `default={}`
+
+`filter` - << "xxx = 123" would be the syntax to add a new filter array. (See examples) `default=[]`
+
+`groupBy` - The column name or CSV of names to group by. (See examples) `default=[]`
+
+`rowStart` - Which page the list should start at `default=0`
+
+`rowLimit` - How many rows per page? `default=10`
+
+`orderBy` -  Default order by "column_name DIRECTION" `default=''`
+
+`allowHTML` - Strip HTML from view or not `default=true`
+
+`strlength` - Strip HTML from view or not `default=true`
+
+`searchClear` - Clear the list's search session `default=false`
+
+`searchClearAll` - Clear all search session for all lists `default=false`
+
+`showPagination` - Show pagination HTML `default=true`
+
+`searchSession` - Remember and restore the last search performed `default=true`
+
+`carryOverRequests` -  will allow you to post custom things from request to all sort/paging URLS for each ajax.  Takes an array of GETVARS which will be passed to each request `default=['switch_grouping']`
+
+`customFooter` -  Add buttons or HTML at bottom area of list inside the grey box `default=''`
+
+`customHeader` -  Add buttons or HTML at top area of list above all headers (such as TABS to delineate Summary/Details) `default=''`
+
+`ajax_function_all` -  Custom javascript called asychronously during each click of each event someone interacts with on the list `default=''`
+
+`ajax_function` -  Mostly an internal setting `default='ListJumpMin'`
+
+`ajax_search_function` -  Mostly an internal setting `default='ListJumpMin'`
+
+`showSearch` -  Show top search bar `default=true`
+
+`searchOnkeyup` -  Search on key up event `default=''`
+
+`searchOnclick` -  Search on click event `default=''`
+
+`searchIdCol` - By default `id` column is here because typically if you call your PK's id and are auto-increment and numeric.  This can also take in an array of numeric fields so that users can search CSV's of numbers and get back matches `default='id'`
+
+`searchTitle` -  Set a title for the search input `default= 'Search by Id or a list of Ids and more'`
+
+`searchFieldsIn` -  White list of fields to include in a alpha-numeric based like '%%' search  `default={}`
+
+`searchFieldsOut` - Black list of fields to exclude in a alpha-numeric based search `default={'id'=>true}`
+
+`searchFieldsOut` - Black list of fields to exclude in a alpha-numeric based search `default={'id'=>true}`
+
+`showExport` - Allow users to export current list view as CSV `default=true`
+
+`exportButtonTitle` - Title of button `default='Export CSV'`
+
+`groupByItems` - Custom drop down's created by passing an array of modes.  Best suited to group by the data `default=[]`
+
+`groupBySelected` - Initially selected grouping - defaults to first in list if not.  Please pass the string value of the "groupByItem" `default=false`
+
+`groupByLabel` -  Label describing select box `default='Group By'`
+
+`groupByClick` -  Function to call as a custom function for each click on an item `default=''`
+
+`groupByClickDefault` -  Default group by handler inside widget_list.js `default="ListChangeGrouping('<!--NAME-->', this);"`
+
+`list_search_form` -  Allows you to pass a custom form for the ARROW drop down for advanced searching `default=''`
+
+`list_search_attribs` -  Additional input configs for the widget_input built for the searching `default={}`
+
+`list_search_attribs` -  Additional input configs for the widget_input built for the searching `default={}`
+
+`columnStyle` -  Column styles.  KEY=column name VALUE= the inline style applied `default={}`
+
+`columnClass` -  Column class.  KEY=column name VALUE= the class name `default={}`
+
+`columnPopupTitle` -  Column title as you hover over.  KEY=column name VALUE=Popup text `default={}`
+
+`columnWidth` -  Column widths.  KEY=column name VALUE= '100px' `default={}`
+
+`columnNoSort` - Dont allow sorting on these columns (By default all visible columns have a sort link built).  KEY=column name VALUE=column name `default={}`
+
+`borderedColumns` - Add a right border to each column. `default=false`
+
+`borderColumnStyle` - Style of row if you use this above feature. `default='1px solid #CCCCCC'`
+ 
+`rowClass` - Class added to all rows `default=''`
+
+`rowColorByStatus` - {'rowColorByStatus' =>
+                                {'active'=>
+                                   {'No'  => '#EBEBEB' }
+                                }
+                     } 
+Color a row based on the value of the column.
+`default={}`
+
+`rowStylesByStatus` -  {'rowStylesByStatus' =>
+                                {'active'=>
+                                   {'No'  => 'font-style:italic;color:red;' }
+                                }
+                             }
+Style a row based on the value of the column.
+`default={}`
+
+`rowOffsets` - Color for each row and offset `default=['FFFFFF','FFFFFF']`
+
+`noDataMessage` - Message to show when no data is found `default='Currently no data.'`
+
+`useSort` - Allow sorting on list `default=true`
+
+`headerClass` - Class of each individual header column `default={}`
+
+`fieldFunction` - A way to wrap or inject columns or SQL formatting in place of your columns `default={}`
+
+`template` - Pass in a custom template for outer shell `default=''`
+
+`templateFilter` - Instead of widget list building your search box.  Pass your own HTML `default=''`
+
+`column_hooks` - Todo `default={}`
+
+`row_hooks` - Todo `default={}`
 
 
 ### #1 - Add widget_list CSS and JS to your application css and js

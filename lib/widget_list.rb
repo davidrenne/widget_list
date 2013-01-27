@@ -78,27 +78,26 @@ module WidgetList
 
     # @param [Hash] list
     def initialize(list={})
-
+      
+      # Defaults for all configs
+      # See https://github.com/davidrenne/widget_list/blob/master/README.md#feature-configurations
       @items = {
         'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
-        'database'            => 'primary',
-        'title'               => '',# will add <h1> title and horizontal rule
-        'listDescription'     => '',# will add grey header box
+        'database'            => 'primary', #
+        'title'               => '',
+        'listDescription'     => '',
         'pageId'              => $_SERVER['PATH_INFO'],
-        'sql'                 => '',
-        'table'               => '',
         'view'                => '',
         'data'                => {},
-        'mode'                => 'passive',
         'collClass'           => '',
         'collAlign'           => '',
         'fields'              => {},
-        'fields_hidden'       => {},
+        'fields_hidden'       => [],
         'bindVars'            => [],
         'bindVarsLegacy'      => {},
         'links'               => {},
         'results'             => {},
-        'buttons'             => {}, # mini buttons for each row
+        'buttons'             => {},
         'inputs'              => {},
         'filter'              => [],
         'rowStart'            => 0,
@@ -106,10 +105,10 @@ module WidgetList
         'orderBy'             => '',
         'allowHTML'           => true,
         'strlength'           => 30,
-        'searchClear'         => false, # build a custom conditional for each page to clear session
-        'searchClearAll'      => false, # build a custom conditional for each page to clear session
+        'searchClear'         => false,
+        'searchClearAll'      => false,
         'showPagination'      => true,
-        'searchSession'       => true,  # on list render use last filter
+        'searchSession'       => true,
 
         #
         # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
@@ -121,13 +120,7 @@ module WidgetList
         #
 
         'customFooter'        => '', # add buttons or HTML at bottom area of list inside the grey box
-        'customHeader'        => '', # add buttons or HTML at top area of list above all headers (such as TABS)
-
-        #
-        # Custom count query
-        #
-        'force_count_sql'     => '',
-        'force_query_sql'     => '',
+        'customHeader'        => '', # add buttons or HTML at top area of list above all headers (such as TABS) 
 
         #
         # Ajax
@@ -1507,13 +1500,6 @@ module WidgetList
 
       @templateFill['<!--COLSPAN_FULL-->'] = headers.count()
 
-      if @items['mode'] != 'passive'
-        pieces = {'<!--LIST_SEQUENCE-->' => @sequence,
-                  '<!--TOTAL_PAGES-->'   => @totalPages}
-
-        @templateFill['<!--PAGE_SEQUENCE_DISPLAY-->'] = WidgetList::Utils::fill(pieces, @items['templateSequence'])
-      end
-
       @templateFill['<!--PAGINATION_LIST-->'] = build_pagination()
       @templateFill['<!--HEADERS-->']         = headers.join('')
 
@@ -1887,7 +1873,7 @@ module WidgetList
       end
 
       url['SQL_HASH']      = @sqlHash
-      linkUrl = WidgetList::Utils::build_url(@items['pageId'],(!$_REQUEST.key?('BUTTON_VALUE')))
+      linkUrl = WidgetList::Utils::build_url(@items['pageId'], url, (!$_REQUEST.key?('BUTTON_VALUE')))
 
       "#{function}('#{linkUrl}'#{parameters})"
     end
@@ -2258,10 +2244,8 @@ module WidgetList
       fields = {}
       sql    = ''
       hashed = false
-
-      if !@items['force_count_sql'].empty?
-        sql = @items['force_count_sql']
-      elsif !@items['view'].empty?
+      
+      if !@items['view'].empty?
         sql = WidgetList::Utils::fill({'<!--VIEW-->' => @items['view']}, @items['statement']['count']['view'])
       end
 
