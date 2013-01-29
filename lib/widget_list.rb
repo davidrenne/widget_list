@@ -78,10 +78,11 @@ module WidgetList
 
     # @param [Hash] list
     def initialize(list={})
-      
+
       # Defaults for all configs
       # See https://github.com/davidrenne/widget_list/blob/master/README.md#feature-configurations
       @items = {
+        'errors'              => [],
         'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
         'database'            => 'primary', #
         'title'               => '',
@@ -124,7 +125,7 @@ module WidgetList
         #
         # Ajax
         #
-        'ajaxFunctionAll'   => '', 
+        'ajaxFunctionAll'   => '',
         'ajaxFunction'       => 'ListJumpMin',
 
         #
@@ -133,10 +134,10 @@ module WidgetList
         'showSearch'          => true,
         'searchOnkeyup'       => '',
         'searchOnclick'       => '',
-        'searchIdCol'         => 'id',    
+        'searchIdCol'         => 'id',
         'searchTitle'         => 'Search by Id or a list of Ids and more',
-        'searchFieldsIn'      => {},            
-        'searchFieldsOut'     => {'id'=>true}, 
+        'searchFieldsIn'      => {},
+        'searchFieldsOut'     => {'id'=>true},
         'templateFilter'      => '',
 
         #
@@ -148,7 +149,7 @@ module WidgetList
         #
         # Group By Box
         #
-        'groupByItems'        => [],  
+        'groupByItems'        => [],
         'groupBySelected'     => false,
         'groupByLabel'        => 'Group By',
         'groupByClick'        => '',
@@ -168,7 +169,7 @@ module WidgetList
         'columnPopupTitle'    => {},
         'columnSort'          => {},
         'columnWidth'         => {},
-        'columnNoSort'        => {}, 
+        'columnNoSort'        => {},
 
         #
         # Column Border (on right)
@@ -178,7 +179,7 @@ module WidgetList
 
         #
         # Row specifics
-        # 
+        #
         'rowClass'            => '',
         'rowColorByStatus'    => {},
         'rowStylesByStatus'   => {},
@@ -374,7 +375,7 @@ module WidgetList
                               {'select'=>
                                  {'view' =>
                                     '
-                                        SELECT <!--FIELDS-->, rn FROM ( SELECT ' + ( (!@items['view'].include?('(')) ? '<!--SOURCE-->' : @items['view'].strip.split(" ").last ) + '.*, rank() over (<!--ORDERBY-->) rn FROM <!--SOURCE--> ) a <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
+                                        SELECT <!--FIELDS--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!@items['view'].include?('(')) ? '<!--SOURCE-->' : @items['view'].strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a <!--WHERE--> <!--ORDERBY--> ) <!--LIMIT--> <!--GROUPBY-->
                                         '
                                  }
                               }
@@ -868,6 +869,8 @@ module WidgetList
         @items['bindVarsLegacy']['LOW'] = (((@sequence * @items['rowLimit']) -  subtractLimit))
         if WidgetList::List.get_database.db_type == 'oracle'
           @items['bindVarsLegacy']['HIGH'] = ((((@sequence + 1) * @items['rowLimit'])))
+          @items['bindVarsLegacy']['LOW'] = @items['bindVarsLegacy']['LOW'] - @items['rowLimit']
+          @items['bindVarsLegacy']['HIGH'] = @items['bindVarsLegacy']['HIGH'] - @items['rowLimit']
         end
 
       end
@@ -917,7 +920,7 @@ module WidgetList
         listJumpUrl['ROW_LIMIT']           = @items['ROW_LIMIT']
         listJumpUrl['LIST_SEQUENCE']       = @sequence
         listJumpUrl['LIST_NAME']           = @items['name']
-        listJumpUrl['SQL_HASH']            = @sqlHash 
+        listJumpUrl['SQL_HASH']            = @sqlHash
 
         if $_REQUEST.key?('switch_grouping')
           listJumpUrl['switch_grouping'] = $_REQUEST['switch_grouping']
@@ -970,7 +973,7 @@ module WidgetList
               filterParameters['BUTTON_VALUE'] = searchVal
               filterParameters['PAGE_ID']      = @items['pageId']
               filterParameters['LIST_NAME']    = @items['name']
-              filterParameters['SQL_HASH']     = @sqlHash 
+              filterParameters['SQL_HASH']     = @sqlHash
 
               @items['carryOverRequsts'].each { |value|
                 if $_REQUEST.key?(value)
@@ -1129,7 +1132,7 @@ module WidgetList
         @items['links']['paginate'].each { |tagName, tag|
           urlTags[tagName] = tag
         }
-      end 
+      end
 
       @items['carryOverRequsts'].each { |value|
         if $_REQUEST.key?(value)
@@ -1694,7 +1697,13 @@ module WidgetList
         columnClass = ' "' + WidgetList::List::concat_string() + columnClass + WidgetList::List::concat_string() + '"'
       end
 
-      link = %[#{WidgetList::List::concat_inner()}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote()}#{drillDownName}#{WidgetList::List::double_quote()}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote()}#{listId}#{WidgetList::List::double_quote()}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string()}#{columnToShow}#{WidgetList::List::concat_string()}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string()} #{dataToPassFromView} #{WidgetList::List::concat_string()}"</script>"#{WidgetList::List::concat_outer()}  as #{columnAlias}]
+      if WidgetList::List.get_database.db_type == 'oracle'
+        link = %[q'[<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}("#{drillDownName}", ListDrillDownGetRowValue(this) ,"#{listId}"#{extraJSFunctionParams});#{extraFunction}'>]' #{WidgetList::List::concat_string()}#{columnToShow}#{WidgetList::List::concat_string()}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string()} #{dataToPassFromView} #{WidgetList::List::concat_string()} q'[</script>]' #{WidgetList::List::concat_outer()}  as #{columnAlias}]
+      else
+        link = %[#{WidgetList::List::concat_inner()}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote()}#{drillDownName}#{WidgetList::List::double_quote()}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote()}#{listId}#{WidgetList::List::double_quote()}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string()}#{columnToShow}#{WidgetList::List::concat_string()}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string()} #{dataToPassFromView} #{WidgetList::List::concat_string()}"</script>"#{WidgetList::List::concat_outer()}  as #{columnAlias}]
+      end
+
+
     end
 
     def self.concat_string
@@ -1805,7 +1814,7 @@ module WidgetList
       links      = @items['links'][column]
       url        = {'PAGE_ID' => @items['pageId']}
       function   = @items['linkFunction']
-      parameters = ''  
+      parameters = ''
 
       #todo unit test this and all of column links
       if links.key?('tags')
@@ -1830,7 +1839,7 @@ module WidgetList
             end
           }
         end
-      end 
+      end
 
       url['SQL_HASH']      = @sqlHash
       linkUrl = WidgetList::Utils::build_url(@items['pageId'], url, (!$_REQUEST.key?('BUTTON_VALUE')))
@@ -2027,12 +2036,12 @@ module WidgetList
             if @items['rowColorByStatus'].empty? &&  @items['rowStylesByStatus'].empty?
               #Set the row color
               #
- 
+
               if( j % 2 ==0)
                 rowColor = @items['rowOffsets'][1]
               else
                 rowColor = @items['rowOffsets'][0]
-              end 
+              end
 
               #Draw default color
               #
@@ -2069,6 +2078,11 @@ module WidgetList
 
     def generate_error_output(ex='')
       sqlDebug = ""
+
+      if !@items['errors'].empty?
+        sqlDebug += "<br/><br/><strong style='color:red'>(" + @items['errors'].join(', ') + ")</strong>"
+      end
+
       if Rails.env == 'development'
         sqlDebug += "<br/><br/><textarea style='width:100%;height:400px;'>" + WidgetList::List.get_database.last_sql.to_s + "</textarea>"
       end
@@ -2104,6 +2118,14 @@ module WidgetList
 
         @fieldList << column
       }
+
+      if WidgetList::List.get_database.db_type == 'oracle'
+        if !@items['groupBy'].empty?
+          @fieldList << 'MAX(rn) as rn'
+        else
+          @fieldList << 'rn'
+        end
+      end
 
       viewPieces = {}
       viewPieces['<!--FIELDS-->'] = @fieldList.join(',')
@@ -2153,27 +2175,33 @@ module WidgetList
       end
 
       if WidgetList::List.get_database.db_type == 'oracle' && pieces['<!--ORDERBY-->'].empty?
-        keys = @items['fields'].keys
-        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + keys.first + ' ASC'
+        #oracle needs a field to perform the rank() over
+        #if field is not an "inputs" or a "buttons"
+        #if field is all NULL, then you better watch out as paging will NOT work
+        tmp  = @items['fields'].dup.reject { |val|
+          if (!@items['inputs'].key?(val) && !@items['buttons'].key?(val))
+            false
+          else
+            true
+          end
+        }
+
+        keys = tmp.keys
+        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + keys[0] + ' ASC'
       end
 
       case WidgetList::List.get_database.db_type
         when 'postgres'
           pieces['<!--LIMIT-->'] = ' LIMIT :HIGH OFFSET :LOW'
         when 'oracle'
-          pieces['<!--LIMIT-->'] = ''
 
-          if !@filter.empty?
-            and_where = ' AND '
-          else
-            and_where = ' WHERE '
-          end
-          pieces['<!--WHERE-->'] += and_where +
+          pieces['<!--LIMIT-->'] =
             '
+            WHERE
             (
-                 a.rn >= :LOW
+                 rn >' + (@sequence > 1 ? '' : '=') + ' :LOW
               AND
-                 a.rn <= :HIGH
+                 rn <= :HIGH
             )
             '
         else
@@ -2201,7 +2229,7 @@ module WidgetList
       fields = {}
       sql    = ''
       hashed = false
-      
+
       if !@items['view'].empty?
         sql = WidgetList::Utils::fill({'<!--VIEW-->' => @items['view']}, @items['statement']['count']['view'])
       end
@@ -2220,7 +2248,7 @@ module WidgetList
             rows = 0
           end
           if rows > 0
-            @totalRows = rows
+            @totalRows = rows.to_i
           end
         else
           rows = 1

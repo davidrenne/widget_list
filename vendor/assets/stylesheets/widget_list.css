@@ -768,10 +768,10 @@ ul#pagination li div.active
 */
 div#advanced-search-container ul.advanced-search-container-inline, div#advanced-search-container ul {list-style:none; margin:0px; padding:3px; height:51px; width:450px}
 div#advanced-search-container ul.advanced-search-container-inline input.info-input, div#advanced-search-container ul input.info-input {font-size:11px}
-   div#advanced-search-container ul.advanced-search-container-inline li {display:inline-block;width:150px; margin-top:4px;}
+   div#advanced-search-container ul.advanced-search-container-inline li {display:inline-block;width:428px; margin-top:4px;}
    div#advanced-search-container ul.advanced-search-container-inline li#required_message_inline {font-size:10px}
    div#advanced-search-container ul.advanced-search-container-inline li#required_message_inline div.required {top:4px}
-   div#advanced-search-container ul#search_columns li {width:190px}
+   div#advanced-search-container ul#search_columns li {width:428px}
 
    
 /**
