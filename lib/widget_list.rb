@@ -206,6 +206,7 @@ module WidgetList
         #
         'checkedClass'       => 'widgetlist-checkbox',
         'checkedFlag'        => {},
+        'storeSessionChecks' => false,
 
         #
         # Hooks
@@ -421,7 +422,7 @@ module WidgetList
 
           clear_sort_get_vars()
 
-          if $_REQUEST.key?('list_action') && $_REQUEST['list_action'] == 'ajax_widgetlist_checks'
+          if $_REQUEST.key?('list_action') && $_REQUEST['list_action'] == 'ajax_widgetlist_checks' && @items['storeSessionChecks']
             ajax_maintain_checks()
           end
 
@@ -466,9 +467,15 @@ module WidgetList
 
             fieldsToSearch = @items['fields'].dup
 
-            @items['fieldsHidden'].each { |columnPivot|
-              fieldsToSearch[columnPivot] = columnPivot
-            }
+            if @items['fieldsHidden'].class.name == 'Array'
+              @items['fieldsHidden'].each { |columnPivot|
+                fieldsToSearch[columnPivot] = columnPivot
+              }
+            elsif @items['fieldsHidden'].class.name == 'Hash'
+              @items['fieldsHidden'].each { |columnPivot|
+                fieldsToSearch[columnPivot[0]] = columnPivot[0]
+              }
+            end
 
             searchCriteria = searchFilter.strip_or_self()
             searchSQL      = []
@@ -1853,7 +1860,7 @@ module WidgetList
         if @items['data'].empty?
           #Run the actual statement
           #
-          @totalRowCount = WidgetList::List.get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy'])
+          @totalRowCount = WidgetList::List.get_database._select(sql , @items['bindVars'], @items['bindVarsLegacy'])
         end
 
         if @totalRowCount > 0
@@ -2127,6 +2134,26 @@ module WidgetList
         end
       end
 
+      if @items['fieldsHidden'].class.name == 'Array'
+        @items['fieldsHidden'].each { |column|
+          if @items['fieldFunction'].key?(column) && !@items['fieldFunction'][column].empty?
+            # fieldFunction's should not have an alias, just the database functions
+            column = @items['fieldFunction'][column] + " " + column
+          end
+          @fieldList << column
+        }
+      elsif @items['fieldsHidden'].class.name == 'Hash'
+        @items['fieldsHidden'].each { |column|
+          col = column[0]
+          if @items['fieldFunction'].key?(column[0]) && !@items['fieldFunction'][column[0]].empty?
+            # fieldFunction's should not have an alias, just the database functions
+            col = @items['fieldFunction'][column[0]] + " " + column[0]
+          end
+          @fieldList << col
+        }
+      end
+
+
       viewPieces = {}
       viewPieces['<!--FIELDS-->'] = @fieldList.join(',')
       viewPieces['<!--SOURCE-->'] = @items['view']
@@ -2211,7 +2238,7 @@ module WidgetList
 
       statement = WidgetList::Utils::fill(pieces, statement)
 
-      if @items['rowLimit'] >= @totalRows
+      if @items['rowLimit'].to_i >= @totalRows
         @items['bindVarsLegacy']['LOW'] = 0
         @sequence = 1
       end

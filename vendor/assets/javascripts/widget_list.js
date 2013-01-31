@@ -233,6 +233,67 @@ function ListJumpResponse(response)
 }
 
 /**
+ * ListMessagePopup()
+ */
+function ListMessagePopup(id, html, hieght, width)
+{
+    jQuery('.ajaxLoad,.ajaxLoad2').remove();
+    if (typeof(hieght) =="undefined")
+    {
+        var hieght = '200'
+    }
+    if (typeof(width) =="undefined")
+    {
+        var width = '400'
+    }
+
+    if(document.getElementById(id))
+    {
+        elmToHide  = document.getElementById(id);
+        var overLay = '<div style="position:relative;top:0px;"><div id="loading' + id + '" class="ajaxLoad" style="height:' + jQuery(elmToHide).height() + 'px;width:' + jQuery(elmToHide).width() + 'px;top:-' + jQuery(elmToHide).height() + 'px;"></div></div><div class="ajaxLoad2" id="message' + id + '" style="height:' + hieght + 'px;width:' + width + 'px;left:100px;top:200px;left:250px;z-index: 1000;background-position: 50% 50%;position: absolute;display: block;border:2px solid #dadada;box-shadow:0 2px 4px #c0c0c0;text-align:center;background-color:#FFFFFF;padding:15px;">' + html + '</div>';
+
+        jQuery(elmToHide).append(overLay);
+
+        jQuery('#message' + id).children( ).each( function( index )
+        {
+            jQuery( this ).addClass( 'tmp-popup-class' );
+        });
+
+        jQuery('#loading' + id).fadeTo("fast", .20);
+
+        jQuery('html,body').animate({scrollTop: jQuery('#message' + id).offset().top - 100 }, 400);
+    }
+
+    jQuery("body").unbind('click');
+
+    setTimeout(function() {
+        jQuery("body").click
+            (
+                function(e)
+                {
+                    if(e.target.id == 'message' + id || e.target.className == 'tmp-popup-class')
+                    {
+                        return false;
+                    }
+                    if (jQuery('#' + e.target.id).parents('#message' + id).length == 0 || (e.target.id != 'message' + id && jQuery('#' + e.target.id).parents('#message' + id).length != 1))
+                    {
+                        jQuery('#message' + id + ', #loading'+ id).remove();
+                    }
+                }
+            );
+    }, 1000);
+}
+
+/**
+ * ListMessageClose()
+ */
+function ListMessageClose()
+{
+    jQuery('.ajaxLoad,.ajaxLoad2').remove();
+}
+
+
+/**
 * ListJumpMin()
 */
 function ListJumpMin(url, id, callback, post)
