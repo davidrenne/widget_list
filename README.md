@@ -137,8 +137,6 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `searchFieldsOut` - Black list of fields to exclude in a alpha-numeric based search `default={'id'=>true}`
 
-`searchFieldsOut` - Black list of fields to exclude in a alpha-numeric based search `default={'id'=>true}`
-
 `showExport` - Allow users to export current list view as CSV `default=true`
 
 `exportButtonTitle` - Title of button `default='Export CSV'`
@@ -200,6 +198,8 @@ Style a row based on the value of the column.
 `template` - Pass in a custom template for outer shell `default=''`
 
 `templateFilter` - Instead of widget list building your search box.  Pass your own HTML `default=''`
+
+`storeSessionChecks` - See http://stackoverflow.com/questions/1928204/marshal-data-too-short for configuring larger session storage which checkboxes would eat up if you had this set to true `default=false`
 
 `columnHooks` - Todo `default={}`
 
