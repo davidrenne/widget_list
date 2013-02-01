@@ -40,21 +40,21 @@ module Sequel
     #
 =begin
      $DATABASE._exec {|i|
-       asdf  = "#{WidgetList::List.get_database.final_results['NAME'][i]}"
+       asdf  = "#{@final_results['NAME'][i]}"
      }
 =end
     #
     # Alternatively you could
 =begin
-        WidgetList::List.get_database.final_results['ID'].each_with_index { |id,k|
-          name = WidgetList::List.get_database.final_results['NAME'][k]
-          price = WidgetList::List.get_database.final_results['PRICE'][k]
+        @final_results['ID'].each_with_index { |id,k|
+          name = @final_results['NAME'][k]
+          price = @final_results['PRICE'][k]
         }
 =end
 
     def _exec
       if block_given?
-        WidgetList::List.get_database.final_count.times {|i|
+        @final_count.times {|i|
           yield i
         }
       end
@@ -95,9 +95,9 @@ module Sequel
 
     def _select(sql_or_obj, bind=[], replace_in_query={})
       # supporting either
-      # if WidgetList::List.get_database._select('select * from items where name = ? AND price > ?', ['abc', 37]) > 0
+      # if get_database._select('select * from items where name = ? AND price > ?', ['abc', 37]) > 0
       # or
-      # if WidgetList::List.get_database._select(WidgetList::List.get_database[:items].filter(:name => 'abc')) > 0
+      # if get_database._select(get_database[:items].filter(:name => 'abc')) > 0
       #
       sql = ''
       sql = _determine_type(sql_or_obj)
@@ -116,32 +116,32 @@ module Sequel
       #
       first   = 1
       cnt     = 0
-      WidgetList::List.get_database.final_results = {}
+      @final_results = {}
 
       Rails.logger.info(sql)
 
       eval("
       begin
-        WidgetList::List.get_database.errors = false
-        WidgetList::List.get_database['" + sql + "' " +  parameters + "].each { |row|
+        @errors = false
+        self['" + sql + "' " +  parameters + "].each { |row|
           cnt += 1
           row.each { |k,v|
             if first == 1
-              WidgetList::List.get_database.final_results[k.to_s.upcase] = []
+              @final_results[k.to_s.upcase] = []
             end
-            WidgetList::List.get_database.final_results[k.to_s.upcase] << v
+            @final_results[k.to_s.upcase] << v
           }
           first = 0
         }
-        WidgetList::List.get_database.last_sql = WidgetList::List.get_database['" + sql + "' " +  parameters + "].get_sql
+        @last_sql = self['" + sql + "' " +  parameters + "].get_sql
       rescue Exception => e
         Rails.logger.info(e)
-        WidgetList::List.get_database.errors = true
-        WidgetList::List.get_database.last_error = e.to_s
-        WidgetList::List.get_database.last_sql = '" + sql + "' + \"\n\n\n\" + ' With Bind => ' + bind.inspect + ' And  BindLegacy => ' + replace_in_query.inspect
+        @errors = true
+        @last_error = e.to_s
+        @last_sql = '" + sql + "' + \"\n\n\n\" + ' With Bind => ' + bind.inspect + ' And  BindLegacy => ' + replace_in_query.inspect
       end
       ")
-      WidgetList::List.get_database.final_count = cnt
+      @final_count = cnt
       return cnt
     end
   end

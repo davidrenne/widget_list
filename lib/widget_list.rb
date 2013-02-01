@@ -27,66 +27,6 @@ module WidgetList
 
     include ActionView::Helpers::SanitizeHelper
 
-    def self.determine_db_type(db_type)
-      the_type, void = db_type.split("://")
-      if the_type == 'sqlite:/'
-        the_type = 'sqlite'
-      end
-      return the_type.downcase
-    end
-
-    def self.connect
-
-      begin
-        if Rails.root.join("config", "widget-list.yml").file?
-          config = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
-          if config.nil?
-            throw 'Configuration file widget-list.yml has no data.  Check that (' + Rails.env + ') Rails.env matches the pointers in the file'
-          end
-          @primary_conn   = config[:primary]
-          @secondary_conn = config[:secondary]
-        else
-          throw 'widget-list.yml not found'
-        end
-
-        $DATABASE  = Sequel.connect(@primary_conn) if @primary_conn != 'false' and @primary_conn != false
-        $DATABASE2 = Sequel.connect(@secondary_conn) if @secondary_conn != 'false' and @secondary_conn != false
-
-        if @primary_conn.class.name != 'false' and @primary_conn != false
-          $DATABASE.db_type = determine_db_type(@primary_conn)
-        end
-
-        if @primary_conn.class.name != 'false' and @secondary_conn != false
-          $DATABASE2.db_type = determine_db_type(@secondary_conn)
-        end
-      rescue Exception => e
-        p "widget-list.yml and connection to \$DATABASE failed.  Please fix and try again (" + e.to_s + ")"
-      end
-
-    end
-
-    def self.get_database
-      begin
-        if $current_db_selection == 'primary'
-          $DATABASE.test_connection
-        end
-        if $current_db_selection == 'secondary'
-          $DATABASE2.test_connection
-        end
-      rescue
-        WidgetList::List::connect
-      end
-
-      case $current_db_selection
-        when 'primary'
-          $DATABASE
-        when 'secondary'
-          $DATABASE2
-        else
-          $DATABASE
-      end
-    end
-
     # @param [Hash] list
     def initialize(list={})
 
@@ -380,9 +320,10 @@ module WidgetList
       @items = WidgetList::Widgets::populate_items(list,@items)
 
       # current_db is a flag of the last known primary or secondary YML used or defaulted when running a list
-      $current_db_selection = @items['database']
+      @current_db_selection = @items['database']
 
-      if WidgetList::List.get_database.db_type == 'oracle'
+
+      if get_database.db_type == 'oracle'
         @items.deep_merge!({'statement' =>
                               {'select'=>
                                  {'view' =>
@@ -692,7 +633,7 @@ module WidgetList
     end
 
     def tick_field()
-      case WidgetList::List.get_database.db_type
+      case get_database.db_type
         when 'postgres'
         when 'oracle'
           ''
@@ -702,7 +643,7 @@ module WidgetList
     end
 
     def cast_col()
-      case WidgetList::List.get_database.db_type
+      case get_database.db_type
         when 'postgres'
           '::char(1000)'
         else
@@ -881,11 +822,11 @@ module WidgetList
 
       if @sequence.to_i > 1 && ! @items['NEW_SEARCH']
         subtractLimit = 0
-        if WidgetList::List.get_database.db_type != 'oracle'
+        if get_database.db_type != 'oracle'
           subtractLimit = @items['rowLimit']
         end
         @items['bindVarsLegacy']['LOW'] = (((@sequence * @items['rowLimit']) -  subtractLimit))
-        if WidgetList::List.get_database.db_type == 'oracle'
+        if get_database.db_type == 'oracle'
           @items['bindVarsLegacy']['HIGH'] = ((((@sequence + 1) * @items['rowLimit'])))
           @items['bindVarsLegacy']['LOW'] = @items['bindVarsLegacy']['LOW'] - @items['rowLimit']
           @items['bindVarsLegacy']['HIGH'] = @items['bindVarsLegacy']['HIGH'] - @items['rowLimit']
@@ -1706,26 +1647,27 @@ module WidgetList
       '<div class="goback" onclick="ListHome(\'' + list_name + '\');" title="Go Back"></div>'
     end
 
-    def self.build_drill_down_link(listId,drillDownName,dataToPassFromView,columnToShow,columnAlias='',extraFunction='',functionName='ListDrillDown',columnClass='',color='blue',extraJSFunctionParams='')
+    def self.build_drill_down_link(listId,drillDownName,dataToPassFromView,columnToShow,columnAlias='',extraFunction='',functionName='ListDrillDown',columnClass='',color='blue',extraJSFunctionParams='',primary=true)
       if columnAlias.empty?
         columnAlias = columnToShow
       end
 
       if !columnClass.empty?
-        columnClass = ' "' + WidgetList::List::concat_string() + columnClass + WidgetList::List::concat_string() + '"'
+        columnClass = ' "' + WidgetList::List::concat_string(primary) + columnClass + WidgetList::List::concat_string(primary) + '"'
       end
 
-      if WidgetList::List.get_database.db_type == 'oracle'
-        link = %[q'[<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}("#{drillDownName}", ListDrillDownGetRowValue(this) ,"#{listId}"#{extraJSFunctionParams});#{extraFunction}'>]' #{WidgetList::List::concat_string()}#{columnToShow}#{WidgetList::List::concat_string()}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string()} #{dataToPassFromView} #{WidgetList::List::concat_string()} q'[</script>]' #{WidgetList::List::concat_outer()}  as #{columnAlias}]
+      if WidgetList::List.get_db_type(primary) == 'oracle'
+        link = %[q'[<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}("#{drillDownName}", ListDrillDownGetRowValue(this) ,"#{listId}"#{extraJSFunctionParams});#{extraFunction}'>]' #{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)} q'[</script>]' #{WidgetList::List::concat_outer(primary)}  as #{columnAlias}]
       else
-        link = %[#{WidgetList::List::concat_inner()}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote()}#{drillDownName}#{WidgetList::List::double_quote()}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote()}#{listId}#{WidgetList::List::double_quote()}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string()}#{columnToShow}#{WidgetList::List::concat_string()}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string()} #{dataToPassFromView} #{WidgetList::List::concat_string()}"</script>"#{WidgetList::List::concat_outer()}  as #{columnAlias}]
+        link = %[#{WidgetList::List::concat_inner(primary)}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote(primary)}#{drillDownName}#{WidgetList::List::double_quote(primary)}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(primary)}#{listId}#{WidgetList::List::double_quote(primary)}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)}"</script>"#{WidgetList::List::concat_outer(primary)}  as #{columnAlias}]
       end
 
 
     end
 
-    def self.concat_string
-      case WidgetList::List.get_database.db_type
+    def self.concat_string(primary)
+
+      case WidgetList::List.get_db_type(primary)
         when 'mysql'
           ' , '
         when 'oracle','sqlite'
@@ -1735,8 +1677,8 @@ module WidgetList
       end
     end
 
-    def self.double_quote
-      case WidgetList::List.get_database.db_type
+    def self.double_quote(primary)
+      case WidgetList::List.get_db_type(primary)
         when 'mysql'
           '\\"'
         when 'oracle','sqlite'
@@ -1746,8 +1688,8 @@ module WidgetList
       end
     end
 
-    def self.concat_outer
-      case WidgetList::List.get_database.db_type
+    def self.concat_outer(primary)
+      case WidgetList::List.get_db_type(primary)
         when 'mysql'
           ')'
         else
@@ -1755,8 +1697,8 @@ module WidgetList
       end
     end
 
-    def self.concat_inner
-      case WidgetList::List.get_database.db_type
+    def self.concat_inner(primary)
+      case WidgetList::List.get_db_type(primary)
         when 'mysql'
           'CONCAT('
         else
@@ -1871,12 +1813,12 @@ module WidgetList
         if @items['data'].empty?
           #Run the actual statement
           #
-          @totalRowCount = WidgetList::List.get_database._select(sql , @items['bindVars'], @items['bindVarsLegacy'])
+          @totalRowCount = get_database._select(sql , @items['bindVars'], @items['bindVarsLegacy'])
         end
 
         if @totalRowCount > 0
           if @items['data'].empty?
-            @results = WidgetList::List.get_database.final_results
+            @results = get_database.final_results
           else
             @results = @items['data']
           end
@@ -1957,7 +1899,7 @@ module WidgetList
                   content = strip_tags(content)
                 end
 
-                content = WidgetList::List.get_database._bind(content, @items['bindVarsLegacy'])
+                content = get_database._bind(content, @items['bindVarsLegacy'])
 
                 # Column color
                 #
@@ -2079,7 +2021,7 @@ module WidgetList
 
         else
 
-          err_message = (WidgetList::List.get_database.errors) ? @items['noDataMessage'] + ' <span style="color:red">(An error occurred)</span>' : @items['noDataMessage']
+          err_message = (get_database.errors) ? @items['noDataMessage'] + ' <span style="color:red">(An error occurred)</span>' : @items['noDataMessage']
 
           @templateFill['<!--DATA-->'] = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output() + err_message + '</div></td></tr>'
 
@@ -2087,7 +2029,7 @@ module WidgetList
 
       else
 
-        err_message = (WidgetList::List.get_database.errors) ? @items['noDataMessage'] + ' <span style="color:red">(An error occurred)</span>' : @items['noDataMessage']
+        err_message = (get_database.errors) ? @items['noDataMessage'] + ' <span style="color:red">(An error occurred)</span>' : @items['noDataMessage']
 
         @templateFill['<!--DATA-->'] = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output() + err_message + '</div></td></tr>'
       end
@@ -2102,11 +2044,11 @@ module WidgetList
       end
 
       if Rails.env == 'development'
-        sqlDebug += "<br/><br/><textarea style='width:100%;height:400px;'>" + WidgetList::List.get_database.last_sql.to_s + "</textarea>"
+        sqlDebug += "<br/><br/><textarea style='width:100%;height:400px;'>" + get_database.last_sql.to_s + "</textarea>"
       end
 
-      if Rails.env == 'development' && WidgetList::List.get_database.errors
-        sqlDebug += "<br/><br/><strong style='color:red'>(" + WidgetList::List.get_database.last_error.to_s + ")</strong>"
+      if Rails.env == 'development' && get_database.errors
+        sqlDebug += "<br/><br/><strong style='color:red'>(" + get_database.last_error.to_s + ")</strong>"
       end
 
       if Rails.env == 'development' && ex != ''
@@ -2137,7 +2079,7 @@ module WidgetList
         @fieldList << column
       }
 
-      if WidgetList::List.get_database.db_type == 'oracle'
+      if get_database.db_type == 'oracle'
         if !@items['groupBy'].empty?
           @fieldList << 'MAX(rn) as rn'
         else
@@ -2212,7 +2154,7 @@ module WidgetList
         pieces['<!--ORDERBY-->'] += ' ORDER BY ' + @items['orderBy']
       end
 
-      if WidgetList::List.get_database.db_type == 'oracle' && pieces['<!--ORDERBY-->'].empty?
+      if get_database.db_type == 'oracle' && pieces['<!--ORDERBY-->'].empty?
         #oracle needs a field to perform the rank() over
         #if field is not an "inputs" or a "buttons"
         #if field is all NULL, then you better watch out as paging will NOT work
@@ -2228,7 +2170,7 @@ module WidgetList
         pieces['<!--ORDERBY-->'] += ' ORDER BY ' + keys[0] + ' ASC'
       end
 
-      case WidgetList::List.get_database.db_type
+      case get_database.db_type
         when 'postgres'
           pieces['<!--LIMIT-->'] = ' LIMIT :HIGH OFFSET :LOW'
         when 'oracle'
@@ -2280,8 +2222,8 @@ module WidgetList
 
       if ! sql.empty?
         if @items['showPagination']
-          if WidgetList::List.get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy']) > 0
-            rows = WidgetList::List.get_database.final_results['TOTAL'][0]
+          if get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy']) > 0
+            rows = get_database.final_results['TOTAL'][0]
           else
             rows = 0
           end
@@ -2300,6 +2242,92 @@ module WidgetList
       end
 
       rows
+    end
+
+
+
+
+    def self.determine_db_type(db_type)
+      the_type, void = db_type.split("://")
+      if the_type == 'sqlite:/'
+        the_type = 'sqlite'
+      end
+      return the_type.downcase
+    end
+
+    def self.get_db_type(primary)
+      config = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
+      if primary
+        database_conn = config[:primary]
+      else
+        database_conn = config[:secondary]
+      end
+      WidgetList::List::determine_db_type(database_conn)
+    end
+
+    def get_db_type(primary)
+      WidgetList::List::get_db_type(primary)
+    end
+
+    def connect
+      @has_connected = true
+      begin
+        if Rails.root.join("config", "widget-list.yml").file?
+          config = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
+          if config.nil?
+            throw 'Configuration file widget-list.yml has no data.  Check that (' + Rails.env + ') Rails.env matches the pointers in the file'
+          end
+          @primary_conn   = config[:primary]
+          @secondary_conn = config[:secondary]
+        else
+          throw 'widget-list.yml not found'
+        end
+
+        @widget_list_conn  = Sequel.connect(@primary_conn) if @primary_conn != 'false' and @primary_conn != false
+        @widget_list_conn2 = Sequel.connect(@secondary_conn) if @secondary_conn != 'false' and @secondary_conn != false
+
+        if @primary_conn.class.name != 'false' and @primary_conn != false
+          @widget_list_conn.db_type = WidgetList::List::determine_db_type(@primary_conn)
+        end
+
+        if @primary_conn.class.name != 'false' and @secondary_conn != false
+          @widget_list_conn2.db_type = WidgetList::List::determine_db_type(@secondary_conn)
+        end
+      rescue Exception => e
+        p "widget-list.yml and connection to @widget_list_conn or @widget_list_conn2 failed.  Please fix and try again (" + e.to_s + ")"
+      end
+
+    end
+
+    def get_database
+
+      if @has_connected.nil?
+        connect
+      end
+
+      begin
+        if @widget_list_conn.class.name.to_s.split('::').first == 'Sequel'
+          if @current_db_selection == 'primary' || @current_db_selection.nil?
+            @widget_list_conn.test_connection
+          end
+          if @current_db_selection == 'secondary'
+            @widget_list_conn2.test_connection
+          end
+        else
+          connect
+        end
+      rescue
+        connect
+      end
+
+      case @current_db_selection
+        when 'primary'
+          @widget_list_conn
+        when 'secondary'
+          @widget_list_conn2
+        else
+          @widget_list_conn
+      end
     end
 
   end

@@ -4,7 +4,7 @@ module WidgetList
     config.before_configuration do
       config_file = Rails.root.join("config", "widget-list.yml")
       if config_file.file?
-        WidgetList::List::connect
+        # WidgetList::List::connect
       else
         puts "\nWidget List config not found.  Creating config/widget-list.yml.  \n\nPlease configure it with the appropriate connections"
         File.open(Rails.root.join("config", "widget-list.yml"), 'w') { |file|
