@@ -66,6 +66,17 @@ module WidgetList
     end
 
     def self.get_database
+      begin
+        if $current_db_selection == 'primary'
+          $DATABASE.test_connection
+        end
+        if $current_db_selection == 'secondary'
+          $DATABASE2.test_connection
+        end
+      rescue
+        WidgetList::List::connect
+      end
+
       case $current_db_selection
         when 'primary'
           $DATABASE
