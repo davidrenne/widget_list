@@ -1,4 +1,3 @@
-require 'widget_list/sequel'
 require 'widget_list/version'
 require 'widget_list/hash'
 require 'widget_list/string'
@@ -10,8 +9,6 @@ require 'csv'
 require 'json'
 require 'uri'
 require 'extensions/action_controller_base'
-require 'sequel'
-
 
 module WidgetList
 
@@ -322,13 +319,12 @@ module WidgetList
       # current_db is a flag of the last known primary or secondary YML used or defaulted when running a list
       @current_db_selection = @items['database']
 
-
       if get_database.db_type == 'oracle'
         @items.deep_merge!({'statement' =>
                               {'select'=>
                                  {'view' =>
                                     '
-                                        SELECT <!--FIELDS--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!@items['view'].include?('(')) ? '<!--SOURCE-->' : @items['view'].strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a <!--WHERE--> <!--ORDERBY--> ) <!--LIMIT--> <!--GROUPBY-->
+                                        SELECT <!--FIELDS--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a <!--WHERE--> <!--ORDERBY--> ) <!--LIMIT--> <!--GROUPBY-->
                                         '
                                  }
                               }
@@ -1657,9 +1653,9 @@ module WidgetList
       end
 
       if WidgetList::List.get_db_type(primary) == 'oracle'
-        link = %[q'[<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}("#{drillDownName}", ListDrillDownGetRowValue(this) ,"#{listId}"#{extraJSFunctionParams});#{extraFunction}'>]' #{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)} q'[</script>]' #{WidgetList::List::concat_outer(primary)}  as #{columnAlias}]
+        link = %[q'[<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}("#{drillDownName}", ListDrillDownGetRowValue(this) ,"#{listId}"#{extraJSFunctionParams});#{extraFunction}'>]' #{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)} q'[</script>]' #{WidgetList::List::concat_outer(primary)} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}]
       else
-        link = %[#{WidgetList::List::concat_inner(primary)}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote(primary)}#{drillDownName}#{WidgetList::List::double_quote(primary)}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(primary)}#{listId}#{WidgetList::List::double_quote(primary)}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)}"</script>"#{WidgetList::List::concat_outer(primary)}  as #{columnAlias}]
+        link = %[#{WidgetList::List::concat_inner(primary)}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote(primary)}#{drillDownName}#{WidgetList::List::double_quote(primary)}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(primary)}#{listId}#{WidgetList::List::double_quote(primary)}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)}"</script>"#{WidgetList::List::concat_outer(primary)} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}]
       end
 
 
@@ -1813,7 +1809,7 @@ module WidgetList
         if @items['data'].empty?
           #Run the actual statement
           #
-          @totalRowCount = get_database._select(sql , @items['bindVars'], @items['bindVarsLegacy'])
+          @totalRowCount = get_database._select(sql , @items['bindVars'], @items['bindVarsLegacy'], @active_record_model)
         end
 
         if @totalRowCount > 0
@@ -2070,13 +2066,8 @@ module WidgetList
 
       #Build out a list of columns to select from
       #
-      @items['fields'].each { |column, fieldTitle|
-        if @items['fieldFunction'].key?(column) && !@items['fieldFunction'][column].empty?
-          # fieldFunction's should not have an alias, just the database functions
-          column = @items['fieldFunction'][column] + " " + column
-        end
-
-        @fieldList << column
+      @items['fieldFunction'].each { |column, columnFunction|
+        @fieldList << columnFunction + " " + column
       }
 
       if get_database.db_type == 'oracle'
@@ -2087,6 +2078,7 @@ module WidgetList
         end
       end
 
+=begin
       if @items['fieldsHidden'].class.name == 'Array'
         @items['fieldsHidden'].each { |column|
           if @items['fieldFunction'].key?(column) && !@items['fieldFunction'][column].empty?
@@ -2105,11 +2097,12 @@ module WidgetList
           @fieldList << col
         }
       end
+=end
 
 
       viewPieces = {}
       viewPieces['<!--FIELDS-->'] = @fieldList.join(',')
-      viewPieces['<!--SOURCE-->'] = @items['view']
+      viewPieces['<!--SOURCE-->'] = get_view()
 
       statement = WidgetList::Utils::fill(viewPieces, @items['statement']['select']['view'])
 
@@ -2210,8 +2203,8 @@ module WidgetList
       sql    = ''
       hashed = false
 
-      if !@items['view'].empty?
-        sql = WidgetList::Utils::fill({'<!--VIEW-->' => @items['view']}, @items['statement']['count']['view'])
+      if !get_view().empty?
+        sql = WidgetList::Utils::fill({'<!--VIEW-->' => get_view()}, @items['statement']['count']['view'])
       end
 
       if ! @filter.empty?
@@ -2222,7 +2215,7 @@ module WidgetList
 
       if ! sql.empty?
         if @items['showPagination']
-          if get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy']) > 0
+          if get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy'], @active_record_model) > 0
             rows = get_database.final_results['TOTAL'][0]
           else
             rows = 0
@@ -2244,23 +2237,57 @@ module WidgetList
       rows
     end
 
-
-
-
     def self.determine_db_type(db_type)
-      the_type, void = db_type.split("://")
-      if the_type == 'sqlite:/'
-        the_type = 'sqlite'
+      if db_type.include?('://')
+        the_type, void = db_type.split("://")
+        if the_type == 'sqlite:/'
+          the_type = 'sqlite'
+        end
+        return the_type.downcase
+      else
+        begin
+          WidgetList::List::load_widget_list_database_yml()
+
+          if $widget_list_db_conf.key?(db_type)
+            if $widget_list_db_conf[db_type]['adapter'].include?('mysql')
+              return 'mysql'
+            elsif $widget_list_db_conf[db_type]['adapter'].include?('postgres')
+              return 'postgres'
+            elsif $widget_list_db_conf[db_type]['adapter'].include?('oracle')
+              return 'oracle'
+            elsif $widget_list_db_conf[db_type]['adapter'].include?('sqlite')
+              return 'sqlite'
+            elsif $widget_list_db_conf[db_type]['adapter'].include?('sqlserver')
+              return 'sqlserver'
+            elsif $widget_list_db_conf[db_type]['adapter'].include?('ibm')
+              return 'db2'
+            end
+          end
+        rescue
+          return ''
+        end
+
       end
-      return the_type.downcase
+    end
+
+    def self.load_widget_list_yml
+      if $widget_list_conf.nil?
+        $widget_list_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
+      end
+    end
+
+    def self.load_widget_list_database_yml
+      if $widget_list_db_conf.nil?
+        $widget_list_db_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "database.yml")).read).result)
+      end
     end
 
     def self.get_db_type(primary)
-      config = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
+      WidgetList::List::load_widget_list_yml()
       if primary
-        database_conn = config[:primary]
+        database_conn = $widget_list_conf[:primary]
       else
-        database_conn = config[:secondary]
+        database_conn = $widget_list_conf[:secondary]
       end
       WidgetList::List::determine_db_type(database_conn)
     end
@@ -2269,34 +2296,90 @@ module WidgetList
       WidgetList::List::get_db_type(primary)
     end
 
+    def get_view
+      @active_record_model = false
+      if @is_sequel
+        return @items['view']
+      elsif @items['view'].respond_to?('scoped') && @items['view'].scoped.respond_to?('to_sql')
+        @active_record_model = @items['view'].name.constantize
+        if !@items.key?('fieldFunction')
+          view = @items['view'].scoped.to_sql
+        elsif @items['fieldFunction'].empty?
+          view = @items['view'].scoped.to_sql
+        else
+          new_columns = @items['fieldFunction'].map { |column, columnFunction|
+            column = columnFunction + " " + column
+          }.reject { |c| c.nil? || c.empty? }.join(',')
+          view = @items['view'].scoped.to_sql.sub(/SELECT/,"SELECT #{new_columns},")
+        end
+        return "( #{view} ) a"
+      else
+        return ""
+      end
+    end
+
     def connect
       @has_connected = true
       begin
         if Rails.root.join("config", "widget-list.yml").file?
-          config = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
-          if config.nil?
+          WidgetList::List::load_widget_list_yml()
+          if $widget_list_conf.nil?
             throw 'Configuration file widget-list.yml has no data.  Check that (' + Rails.env + ') Rails.env matches the pointers in the file'
           end
-          @primary_conn   = config[:primary]
-          @secondary_conn = config[:secondary]
+          @primary_conn   = $widget_list_conf[:primary]
+          @secondary_conn = $widget_list_conf[:secondary]
         else
           throw 'widget-list.yml not found'
         end
 
-        @widget_list_conn  = Sequel.connect(@primary_conn) if @primary_conn != 'false' and @primary_conn != false
-        @widget_list_conn2 = Sequel.connect(@secondary_conn) if @secondary_conn != 'false' and @secondary_conn != false
-
-        if @primary_conn.class.name != 'false' and @primary_conn != false
-          @widget_list_conn.db_type = WidgetList::List::determine_db_type(@primary_conn)
+        @is_sequel                         = true
+        if @primary_conn != false && ! @primary_conn.include?('://')
+          @is_sequel                       = false
         end
 
-        if @primary_conn.class.name != 'false' and @secondary_conn != false
-          @widget_list_conn2.db_type = WidgetList::List::determine_db_type(@secondary_conn)
+        if @secondary_conn != false && !@secondary_conn.include?('://')
+          @is_sequel                       = false
         end
+
+        if @primary_conn != false
+          if @primary_conn.include?('://')
+            @widget_list_sequel_conn         = Sequel.connect(@primary_conn)
+            @widget_list_sequel_conn.db_type = WidgetList::List::determine_db_type(@primary_conn)
+          else
+            @widget_list_ar_conn             = WidgetListActiveRecord.new
+            @widget_list_ar_conn.db_type     = WidgetList::List::determine_db_type(@primary_conn)
+          end
+        end
+
+        if @secondary_conn != false
+          if @secondary_conn.include?('://')
+            @widget_list_sequel_conn2         = Sequel.connect(@secondary_conn)
+            @widget_list_sequel_conn2.db_type = WidgetList::List::determine_db_type(@secondary_conn)
+          else
+            @widget_list_ar_conn2             = WidgetListActiveRecord.new
+            @widget_list_ar_conn2.db_type     = WidgetList::List::determine_db_type(@secondary_conn)
+          end
+        end
+
       rescue Exception => e
-        p "widget-list.yml and connection to @widget_list_conn or @widget_list_conn2 failed.  Please fix and try again (" + e.to_s + ")"
+        p "widget-list.yml and connection to @widget_list_sequel_conn or @widget_list_sequel_conn2 failed.  Please fix and try again (" + e.to_s + ")"
       end
 
+    end
+
+
+    def self.is_sequel(primary)
+      WidgetList::List::load_widget_list_yml()
+      if primary
+        database_conn = $widget_list_conf[:primary]
+      else
+        database_conn = $widget_list_conf[:secondary]
+      end
+      is_sequel = true
+      if database_conn != false && ! database_conn.include?('://')
+        is_sequel = false
+      end
+      return is_sequel
     end
 
     def get_database
@@ -2305,29 +2388,32 @@ module WidgetList
         connect
       end
 
-      begin
-        if @widget_list_conn.class.name.to_s.split('::').first == 'Sequel'
-          if @current_db_selection == 'primary' || @current_db_selection.nil?
-            @widget_list_conn.test_connection
+      if @is_sequel
+        begin
+          if @widget_list_sequel_conn.class.name.to_s.split('::').first == 'Sequel'
+            if @current_db_selection == 'primary' || @current_db_selection.nil?
+              @widget_list_sequel_conn.test_connection
+            end
+            if @current_db_selection == 'secondary'
+              @widget_list_sequel_conn2.test_connection
+            end
+          else
+            connect
           end
-          if @current_db_selection == 'secondary'
-            @widget_list_conn2.test_connection
-          end
-        else
+        rescue
           connect
         end
-      rescue
-        connect
       end
 
       case @current_db_selection
         when 'primary'
-          @widget_list_conn
+          return (@is_sequel) ? @widget_list_sequel_conn : @widget_list_ar_conn
         when 'secondary'
-          @widget_list_conn2
+          return (@is_sequel) ? @widget_list_sequel_conn2 : @widget_list_ar_conn2
         else
-          @widget_list_conn
+          return (@is_sequel) ? @widget_list_sequel_conn : @widget_list_ar_conn
       end
+
     end
 
   end

@@ -28,5 +28,15 @@ module WidgetList
       end
     end
 
+    initializer "Include widget_list" do
+      ActiveSupport.on_load(:action_controller) do
+        if WidgetList::List::is_sequel(true) || WidgetList::List::is_sequel(false)
+          require 'sequel'
+        end
+        require 'widget_list/sequel'
+      end
+    end
+
+
   end
 end
