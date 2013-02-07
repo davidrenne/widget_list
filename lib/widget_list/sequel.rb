@@ -34,6 +34,14 @@ module Sequel
       parameters
     end
 
+    def _convert_active_record_bind(sql='',bind=[])
+      unless bind.empty?
+        (bind||{}).each { |v|
+          sql.sub!(/\?/,v.to_s)
+        }
+      end
+    end
+
     # _exec, pass a block and iterate the total rows
     #
     # example
@@ -93,7 +101,7 @@ module Sequel
     # @param [Hash]             replace_in_query
     #                           will be a traditional php bind hash {'BIND'=>'value'}.  which will replace :BIND in the query.  thanks mwild
 
-    def _select(sql_or_obj, bind=[], replace_in_query={})
+    def _select(sql_or_obj, bind=[], replace_in_query={}, active_record_model=false)
       # supporting either
       # if get_database._select('select * from items where name = ? AND price > ?', ['abc', 37]) > 0
       # or
@@ -102,13 +110,20 @@ module Sequel
       sql = ''
       sql = _determine_type(sql_or_obj)
 
-      # build csv of bind to eval below (arguments need to be like this for raw SQL passed with bind in Sequel)
-      #
-      parameters = _convert_bind(bind)
+      if self.class.name != 'WidgetListActiveRecord'
 
-      # escape anything incoming in raw SQL such as bound items to create the ruby string to pass
-      #
-      sql.gsub!(/'/,"\\\\'")
+        # build csv of bind to eval below (arguments need to be like this for raw SQL passed with bind in Sequel)
+        #
+        parameters = _convert_bind(bind)
+
+        # escape anything incoming in raw SQL such as bound items to create the ruby string to pass
+        #
+        sql.gsub!(/'/,"\\\\'")
+      else
+
+        _convert_active_record_bind(sql, bind)
+
+      end
 
       sql = _bind(sql,replace_in_query)
 
@@ -120,27 +135,50 @@ module Sequel
 
       Rails.logger.info(sql)
 
-      eval("
-      begin
-        @errors = false
-        self['" + sql + "' " +  parameters + "].each { |row|
-          cnt += 1
-          row.each { |k,v|
-            if first == 1
-              @final_results[k.to_s.upcase] = []
-            end
-            @final_results[k.to_s.upcase] << v
+      if self.class.name == 'WidgetListActiveRecord'
+        begin
+          results = active_record_model.find_by_sql(sql)
+          (results||[]).each { |row|
+            cnt += 1
+            row.attributes.keys.each { |fieldName|
+              if first == 1
+                @final_results[fieldName.to_s.upcase] = []
+              end
+              @final_results[fieldName.to_s.upcase] << row.send(fieldName)
+            }
+            first = 0
           }
-          first = 0
-        }
-        @last_sql = self['" + sql + "' " +  parameters + "].get_sql
-      rescue Exception => e
-        Rails.logger.info(e)
-        @errors = true
-        @last_error = e.to_s
-        @last_sql = '" + sql + "' + \"\n\n\n\" + ' With Bind => ' + bind.inspect + ' And  BindLegacy => ' + replace_in_query.inspect
+          @last_sql = sql_or_obj
+
+        rescue Exception => e
+          Rails.logger.info(e)
+          @errors = true
+          @last_error = e.to_s
+          @last_sql = sql_or_obj
+        end
+      else
+        eval("
+          begin
+            @errors = false
+            self['" + sql + "' " +  parameters + "].each { |row|
+              cnt += 1
+              row.each { |k,v|
+                if first == 1
+                  @final_results[k.to_s.upcase] = []
+                end
+                @final_results[k.to_s.upcase] << v
+              }
+              first = 0
+            }
+            @last_sql = self['" + sql + "' " +  parameters + "].get_sql
+          rescue Exception => e
+            Rails.logger.info(e)
+            @errors = true
+            @last_error = e.to_s
+            @last_sql = '" + sql + "' + \"\n\n\n\" + ' With Bind => ' + bind.inspect + ' And  BindLegacy => ' + replace_in_query.inspect
+          end
+        ")
       end
-      ")
       @final_count = cnt
       return cnt
     end
@@ -150,5 +188,30 @@ module Sequel
     def get_sql
       select_sql()
     end
+  end
+end
+
+
+class WidgetListActiveRecord < Sequel::Database
+  @final_results = {}
+  attr_accessor :final_results
+
+  @errors = false
+  attr_accessor :errors
+
+  @last_error = ''
+  attr_accessor :last_error
+
+  @db_type = ''
+  attr_accessor :db_type
+
+  @final_count = 0
+  attr_accessor :final_count
+
+  @last_sql = ''
+  attr_accessor :last_sql
+
+  def initialize
+    asdf = 1
   end
 end

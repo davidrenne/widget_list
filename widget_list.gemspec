@@ -11,7 +11,7 @@ Gem::Specification.new do |gem|
   gem.description   = %q{An Advanced and flexible ajax data grid.  Outside of all of the RAILS Active record CRAP!}
   gem.summary       = %q{In rails you have will_paginate and other gems like it using the ActiveRecord approach, but widget_list adds some awesome treats to standard boring pagers}
   gem.homepage      = "https://github.com/davidrenne/widget_list"
-  gem.add_dependency('sequel', '3.42.0')
+  gem.add_dependency('sequel', '3.42.0')  # SEQUEL IS NOW OPTIONAL!! I am sure most people will be using ActiveRecord ORM
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
