@@ -132,8 +132,9 @@ module Sequel
       first   = 1
       cnt     = 0
       @final_results = {}
-
-      Rails.logger.info(sql)
+      if Rails.env == 'development'
+        Rails.logger.info(sql)
+      end
 
       if self.class.name == 'WidgetListActiveRecord'
         begin
@@ -144,17 +145,18 @@ module Sequel
               if first == 1
                 @final_results[fieldName.to_s.upcase] = []
               end
-              @final_results[fieldName.to_s.upcase] << row.send(fieldName)
+              @final_results[fieldName.to_s.upcase] << ((row.send(fieldName).nil?) ? '' : row.send(fieldName))
             }
             first = 0
           }
           @last_sql = sql_or_obj
 
         rescue Exception => e
+          cnt         = 0
           Rails.logger.info(e)
-          @errors = true
+          @errors     = true
           @last_error = e.to_s
-          @last_sql = sql_or_obj
+          @last_sql   = sql_or_obj
         end
       else
         eval("
@@ -210,8 +212,4 @@ class WidgetListActiveRecord < Sequel::Database
 
   @last_sql = ''
   attr_accessor :last_sql
-
-  def initialize
-    asdf = 1
-  end
 end

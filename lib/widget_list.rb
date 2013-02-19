@@ -257,8 +257,8 @@ module WidgetList
                             {'count'=>
                                {'view' =>
                                   '
-                                   SELECT count(1) total FROM <!--VIEW--> <!--WHERE-->
-                                   '
+                                   SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->
+                                  '
                                }
                             }
                          })
@@ -324,8 +324,8 @@ module WidgetList
                               {'select'=>
                                  {'view' =>
                                     '
-                                        SELECT <!--FIELDS--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a <!--WHERE--> <!--ORDERBY--> ) <!--LIMIT--> <!--GROUPBY-->
-                                        '
+                                        SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a <!--WHERE--> <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '') + '
+                                    '
                                  }
                               }
                            })
@@ -417,11 +417,11 @@ module WidgetList
 
             if @items['fieldsHidden'].class.name == 'Array'
               @items['fieldsHidden'].each { |columnPivot|
-                fieldsToSearch[columnPivot] = columnPivot
+                fieldsToSearch[columnPivot] = strip_aliases(columnPivot)
               }
             elsif @items['fieldsHidden'].class.name == 'Hash'
               @items['fieldsHidden'].each { |columnPivot|
-                fieldsToSearch[columnPivot[0]] = columnPivot[0]
+                fieldsToSearch[columnPivot[0]] = strip_aliases(columnPivot[0])
               }
             end
 
@@ -500,10 +500,15 @@ module WidgetList
 
               fieldsToSearch.each { |fieldName,fieldTitle|
 
+                fieldName = strip_aliases(fieldName)
                 # new lodgette. if fieldFunction exists, find all matches and skip them
 
                 if @items['fieldFunction'].key?(fieldName)
-                  theField = @items['fieldFunction'][fieldName]  + cast_col()
+                  if get_database.db_type == 'oracle'
+                    theField = fieldName
+                  else
+                    theField = @items['fieldFunction'][fieldName]  + cast_col()
+                  end
                 else
                   theField = tick_field() + "#{fieldName}" + cast_col() + tick_field()
                 end
@@ -1653,9 +1658,17 @@ module WidgetList
       end
 
       if WidgetList::List.get_db_type(primary) == 'oracle'
-        link = %[q'[<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}("#{drillDownName}", ListDrillDownGetRowValue(this) ,"#{listId}"#{extraJSFunctionParams});#{extraFunction}'>]' #{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)} q'[</script>]' #{WidgetList::List::concat_outer(primary)} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}]
+        if $_REQUEST.key?('export_widget_list')
+          link = "#{columnToShow} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}"
+        else
+          link = %[q'[<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}("#{drillDownName}", ListDrillDownGetRowValue(this) ,"#{listId}"#{extraJSFunctionParams});#{extraFunction}'>]' #{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)} q'[</script>]' #{WidgetList::List::concat_outer(primary)} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}]
+        end
       else
-        link = %[#{WidgetList::List::concat_inner(primary)}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote(primary)}#{drillDownName}#{WidgetList::List::double_quote(primary)}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(primary)}#{listId}#{WidgetList::List::double_quote(primary)}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)}"</script>"#{WidgetList::List::concat_outer(primary)} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}]
+        if $_REQUEST.key?('export_widget_list')
+          link = "#{columnToShow} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}"
+        else
+          link = %[#{WidgetList::List::concat_inner(primary)}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote(primary)}#{drillDownName}#{WidgetList::List::double_quote(primary)}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(primary)}#{listId}#{WidgetList::List::double_quote(primary)}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)}"</script>"#{WidgetList::List::concat_outer(primary)} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}]
+        end
       end
 
 
@@ -1835,6 +1848,8 @@ module WidgetList
             #
 
             @items['fields'].each { |column , fieldTitle|
+              column = strip_aliases(column)
+
               colPieces        = {}
               colClasses       = []
               theStyle         = ''
@@ -2056,19 +2071,29 @@ module WidgetList
     end
 
     def build_statement()
-      statement = ''
-      pieces    =       { '<!--FIELDS-->'  => '',
-                          '<!--SOURCE-->'  => '',
-                          '<!--WHERE-->'   => '',
-                          '<!--GROUPBY-->' => '',
-                          '<!--ORDERBY-->' => '',
-                          '<!--LIMIT-->'   => ''}
+      statement  = ''
+      @fieldList      = []
+      @fieldListPlain = []
+      pieces     =      { '<!--FIELDS_PLAIN-->'  => '',
+                          '<!--FIELDS-->'        => '',
+                          '<!--SOURCE-->'        => '',
+                          '<!--WHERE-->'         => '',
+                          '<!--GROUPBY-->'       => '',
+                          '<!--ORDERBY-->'       => '',
+                          '<!--LIMIT-->'         => ''}
 
       #Build out a list of columns to select from
       #
-      @items['fieldFunction'].each { |column, columnFunction|
-        @fieldList << columnFunction + " " + column
+
+      @items['fields'].each { |column, fieldTitle|
+        @fieldListPlain << strip_aliases(column)
+        if @items['fieldFunction'].key?(column) && !@items['fieldFunction'][column].empty?
+          # fieldFunction's should not have an alias, just the database functions
+          column = @items['fieldFunction'][column] + " " + column
+        end
+        @fieldList << column
       }
+
 
       if get_database.db_type == 'oracle'
         if !@items['groupBy'].empty?
@@ -2076,31 +2101,37 @@ module WidgetList
         else
           @fieldList << 'rn'
         end
+        @fieldListPlain << 'rn'
       end
 
-=begin
       if @items['fieldsHidden'].class.name == 'Array'
         @items['fieldsHidden'].each { |column|
-          if @items['fieldFunction'].key?(column) && !@items['fieldFunction'][column].empty?
-            # fieldFunction's should not have an alias, just the database functions
-            column = @items['fieldFunction'][column] + " " + column
+          if !@items['fields'].key?(column)
+            @fieldListPlain << strip_aliases(column)
+            if @items['fieldFunction'].key?(column) && !@items['fieldFunction'][column].empty?
+              # fieldFunction's should not have an alias, just the database functions
+              column = @items['fieldFunction'][column] + " " + column
+            end
+            @fieldList << column
           end
-          @fieldList << column
         }
       elsif @items['fieldsHidden'].class.name == 'Hash'
         @items['fieldsHidden'].each { |column|
           col = column[0]
-          if @items['fieldFunction'].key?(column[0]) && !@items['fieldFunction'][column[0]].empty?
-            # fieldFunction's should not have an alias, just the database functions
-            col = @items['fieldFunction'][column[0]] + " " + column[0]
+          if !@items['fields'].key?(col)
+            @fieldListPlain << strip_aliases(col)
+            if @items['fieldFunction'].key?(column[0]) && !@items['fieldFunction'][column[0]].empty?
+              # fieldFunction's should not have an alias, just the database functions
+              col = @items['fieldFunction'][column[0]] + " " + column[0]
+            end
+            @fieldList << col
           end
-          @fieldList << col
         }
       end
-=end
 
 
       viewPieces = {}
+      viewPieces['<!--FIELDS_PLAIN-->'] = @fieldListPlain.join(',')
       viewPieces['<!--FIELDS-->'] = @fieldList.join(',')
       viewPieces['<!--SOURCE-->'] = get_view()
 
@@ -2122,7 +2153,9 @@ module WidgetList
       end
 
       if !@items['groupBy'].empty?
-        pieces['<!--GROUPBY-->'] += ' GROUP BY ' + @items['groupBy']
+        pieces['<!--GROUPBY-->'] = ' GROUP BY ' + @items['groupBy']
+      else
+        pieces['<!--GROUPBY-->'] = ''
       end
 
       if !@items['LIST_COL_SORT'].empty? || ($_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash))
@@ -2192,6 +2225,10 @@ module WidgetList
       statement
     end
 
+    def strip_aliases(name='')
+      ((name.include?('.')) ? name.split('.').last.gsub(/'||"/,'') : name.gsub(/'||"/,''))
+    end
+
     def auto_column_name(name='')
       name.gsub(/\_/,' ').gsub(/\-/,' ').capitalize
     end
@@ -2204,7 +2241,7 @@ module WidgetList
       hashed = false
 
       if !get_view().empty?
-        sql = WidgetList::Utils::fill({'<!--VIEW-->' => get_view()}, @items['statement']['count']['view'])
+        sql = WidgetList::Utils::fill({'<!--VIEW-->' => get_view(),'<!--GROUPBY-->' => !@items['groupBy'].empty? ? ' GROUP BY ' + @items['groupBy'] : '' }, @items['statement']['count']['view'])
       end
 
       if ! @filter.empty?
@@ -2302,17 +2339,44 @@ module WidgetList
         return @items['view']
       elsif @items['view'].respond_to?('scoped') && @items['view'].scoped.respond_to?('to_sql')
         @active_record_model = @items['view'].name.constantize
-        if !@items.key?('fieldFunction')
-          view = @items['view'].scoped.to_sql
-        elsif @items['fieldFunction'].empty?
-          view = @items['view'].scoped.to_sql
-        else
-          new_columns = @items['fieldFunction'].map { |column, columnFunction|
-            column = columnFunction + " " + column
-          }.reject { |c| c.nil? || c.empty? }.join(',')
-          view = @items['view'].scoped.to_sql.sub(/SELECT/,"SELECT #{new_columns},")
+
+        new_columns = []
+
+        @items['fields'].each { |column, fieldTitle|
+          if @items['fieldFunction'].key?(column) && !@items['fieldFunction'][column].empty?
+            # fieldFunction's should not have an alias, just the database functions
+            column = @items['fieldFunction'][column] + " " + column
+          end
+          new_columns << column
+        }
+
+        if @items['fieldsHidden'].class.name == 'Array' && !@items['fieldsHidden'].empty?
+          @items['fieldsHidden'].each { |columnPivot|
+            if !@items['fields'].key?(columnPivot)
+              if @items['fieldFunction'].key?(columnPivot) && !@items['fieldFunction'][columnPivot].empty?
+                # fieldFunction's should not have an alias, just the database functions
+                columnPivot = @items['fieldFunction'][columnPivot] + " " + columnPivot
+              end
+              new_columns << columnPivot
+            end
+          }
+        elsif @items['fieldsHidden'].class.name == 'Hash' && !@items['fieldsHidden'].empty?
+          @items['fieldsHidden'].each { |columnPivot|
+            if !@items['fields'].key?(columnPivot[0])
+              if @items['fieldFunction'].key?(columnPivot[0]) && !@items['fieldFunction'][columnPivot[0]].empty?
+                # fieldFunction's should not have an alias, just the database functions
+                columnPivot[0] = @items['fieldFunction'][columnPivot[0]] + " " + columnPivot[0]
+              end
+              new_columns << columnPivot[0]
+            end
+          }
         end
-        return "( #{view} ) a"
+
+        view     = @items['view'].scoped.to_sql
+        sql_from = view[view.index(/FROM/),view.length]
+        view     = "SELECT #{new_columns.join(',')} " + sql_from
+
+        return "( #{view} <!--GROUPBY-->) a"
       else
         return ""
       end
