@@ -387,7 +387,7 @@ module WidgetList
         end
 
         matchesCurrentList   = $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['BUTTON_VALUE'] == @items['buttonVal']
-        isSearchRequest      = $_REQUEST.key?('search_filter')
+        isSearchRequest      = $_REQUEST.key?('search_filter') && $_REQUEST['search_filter'] != 'undefined'
         templateCustomSearch = !@items['templateFilter'].empty? # if you define templateFilter WidgetList will not attempt to build a where clause with search
 
         #
@@ -2319,7 +2319,7 @@ module WidgetList
       end
     end
 
-    def self.get_db_type(primary)
+    def self.get_db_type(primary=true)
       WidgetList::List::load_widget_list_yml()
       if primary
         database_conn = $widget_list_conf[:primary]
@@ -2329,13 +2329,13 @@ module WidgetList
       WidgetList::List::determine_db_type(database_conn)
     end
 
-    def get_db_type(primary)
+    def get_db_type(primary=true)
       WidgetList::List::get_db_type(primary)
     end
 
     def get_view
       @active_record_model = false
-      if @is_sequel
+      if (@is_primary_sequel && @items['database'] == 'primary') ||  (@is_secondary_sequel && @items['database'] == 'secondary')
         return @items['view']
       elsif @items['view'].respond_to?('scoped') && @items['view'].scoped.respond_to?('to_sql')
         @active_record_model = @items['view'].name.constantize
@@ -2383,6 +2383,7 @@ module WidgetList
     end
 
     def connect
+
       @has_connected = true
       begin
         if Rails.root.join("config", "widget-list.yml").file?
@@ -2396,17 +2397,18 @@ module WidgetList
           throw 'widget-list.yml not found'
         end
 
-        @is_sequel                         = true
-        if @primary_conn != false && ! @primary_conn.include?('://')
-          @is_sequel                       = false
+        @is_primary_sequel                 = true
+        @is_secondary_sequel               = true
+        if @primary_conn != false && ! @primary_conn.include?(':/')
+          @is_primary_sequel               = false
         end
 
-        if @secondary_conn != false && !@secondary_conn.include?('://')
-          @is_sequel                       = false
+        if @secondary_conn != false && !@secondary_conn.include?(':/')
+          @is_secondary_sequel             = false
         end
 
         if @primary_conn != false
-          if @primary_conn.include?('://')
+          if @primary_conn.include?(':/')
             @widget_list_sequel_conn         = Sequel.connect(@primary_conn)
             @widget_list_sequel_conn.db_type = WidgetList::List::determine_db_type(@primary_conn)
           else
@@ -2416,7 +2418,7 @@ module WidgetList
         end
 
         if @secondary_conn != false
-          if @secondary_conn.include?('://')
+          if @secondary_conn.include?(':/')
             @widget_list_sequel_conn2         = Sequel.connect(@secondary_conn)
             @widget_list_sequel_conn2.db_type = WidgetList::List::determine_db_type(@secondary_conn)
           else
@@ -2426,7 +2428,7 @@ module WidgetList
         end
 
       rescue Exception => e
-        p "widget-list.yml and connection to @widget_list_sequel_conn or @widget_list_sequel_conn2 failed.  Please fix and try again (" + e.to_s + ")"
+        Rails.logger.info "widget-list.yml and connection to @widget_list_sequel_conn or @widget_list_sequel_conn2 failed.  Please fix and try again (" + e.to_s + ")"
       end
 
     end
@@ -2446,36 +2448,36 @@ module WidgetList
       return is_sequel
     end
 
+    def self.get_sequel(primary=true)
+      WidgetList::List::load_widget_list_yml()
+      if primary
+        Sequel.connect($widget_list_conf[:primary])
+      else
+        Sequel.connect($widget_list_conf[:secondary])
+      end
+    end
+
     def get_database
 
       if @has_connected.nil?
         connect
       end
 
-      if @is_sequel
-        begin
-          if @widget_list_sequel_conn.class.name.to_s.split('::').first == 'Sequel'
-            if @current_db_selection == 'primary' || @current_db_selection.nil?
-              @widget_list_sequel_conn.test_connection
-            end
-            if @current_db_selection == 'secondary'
-              @widget_list_sequel_conn2.test_connection
-            end
-          else
-            connect
-          end
-        rescue
-          connect
-        end
+      if @is_primary_sequel && @widget_list_sequel_conn.class.name.to_s.split('::').first == 'Sequel' && @current_db_selection == 'primary' || @current_db_selection.nil?
+        @widget_list_sequel_conn.test_connection
+      end
+
+      if @is_secondary_sequel && @widget_list_sequel_conn2.class.name.to_s.split('::').first == 'Sequel' && @current_db_selection == 'secondary'
+        @widget_list_sequel_conn2.test_connection
       end
 
       case @current_db_selection
         when 'primary'
-          return (@is_sequel) ? @widget_list_sequel_conn : @widget_list_ar_conn
+          return (@is_primary_sequel) ? @widget_list_sequel_conn : @widget_list_ar_conn
         when 'secondary'
-          return (@is_sequel) ? @widget_list_sequel_conn2 : @widget_list_ar_conn2
+          return (@is_secondary_sequel) ? @widget_list_sequel_conn2 : @widget_list_ar_conn2
         else
-          return (@is_sequel) ? @widget_list_sequel_conn : @widget_list_ar_conn
+          return (@is_primary_sequel) ? @widget_list_sequel_conn : @widget_list_ar_conn
       end
 
     end
