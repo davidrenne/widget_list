@@ -347,8 +347,21 @@ Style a row based on the value of the column.
       list_parms['fieldsHidden'] = ['sku']
 
       drill_downs = []
-      drill_downs << WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_name','a.name','a.name','name_linked')
-      drill_downs << WidgetList::List::build_drill_down_link(list_parms['name'],'filter_by_sku','a.sku','a.sku','sku_linked')
+
+      drill_downs << WidgetList::List::build_drill_down( :list_id                => list_parms['name'],
+                                                         :drill_down_name        => 'filter_by_name',
+                                                         :data_to_pass_from_view => 'a.name',
+                                                         :column_to_show         => 'a.name',
+                                                         :column_alias           => 'name_linked'
+                                                       )
+
+      drill_downs << WidgetList::List::build_drill_down(
+                                                         :list_id                => list_parms['name'],
+                                                         :drill_down_name        => 'filter_by_sku',
+                                                         :data_to_pass_from_view => 'a.sku',
+                                                         :column_to_show         => 'a.sku',
+                                                         :column_alias           => 'sku_linked'
+                                                       )
 
       list_parms['view']          = '(
                                        SELECT
@@ -382,7 +395,7 @@ Style a row based on the value of the column.
 
 
       list_parms['noDataMessage'] = 'No Ruby Items Found'
-      list_parms['title']         = 'Ruby Items!!!'
+      list_parms['title']         = 'Ruby Items Using Sequel!!!'
 
       #
       # Create small button array and pass to the buttons key
@@ -525,7 +538,6 @@ Style a row based on the value of the column.
       end
 
     end
-
 
 ## Contributing
 

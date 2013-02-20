@@ -588,6 +588,24 @@ module WidgetList
       items
     end
 
+    def self.validate_items(list,items)
+      valid = true
+      unless items.empty?
+        items.each { |k,v|
+          if !list.to_s.empty? && !list.key?(k)
+            valid = false
+            throw "Required item '#{k.to_s}' only passed in #{items.inspect}"
+          end
+        }
+      end
+
+      if list.to_s.empty? && !items.empty?
+        valid = false
+        throw "Required items are needing to be passed #{items.inspect} are all required for this function"
+      end
+      return valid
+    end
+
     # WidgetButton
     def self.widget_button(text='', list={}, small=false)
       items = {
