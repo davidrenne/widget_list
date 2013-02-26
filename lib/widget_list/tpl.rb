@@ -47,7 +47,7 @@ $G_TEMPLATE.deep_merge!({'widget' =>
                            {'checkbox'=>
                               {'default' =>
                                  '
-<input type="checkbox" class="<!--INPUT_CLASS-->" style="<!--INPUT_STYLE-->" id="<!--ID-->" name="<!--NAME-->" value="<!--VALUE-->" onclick="<!--ONCLICK-->" <!--CHECKED-->>
+<input type="checkbox" class="<!--INPUT_CLASS-->" style="<!--INPUT_STYLE-->" id="<!--ID-->" name="<!--NAME-->" value="<!--VALUE-->" onclick="<!--ONCLICK-->" <!--CHECKED-->  <!--DISABLED-->>
 <!--REQUIRED-->'
                               }
                            }

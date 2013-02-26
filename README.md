@@ -277,7 +277,7 @@ Style a row based on the value of the column.
 
     begin
 
-      list_parms   = {}
+      list_parms   = WidgetList::List::init_config()
 
       #
       # Give it a name, some SQL to feed widget_list and set a noDataMessage
