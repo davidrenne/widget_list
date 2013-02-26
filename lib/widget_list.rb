@@ -2324,7 +2324,7 @@ module WidgetList
       if ! sql.empty?
         if @items['showPagination']
           if get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy'], @active_record_model) > 0
-            rows = get_database.final_results['TOTAL'][0]
+            rows = get_database.final_results['TOTAL'][0].to_i
           else
             rows = 0
           end
