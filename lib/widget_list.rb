@@ -29,139 +29,7 @@ module WidgetList
 
       # Defaults for all configs
       # See https://github.com/davidrenne/widget_list/blob/master/README.md#feature-configurations
-      @items = {
-        'errors'              => [],
-        'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
-        'database'            => 'primary', #
-        'title'               => '',
-        'listDescription'     => '',
-        'pageId'              => $_SERVER['PATH_INFO'],
-        'view'                => '',
-        'data'                => {},
-        'collClass'           => '',
-        'collAlign'           => '',
-        'fields'              => {},
-        'fieldsHidden'        => [],
-        'bindVars'            => [],
-        'bindVarsLegacy'      => {},
-        'links'               => {},
-        'buttons'             => {},
-        'inputs'              => {},
-        'filter'              => [],
-        'groupBy'             => '',
-        'rowStart'            => 0,
-        'rowLimit'            => 10,
-        'orderBy'             => '',
-        'allowHTML'           => true,
-        'searchClear'         => false,
-        'searchClearAll'      => false,
-        'showPagination'      => true,
-        'searchSession'       => true,
-
-        #
-        # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
-        #
-        'carryOverRequsts'    => ['switch_grouping'],
-
-        #
-        # Head/Foot
-        #
-
-        'customFooter'        => '',
-        'customHeader'        => '',
-
-        #
-        # Ajax
-        #
-        'ajaxFunctionAll'   => '',
-        'ajaxFunction'       => 'ListJumpMin',
-
-        #
-        #  Search
-        #
-        'showSearch'          => true,
-        'searchOnkeyup'       => '',
-        'searchOnclick'       => '',
-        'searchIdCol'         => 'id',
-        'searchTitle'         => 'Search by Id or a list of Ids and more',
-        'searchFieldsIn'      => {},
-        'searchFieldsOut'     => {'id'=>true},
-        'templateFilter'      => '',
-
-        #
-        #  Export
-        #
-        'showExport'          => true,
-        'exportButtonTitle'   => 'Export CSV',
-
-        #
-        # Group By Box
-        #
-        'groupByItems'        => [],
-        'groupBySelected'     => false,
-        'groupByLabel'        => 'Group By',
-        'groupByClick'        => '',
-        'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
-
-
-        #
-        # Advanced searching
-        #
-        'listSearchForm'    => '',
-
-        #
-        # Column Specific
-        #
-        'columnStyle'         => {},
-        'columnClass'         => {},
-        'columnPopupTitle'    => {},
-        'columnSort'          => {},
-        'columnWidth'         => {},
-        'columnNoSort'        => {},
-
-        #
-        # Column Border (on right)
-        #
-        'borderedColumns'     => false,
-        'borderColumnStyle'   => '1px solid #CCCCCC',
-
-        #
-        # Row specifics
-        #
-        'rowClass'            => '',
-        'rowColorByStatus'    => {},
-        'rowStylesByStatus'   => {},
-        'rowOffsets'          => ['FFFFFF','FFFFFF'],
-
-        'class'               => 'listContainerPassive',
-        'tableclass'          => 'tableBlowOutPreventer',
-        'noDataMessage'       => 'Currently no data.',
-        'useSort'             => true,
-        'headerClass'         => {},
-        'fieldFunction'       => {},
-        'buttonVal'           => 'templateListJump',
-        'linkFunction'        => 'ButtonLinkPost',
-        'template'            => '',
-        'LIST_COL_SORT_ORDER' => 'ASC',
-        'LIST_COL_SORT'       => '',
-        'LIST_FILTER_ALL'     => '',
-        'ROW_LIMIT'           => '',
-        'LIST_SEQUENCE'       => 1,
-        'NEW_SEARCH'          => false,
-
-        #
-        # Checkbox
-        #
-        'checkedClass'       => 'widgetlist-checkbox',
-        'checkedFlag'        => {},
-        'storeSessionChecks' => false,
-
-        #
-        # Hooks
-        #
-        'columnHooks'        => {},
-        'rowHooks'           => {}
-      }
+      @items        = WidgetList::List::get_defaults()
 
       @csv          = []
       @csv          << []
@@ -337,27 +205,27 @@ module WidgetList
 
         #Ajax ListJump
         if ! $_REQUEST.empty?
-          if $_REQUEST.key?('LIST_FILTER_ALL')
+          if $_REQUEST.key?('LIST_FILTER_ALL') && !$_REQUEST['LIST_FILTER_ALL'].empty?
             @items['LIST_FILTER_ALL']     = $_REQUEST['LIST_FILTER_ALL']
             @isJumpingList = true
           end
 
-          if $_REQUEST.key?('LIST_COL_SORT')
+          if $_REQUEST.key?('LIST_COL_SORT') && !$_REQUEST['LIST_COL_SORT'].empty?
             @items['LIST_COL_SORT']     = $_REQUEST['LIST_COL_SORT']
             @isJumpingList = true
           end
 
-          if $_REQUEST.key?('LIST_COL_SORT_ORDER')
+          if $_REQUEST.key?('LIST_COL_SORT_ORDER') && !$_REQUEST['LIST_COL_SORT_ORDER'].empty?
             @items['LIST_COL_SORT_ORDER']     = $_REQUEST['LIST_COL_SORT_ORDER']
             @isJumpingList = true
           end
 
-          if $_REQUEST.key?('LIST_SEQUENCE')
+          if $_REQUEST.key?('LIST_SEQUENCE') && !$_REQUEST['LIST_SEQUENCE'].empty?
             @items['LIST_SEQUENCE']     = $_REQUEST['LIST_SEQUENCE'].to_i
             @isJumpingList = true
           end
 
-          if $_REQUEST.key?('ROW_LIMIT')
+          if $_REQUEST.key?('ROW_LIMIT') && !$_REQUEST['ROW_LIMIT'].empty?
             @items['ROW_LIMIT']     = $_REQUEST['ROW_LIMIT']
             @isJumpingList = true
 
@@ -617,6 +485,152 @@ module WidgetList
       rescue Exception => e
         @templateFill['<!--DATA-->']  = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output(e) + @items['noDataMessage'] + '</div></td></tr>'
       end
+    end
+
+    def self.get_defaults()
+      {
+        'errors'              => [],
+        'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
+        'database'            => 'primary', #
+        'title'               => '',
+        'listDescription'     => '',
+        'pageId'              => $_SERVER['PATH_INFO'],
+        'view'                => '',
+        'data'                => {},
+        'collClass'           => '',
+        'collAlign'           => '',
+        'fields'              => {},
+        'fieldsHidden'        => [],
+        'bindVars'            => [],
+        'bindVarsLegacy'      => {},
+        'links'               => {},
+        'buttons'             => {},
+        'inputs'              => {},
+        'filter'              => [],
+        'groupBy'             => '',
+        'rowStart'            => 0,
+        'rowLimit'            => 10,
+        'orderBy'             => '',
+        'allowHTML'           => true,
+        'searchClear'         => false,
+        'searchClearAll'      => false,
+        'showPagination'      => true,
+        'searchSession'       => true,
+
+        #
+        # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
+        #
+        'carryOverRequsts'    => ['switch_grouping'],
+
+        #
+        # Head/Foot
+        #
+
+        'customFooter'        => '',
+        'customHeader'        => '',
+
+        #
+        # Ajax
+        #
+        'ajaxFunctionAll'     => '',
+        'ajaxFunction'        => 'ListJumpMin',
+
+        #
+        #  Search
+        #
+        'showSearch'          => true,
+        'searchOnkeyup'       => '',
+        'searchOnclick'       => '',
+        'searchIdCol'         => 'id',
+        'searchTitle'         => 'Search by Id or a list of Ids and more',
+        'searchFieldsIn'      => {},
+        'searchFieldsOut'     => {'id'=>true},
+        'templateFilter'      => '',
+
+        #
+        #  Export
+        #
+        'showExport'          => true,
+        'exportButtonTitle'   => 'Export CSV',
+
+        #
+        # Group By Box
+        #
+        'groupByItems'        => [],
+        'groupBySelected'     => false,
+        'groupByLabel'        => 'Group By',
+        'groupByClick'        => '',
+        'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
+
+
+        #
+        # Advanced searching
+        #
+        'listSearchForm'      => '',
+
+        #
+        # Column Specific
+        #
+        'columnStyle'         => {},
+        'columnClass'         => {},
+        'columnPopupTitle'    => {},
+        'columnSort'          => {},
+        'columnWidth'         => {},
+        'columnNoSort'        => {},
+
+        #
+        # Column Border (on right)
+        #
+        'borderedColumns'     => false,
+        'borderColumnStyle'   => '1px solid #CCCCCC',
+
+        #
+        # Row specifics
+        #
+        'rowClass'            => '',
+        'rowColorByStatus'    => {},
+        'rowStylesByStatus'   => {},
+        'rowOffsets'          => ['FFFFFF','FFFFFF'],
+
+        'class'               => 'listContainerPassive',
+        'tableclass'          => 'tableBlowOutPreventer',
+        'noDataMessage'       => 'Currently no data.',
+        'useSort'             => true,
+        'headerClass'         => {},
+        'fieldFunction'       => {},
+        'buttonVal'           => 'templateListJump',
+        'linkFunction'        => 'ButtonLinkPost',
+        'template'            => '',
+        'LIST_COL_SORT_ORDER' => 'ASC',
+        'LIST_COL_SORT'       => '',
+        'LIST_FILTER_ALL'     => '',
+        'ROW_LIMIT'           => '',
+        'LIST_SEQUENCE'       => 1,
+        'NEW_SEARCH'          => false,
+
+        #
+        # Checkbox
+        #
+        'checkedClass'        => 'widgetlist-checkbox',
+        'checkedFlag'         => {},
+        'storeSessionChecks'  => false,
+
+        #
+        # Hooks
+        #
+        'columnHooks'         => {},
+        'rowHooks'            => {}
+      }
+    end
+
+    def self.init_config()
+      list_parms = {}
+      WidgetList::List::get_defaults.each { |k,v|
+        if (v.is_a?(Array) || v.is_a?(Hash)) && v.empty?
+          list_parms[k] = v
+        end
+      }
+      return list_parms
     end
 
     def skip_column(fieldName)
@@ -916,6 +930,9 @@ module WidgetList
           if ! @items['templateFilter'].empty?
             @templateFill['<!--FILTER_HEADER-->']    = @items['templateFilter']
           else
+
+            @templateFill['<!--FILTER_HEADER-->'] = ''
+
             if !$_REQUEST.key?('search_filter') && !@isJumpingList
 
               #Search page url
@@ -1029,11 +1046,12 @@ module WidgetList
               end
               @templateFill['<!--FILTER_HEADER-->']  += '<div class="fake-select"><div class="label">' + @items['groupByLabel'] + ':</div> ' + WidgetList::Widgets::widget_input(list_group) + '</div>'
 
-              if @items['showExport']
-                @templateFill['<!--FILTER_HEADER-->']  +=  WidgetList::Widgets::widget_button(@items['exportButtonTitle'], {'onclick' => 'ListExport(\'' + @items['name'] + '\');'}, true)
-              end
-
             end
+
+            if @items['showExport']
+              @templateFill['<!--FILTER_HEADER-->']  +=  WidgetList::Widgets::widget_button(@items['exportButtonTitle'], {'onclick' => 'ListExport(\'' + @items['name'] + '\');'}, true)
+            end
+
           end
         end
 
@@ -1487,6 +1505,17 @@ module WidgetList
           #
           if @results.key?(input['value'].upcase) && !@results[input['value'].upcase][row].to_s.empty?
             input['value'] = @results[ input['value'].upcase ][row]
+          end
+
+          if input.key?('disabled_if') && input['disabled_if'].class.name == 'Proc'
+            row_tmp = {}
+            @results.map { |column| column }.each { |col|
+              row_tmp[ col[0] ] = col[1][row]
+            }
+
+            if input['disabled_if'].call(row_tmp)
+              input['disabled'] = true
+            end
           end
 
           #
@@ -2206,14 +2235,10 @@ module WidgetList
 
       if !@items['LIST_COL_SORT'].empty? || ($_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash))
         if ! @items['LIST_COL_SORT'].empty?
-          if @items['fields'].key?(@items['LIST_COL_SORT'])
-            pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + @items['LIST_COL_SORT'] + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
-          end
+          pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + @items['LIST_COL_SORT'] + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
         else
           $_SESSION['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
-            if @items['fields'].key?(order[0])
-              pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + order[0] + tick_field() +  " " + order[1]
-            end
+            pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + order[0] + tick_field() +  " " + order[1]
           } if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
         end
 

@@ -42,8 +42,10 @@ module WidgetList
         items['input_class'] = items['class']
       end
 
-      if !items['disabled']
-        items['input_class'] += ' disabled'
+      if items['disabled']
+        items['disabled']     = 'disabled'
+      else        
+        items['disabled']     = ''
       end
 
       if items['hidden'] == true
@@ -60,7 +62,8 @@ module WidgetList
         '<!--VALUE-->'       => items['value'],
         '<!--REQUIRED-->'    => items['template_required'],
         '<!--CHECKED-->'     => items['checked'],
-        '<!--VALUE-->'       => items['value']
+        '<!--VALUE-->'       => items['value'],
+        '<!--DISABLED-->'    => items['disabled']
       }
 
       return WidgetList::Utils::fill(pieces, items['template'])
