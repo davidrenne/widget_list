@@ -536,30 +536,6 @@ function BuildUrl(getVars)
    jQuery(document).ready(
    function()
    {
-      /**
-      * @todo if is visible slide up
-      */
-/*      jQuery('.widget-search-drilldown').each(
-      function()
-      {
-         //widget-search-content
-         //
-         var masterBlaster = this;
-
-         jQuery('.widget-search-content', this).bind("mouseenter",
-         function()
-         {
-            jQuery(masterBlaster).stop();
-            jQuery(masterBlaster).slideDown();
-         }
-         ).bind("mouseleave",
-         function()
-         {
-            //jQuery(masterBlaster).stop();
-            jQuery(masterBlaster).slideUp();
-         });
-      });*/
-
       InitInfoFields();
    });
 })(jQuery);
@@ -684,29 +660,28 @@ function AjaxMaintainChecks(obj, checkbox_class, list_id, url, check_all_id)
 
       //Check or uncheck check-all checkbox
       //
-      jQuery('.' + checkbox_class).attr('checked', jQuery('#' + checkAllId).is(':checked'));
+      jQuery('.' + checkbox_class).not(':disabled').attr('checked', jQuery('#' + checkAllId).is(':checked'));
    }
 
    /**
    * Serialize all checkboxes both checked and unchecked
    */
-   jQuery('.' + checkbox_class).each(
-   function(key, value)
-   {
-      var checked = '0';
-
-      if(this.checked)
+   jQuery('.' + checkbox_class).not(':disabled').each(
+      function(key, value)
       {
-         checked = '1';
+         var checked = '0';
+             if(this.checked)
+         {
+            checked = '1';
+          }
+         else
+         {
+            checkedAllBool = false;
+            checkedAllString = '0';
+         }
+             serializedChecks += escape(this.value) + '=' + checked + '&';
       }
-      else
-      {
-         checkedAllBool = false;
-         checkedAllString = '0';
-      }
-
-      serializedChecks += escape(this.value) + '=' + checked + '&';
-   });
+   );
 
    /**
    * Check All Checkbox Status. On/Off
