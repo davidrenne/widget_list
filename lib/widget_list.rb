@@ -188,16 +188,28 @@ module WidgetList
       @current_db_selection = @items['database']
 
       if get_database.db_type == 'oracle'
+
+        @items.deep_merge!({'statement' =>
+                              {'count'=>
+                                 {'view' =>
+                                    '
+                                   SELECT count(1) total FROM <!--VIEW--> ' + ((@items['groupBy'].empty? && !@active_record_model) ? '<!--WHERE-->  <!--GROUPBY-->' : '' )
+                                 }
+                              }
+                           })
         @items.deep_merge!({'statement' =>
                               {'select'=>
                                  {'view' =>
-                                    '
-                                        SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a <!--WHERE--> <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '') + '
-                                    '
+                                    'SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a ' + ((@items['groupBy'].empty?) ? '<!--WHERE-->' : '') + ' <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '')
                                  }
                               }
                            })
 
+      end
+
+
+      if $_REQUEST.key?('searchClear')
+        clear_search_session()
       end
 
       begin
@@ -245,10 +257,6 @@ module WidgetList
         end
 
         @items['groupByClick'] = WidgetList::Utils::fill({'<!--NAME-->' => @items['name']}, @items['groupByClickDefault'] + @items['groupByClick'])
-
-        if $_REQUEST.key?('searchClear')
-          clear_search_session()
-        end
 
         if @items['searchClear'] || @items['searchClearAll']
           clear_search_session(@items.key?('searchClearAll'))
@@ -649,8 +657,7 @@ module WidgetList
 
     def tick_field()
       case get_database.db_type
-        when 'postgres'
-        when 'oracle'
+        when 'postgres','oracle'
           ''
         else
           '`'
@@ -769,6 +776,22 @@ module WidgetList
 
       if all && $_SESSION.key?('ROW_LIMIT')
         $_SESSION.delete('ROW_LIMIT')
+      end
+
+      if $_REQUEST.key?('LIST_FILTER_ALL')
+        $_REQUEST.delete('LIST_FILTER_ALL')
+      end
+
+      if $_REQUEST.key?('LIST_COL_SORT')
+        $_REQUEST.delete('LIST_COL_SORT')
+      end
+
+      if $_REQUEST.key?('LIST_COL_SORT_ORDER')
+        $_REQUEST.delete('LIST_COL_SORT_ORDER')
+      end
+
+      if $_REQUEST.key?('LIST_SEQUENCE')
+        $_REQUEST.delete('LIST_SEQUENCE')
       end
 
     end
@@ -2234,21 +2257,28 @@ module WidgetList
       end
 
       if !@items['LIST_COL_SORT'].empty? || ($_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash))
+        pieces['<!--ORDERBY-->'] += ' ORDER BY '
+        foundColumn = false
         if ! @items['LIST_COL_SORT'].empty?
-          pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + @items['LIST_COL_SORT'] + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
+          foundColumn = true
+          pieces['<!--ORDERBY-->'] += tick_field() + strip_aliases(@items['LIST_COL_SORT']) + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
         else
           $_SESSION['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
-            pieces['<!--ORDERBY-->'] += ' ORDER BY ' + tick_field() + order[0] + tick_field() +  " " + order[1]
+            if @items['fields'].key?(order[0])
+              foundColumn = true
+              pieces['<!--ORDERBY-->'] += tick_field() + strip_aliases(order[0]) + tick_field() +  " " + strip_aliases(order[1])
+            end
           } if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
         end
 
         # Add base order by
         if ! @items['orderBy'].empty?
-          pieces['<!--ORDERBY-->'] += ',' + @items['orderBy']
+          pieces['<!--ORDERBY-->'] += ',' if foundColumn == true
+          pieces['<!--ORDERBY-->'] += strip_aliases(@items['orderBy'])
         end
 
       elsif !@items['orderBy'].empty?
-        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + @items['orderBy']
+        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + strip_aliases(@items['orderBy'])
       end
 
       if get_database.db_type == 'oracle' && pieces['<!--ORDERBY-->'].empty?
@@ -2264,7 +2294,7 @@ module WidgetList
         }
 
         keys = tmp.keys
-        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + keys[0] + ' ASC'
+        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + strip_aliases(keys[0]) + ' ASC' unless keys[0].nil?
       end
 
       case get_database.db_type
@@ -2446,8 +2476,12 @@ module WidgetList
         view     = @items['view'].scoped.to_sql
         sql_from = view[view.index(/FROM/),view.length]
         view     = "SELECT #{new_columns.join(',')} " + sql_from
+        where    = ''
+        if !@items['groupBy'].empty?
+          where    = '<!--WHERE-->'
+        end
 
-        return "( #{view} <!--GROUPBY-->) a"
+        return "( #{view} #{where} <!--GROUPBY--> ) a"
       else
         return ""
       end

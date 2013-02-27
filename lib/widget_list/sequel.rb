@@ -94,6 +94,10 @@ module Sequel
       sql
     end
 
+    def _get_row_value(row,fieldName)
+      row.send(fieldName).to_s
+    end
+
     # @param [Object or String] sql_or_obj
     #                           will either take raw SQL or a Sequel object
     # @param [Array]            bind
@@ -145,7 +149,7 @@ module Sequel
               if first == 1
                 @final_results[fieldName.to_s.upcase] = []
               end
-              @final_results[fieldName.to_s.upcase] << ((row.send(fieldName).nil?) ? '' : row.send(fieldName))
+              @final_results[fieldName.to_s.upcase] << ((row.send(fieldName).nil? && row.attributes[fieldName].nil?) ? '' : _get_row_value(row,fieldName))
             }
             first = 0
           }
