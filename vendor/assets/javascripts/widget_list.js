@@ -230,6 +230,22 @@ function ListJumpResponse(response)
    {
       eval(response['callback'] + '()');
    }
+
+   if(typeof response['search_bar'] === 'string')
+   {
+      jQuery('.' + response['list_id'] + '-search').replaceWith(response['search_bar']);
+      InitInfoFields(jQuery('#list_search_id_' + response['list_id']));
+   }
+
+   if(typeof response['export_button'] === 'string')
+   {
+      jQuery('.' + response['list_id'] + '-export').replaceWith(response['export_button']);
+   }
+
+   if(typeof response['group_by_items'] === 'string')
+   {
+      jQuery('.' + response['list_id'] + '-group-by').replaceWith(response['group_by_items']);
+   }
 }
 
 /**

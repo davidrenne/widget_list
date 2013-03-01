@@ -629,6 +629,8 @@ module WidgetList
         'passive'    => false,
         'function'   => 'ButtonLinkPost',
         'onclick'    => '',
+        'onmouseover'=> '',
+        'onmouseout' => '',
         'template'   => ''
       }
 
@@ -691,6 +693,8 @@ module WidgetList
                                 '<!--ID-->'                 => items['id'],
                                 '<!--BUTTON_STYLE-->'       => items['style'],
                                 '<!--BUTTON_CLASS_INNER-->' => items['innerClass'],
+                                '<!--MOUSEOVER-->'          => items['onmouseover'],
+                                '<!--MOUSEOUT-->'           => items['onmouseout'],
                                 '<!--FRM_SUBMIT-->'         => items['frmSubmit'],
                               },
                               items['template']
