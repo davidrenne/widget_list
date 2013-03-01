@@ -38,16 +38,17 @@ Searching a row:
 
 Add this line to your application's Gemfile:
 
+```ruby
     gem 'widget_list'
-
+```
 And then execute:
-
+```ruby
     $ bundle
-
+```
 Or install it yourself as:
-
+```ruby
     $ gem install widget_list
-
+```
 ## Usage/Examples
 
 You can either follow the below instructions or take a look at the changes here https://github.com/davidrenne/widget_list_example/commit/e4e8ab54edcf8bc4538b1850ee762c13bc6f5316
@@ -209,14 +210,14 @@ Style a row based on the value of the column.
 ### #1 - Add widget_list CSS and JS to your application css and js
 
     Change application.css to:
-
+```ruby
     *= require widget_list
     *= require widgets
-
+```
     Change application.js to:
-
+```ruby
     //= require widget_list
-
+```
 ### #2 - Run `bundle exec rails s` to have widget_list create config/widget-list.yml (by default a sqlite3 memory database is created)
 
     Configure your connection settings for your primary or secondary widget_list connections.
@@ -228,16 +229,19 @@ Style a row based on the value of the column.
     rails generate controller WidgetListExamples ruby_items
 
   Then modify app/views/widget_list_examples/ruby_items.html.erb and add 
-    <div style="margin:50px;">
+```ruby
+   <div style="margin:50px;">
       <%=raw @output%>
     </div>
-  
+```  
   Add config/routes.rb if it is not in there:
-    match ':controller(/:action)'
-
+```ruby
+  match ':controller(/:action)'
+```
   Ensure that sessions are loaded into active record because widget_list keeps track of several settings on each list for each session
-    config.session_store :active_record_store
-  
+```ruby
+  config.session_store :active_record_store
+```  
   Add the example shown below to app/controllers/widget_list_examples_controller.rb#ruby_items
   
   Go To http://localhost:3000/widget_list_examples/ruby_items
@@ -245,7 +249,7 @@ Style a row based on the value of the column.
 ### Example Calling Page That Sets up Config and calls WidgetList.render
 
    
-
+```ruby
     #
     # Load Sample "items" Data. Comment out in your first time executing a widgetlist to create the items table
     #
@@ -538,6 +542,7 @@ Style a row based on the value of the column.
       end
 
     end
+```
 
 ## Contributing
 
