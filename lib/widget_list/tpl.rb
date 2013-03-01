@@ -146,7 +146,7 @@ $G_TEMPLATE.deep_merge!({'widget' =>
                               {'default' =>
                                  '
 <!--FRM_SUBMIT-->
-<a class="<!--BUTTON_CLASS-->" style="<!--BUTTON_STYLE-->" onclick="<!--BUTTON_ONCLICK-->" name="<!--NAME-->" id="<!--ID-->">
+<a class="<!--BUTTON_CLASS-->" style="<!--BUTTON_STYLE-->" onclick="<!--BUTTON_ONCLICK-->" onmouseover="<!--MOUSEOVER-->" onmouseout="<!--MOUSEOUT-->" name="<!--NAME-->" id="<!--ID-->">
    <!--BUTTON_LABEL-->
 </a>'
                               }

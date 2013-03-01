@@ -46,6 +46,7 @@ module WidgetList
       @fieldList    = []
       @templateFill = {}
       @results      = {}
+      @headerPieces = {}
 
       #the main template and outer shell
       @items.deep_merge!({'template' =>
@@ -54,13 +55,13 @@ module WidgetList
                               <!--HEADER-->
                               <!--CUSTOM_CONTENT_TOP-->
                               <div class="<!--CLASS-->" id="<!--NAME-->">
-                                 <table class="widget_list <!--TABLE_CLASS-->" style="<!--INLINE_STYLE-->" border="0" width="100%" cellpadding="0" cellspacing="0">
+                                 <table class="widget_list <!--TABLE_CLASS-->" style="<!--INLINE_STYLE-->;border:<!--TABLE_BORDER-->;" width="100%" cellpadding="0" cellspacing="0">
                                     <!--LIST_TITLE-->
-                                    <tr class="widget_list_header"><!--HEADERS--></tr>
+                                    <tr class="widget_list_header" style="background-color:<!--HEADER_COLOR-->;color:<!--HEADER_TXT_COLOR-->;"><!--HEADERS--></tr>
                                        <!--DATA-->
                                     <tr>
                                        <td colspan="<!--COLSPAN_FULL-->" align="left" style="padding:0px;margin:0px;text-align:left">
-                                          <div style="background-color:#ECECEC;height:50px;"><div style="padding:10px"><!--CUSTOM_CONTENT_BOTTOM--></div>
+                                          <div style="background-color:<!--FOOTER_COLOR-->;hieght:50px;color:<!--FOOTER_TXT_COLOR-->;"><div style="padding:10px"><!--CUSTOM_CONTENT_BOTTOM--></div>
                                        </td>
                                     </tr>
                                  </table>
@@ -182,6 +183,13 @@ module WidgetList
                             '
                          })
 
+
+      #inject site wide configs before list specific configs if a helper exists
+
+      if defined?(WidgetListHelper) == 'constant' && WidgetListHelper::SiteDefaults.class == Class && WidgetListHelper::SiteDefaults.respond_to?('get_site_widget_list_defaults')
+        @items = WidgetList::Widgets::populate_items(WidgetListHelper::SiteDefaults::get_site_widget_list_defaults() ,@items)
+      end
+
       @items = WidgetList::Widgets::populate_items(list,@items)
 
       # current_db is a flag of the last known primary or secondary YML used or defaulted when running a list
@@ -300,7 +308,7 @@ module WidgetList
                 fieldsToSearch[columnPivot[0]] = strip_aliases(columnPivot[0])
               }
             end
-
+            fieldsToSearch.delete('cnt') if fieldsToSearch.key?('cnt')
             searchCriteria = searchFilter.strip_or_self()
             searchSQL      = []
             numericSearch  = false
@@ -495,6 +503,56 @@ module WidgetList
       end
     end
 
+    def get_grouping_functions()
+      #http://docs.oracle.com/cd/E11882_01/server.112/e10592/functions003.htm
+      [
+        'AVG(',
+        'COLLECT(',
+        'CORR(',
+        'COUNT(',
+        'COVAR_POP(',
+        'COVAR_SAMP(',
+        'CUME_DIST(',
+        'DENSE_RANK(',
+        'FIRST(',
+        'GROUP_ID(',
+        'GROUPING_ID(',
+        'LAST(',
+        'LISTAGG(',
+        'MAX(',
+        'MEDIAN(',
+        'MIN(',
+        'PERCENT_RANK(',
+        'PERCENTILE_CONT(',
+        'PERCENTILE_DISC(',
+        'RANK(',
+        'REGR_SLOPE(',
+        'REGR_INTERCEPT(',
+        'REGR_COUNT(',
+        'REGR_R2(',
+        'REGR_AVGX(',
+        'REGR_AVGY(',
+        'REGR_SXX(',
+        'REGR_SYY(',
+        'REGR_SXY(',
+        'STATS_MINOMIAL_TEST(',
+        'STATS_CROSSTAB(',
+        'STATS_F_TEST(',
+        'STATS_KS_TEST(',
+        'STATS_MODE(',
+        'STATS_MW_TEST(',
+        'STDDEV(',
+        'STDDEV_POP(',
+        'STDDEV_SAMP(',
+        'SUM(',
+        'SYS_XMLAGG(',
+        'VAR_POP(',
+        'VAR_SAMP(',
+        'VARIANCE(',
+        'XMLAGG(',
+      ]
+    end
+
     def self.get_defaults()
       {
         'errors'              => [],
@@ -528,7 +586,7 @@ module WidgetList
         #
         # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
         #
-        'carryOverRequsts'    => ['switch_grouping'],
+        'carryOverRequsts'    => ['switch_grouping','group_row_id'],
 
         #
         # Head/Foot
@@ -547,8 +605,7 @@ module WidgetList
         #  Search
         #
         'showSearch'          => true,
-        'searchOnkeyup'       => '',
-        'searchOnclick'       => '',
+        'searchOnkeyup'       => "SearchWidgetList('<!--URL-->', '<!--TARGET-->', this);",
         'searchIdCol'         => 'id',
         'searchTitle'         => 'Search by Id or a list of Ids and more',
         'searchFieldsIn'      => {},
@@ -593,12 +650,21 @@ module WidgetList
         'borderColumnStyle'   => '1px solid #CCCCCC',
 
         #
+        # Table Colors
+        #
+        'footerBGColor'       => '#ECECEC',
+        'headerBGColor'       => '#ECECEC',
+        'footerFontColor'     => '#494949',
+        'headerFontColor'     => '#494949',
+        'tableBorder'         => '1',
+
+        #
         # Row specifics
         #
         'rowClass'            => '',
         'rowColorByStatus'    => {},
         'rowStylesByStatus'   => {},
-        'rowOffsets'          => ['FFFFFF','FFFFFF'],
+        'rowOffsets'          => ['#FFFFFF','#FFFFFF'],
 
         'class'               => 'listContainerPassive',
         'tableclass'          => 'tableBlowOutPreventer',
@@ -934,6 +1000,11 @@ module WidgetList
         end
 
         @templateFill['<!--HEADER-->']               = @items['templateHeader']
+        @templateFill['<!--TABLE_BORDER-->']         = @items['tableBorder']
+        @templateFill['<!--HEADER_COLOR-->']         = @items['headerBGColor']
+        @templateFill['<!--FOOTER_COLOR-->']         = @items['footerBGColor']
+        @templateFill['<!--HEADER_TXT_COLOR-->']     = @items['headerFontColor']
+        @templateFill['<!--FOOTER_TXT_COLOR-->']     = @items['footerFontColor']
         @templateFill['<!--TITLE-->']                = @items['title']
         @templateFill['<!--NAME-->']                 = @items['name']
         @templateFill['<!--JUMP_URL-->']             = WidgetList::Utils::build_url(@items['pageId'],listJumpUrl,(!$_REQUEST.key?('BUTTON_VALUE')))
@@ -1010,11 +1081,11 @@ module WidgetList
                 'skip_queue'   => false,
                 'target'       => @items['name'],
                 'search_form'  => @items['listSearchForm'],
-                'onclick'      => (! @items['searchOnclick'].empty? && ! @items['listSearchForm'].empty?) ? @items['searchOnclick'] : '',
-                'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? @items['searchOnkeyup'] : ''
+                'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
               }
 
-              @templateFill['<!--FILTER_HEADER-->'] = WidgetList::Widgets::widget_input(list_search)
+              @headerPieces['searchBar']            = WidgetList::Widgets::widget_input(list_search)
+              @templateFill['<!--FILTER_HEADER-->'] = @headerPieces['searchBar']
 
             end
 
@@ -1027,6 +1098,11 @@ module WidgetList
               list_group['readonly']      = true
               if @items['groupBySelected']
                 list_group['value']      = @items['groupBySelected']
+              elsif $_REQUEST.key?('group_row_id')
+                tmp                      = $_REQUEST['group_row_id'].gsub(@items['name'] + '_row_','')
+                if Float(tmp.to_i) != nil
+                  list_group['value']      = @items['groupByItems'][tmp.to_i - 1]
+                end
               else
                 list_group['value']      = @items['groupByItems'][0]
               end
@@ -1061,18 +1137,19 @@ module WidgetList
                 'search_form'=>  '
                                  <div id="advanced-search-container" style="height:100% !important;">
                                     ' + groupRows.join("\n") + '
-                                 </div>',
-                'onclick'    => @items['searchOnclick']
+                                 </div>'
               }
               if !@templateFill.key?('<!--FILTER_HEADER-->')
                 @templateFill['<!--FILTER_HEADER-->'] = ''
               end
-              @templateFill['<!--FILTER_HEADER-->']  += '<div class="fake-select"><div class="label">' + @items['groupByLabel'] + ':</div> ' + WidgetList::Widgets::widget_input(list_group) + '</div>'
+              @headerPieces['groupByItems']           = '<div class="fake-select ' + @items['name'] + '-group-by"><div class="label">' + @items['groupByLabel'] + ':</div> ' + WidgetList::Widgets::widget_input(list_group) + '</div>'
+              @templateFill['<!--FILTER_HEADER-->']  += @headerPieces['groupByItems']
 
             end
 
             if @items['showExport']
-              @templateFill['<!--FILTER_HEADER-->']  +=  WidgetList::Widgets::widget_button(@items['exportButtonTitle'], {'onclick' => 'ListExport(\'' + @items['name'] + '\');'}, true)
+              @headerPieces['exportButton']           =  '<span class="' + @items['name'] + '-export">' + WidgetList::Widgets::widget_button(@items['exportButtonTitle'], {'onclick' => 'ListExport(\'' + @items['name'] + '\');'}, true) + '</span>'
+              @templateFill['<!--FILTER_HEADER-->']  += @headerPieces['exportButton']
             end
 
           end
@@ -1096,6 +1173,10 @@ module WidgetList
       else
         return WidgetList::Utils::fill(@templateFill, @items['template'])
       end
+    end
+
+    def get_header_pieces()
+      @headerPieces
     end
 
     def build_pagination()
@@ -1300,6 +1381,27 @@ module WidgetList
         return ''
       end
 
+    end
+
+    def self.build_search_button_click(list_parms)
+
+      extra_get_vars  = ''
+      extra_func       = ''
+      filterParameters = {}
+      if list_parms.key?('ajaxFunctionAll')
+        extra_func = list_parms['ajaxFunctionAll']
+      end
+
+      if list_parms.key?('carryOverRequsts')
+        list_parms['carryOverRequsts'].each { |value|
+          if $_REQUEST.key?(value)
+            filterParameters[value] = $_REQUEST[value]
+          end
+        }
+        extra_get_vars = WidgetList::Utils::build_query_string(filterParameters)
+      end
+
+      "ListJumpMin(jQuery('##{list_parms['name']}_jump_url').val() + '&advanced_search=1&' + jQuery('#list_search_id_#{list_parms['name']}_results *').serialize() + '&#{extra_get_vars}', '#{list_parms['name']}');HideAdvancedSearch(this);" + extra_func
     end
 
     def build_headers()
@@ -1636,9 +1738,12 @@ module WidgetList
         ret = {}
 
         if $_REQUEST['list_action'] != 'ajax_widgetlist_checks'
-          ret['list']     = list.render()
-          ret['list_id']  = list_parms['name']
-          ret['callback'] = 'ListSearchAheadResponse'
+          ret['list']           = list.render()
+          ret['search_bar']     = list.get_header_pieces['searchBar']
+          ret['group_by_items'] = list.get_header_pieces['groupByItems']
+          ret['export_button']  = list.get_header_pieces['exportButton']
+          ret['list_id']        = list_parms['name']
+          ret['callback']       = 'ListSearchAheadResponse'
         end
 
         return ['json',WidgetList::Utils::json_encode(ret)]
@@ -1821,29 +1926,37 @@ module WidgetList
       nameId      = ''
 
       buttons.each { |buttonId,buttonAttribs|
-        #url          = array('PAGE_ID')
         function     = @items['linkFunction']
         parameters   = ''
         renderButton = true
 
+        page = buttonAttribs['page'].dup
         if buttonAttribs.key?('tags')
           buttonAttribs['tags'].each { | tagName , tag |
-            #only uppercase will be replaced
-            #
-
             if @results.key?(tag.upcase) && @results[tag.upcase][j]
+              #
+              # Data exists, lets check to see if page has any lowercase tags for restful URLs
+              #
 
-              buttonAttribs.deep_merge!({'args' =>
-                                           {
-                                             tagName => @results[tag.upcase][j]
-                                           }
-                                        })
+              if buttonAttribs.key?('page') && buttonAttribs['page'].include?(tag.downcase)
+                page.gsub!(tag.downcase,@results[tag.upcase][j])
+              else
+                #
+                # Will build ?tagname=XXXX based on your hash passed to your page
+                #
+                buttonAttribs.deep_merge!({ 'args' => { tagName => @results[tag.upcase][j] } })
+              end
             else
-              buttonAttribs.deep_merge!({'args' =>
-                                           {
-                                             tagName => tag
-                                           }
-                                        })
+
+              #
+              # User is passing hard coded tags such as 'tags'       => {'my_static_var' => '1234'}
+              # Just fill in normally wherever anything is matched
+              #
+              if buttonAttribs.key?('page') && buttonAttribs['page'].include?(tag.downcase)
+                page.gsub!(tagName,tag)
+              else
+                buttonAttribs.deep_merge!({ 'args' => { tagName => tag } })
+              end
             end
           }
         end
@@ -1852,19 +1965,19 @@ module WidgetList
         buttonAttribs['name'] = nameId
         buttonAttribs['id']   = nameId
 
-        #if  buttonAttribs.key?('condition')
-        #never show button if you pass a condition unless explicitly matching the value of the features
-        #
-        #renderButton = false
-        #allConditions = columnValue.split(':')
-        #if (in_array(ltrim($buttonAttribs['condition'], ':'), $allConditions))
-        #   renderButton = true
-        #end
-        #end
+        if buttonAttribs.key?('hide_if') && input['hide_if'].class.name == 'Proc'
+          row_tmp = {}
+          @results.map { |column| column }.each { |col|
+            row_tmp[ col[0] ] = col[1][row]
+          }
+          if buttonAttribs['hide_if'].call(row_tmp)
+            renderButton = false
+          end
+        end
 
         if (renderButton)
           strCnt += (buttonAttribs['text'].length * 15)
-          btnOut << WidgetList::Widgets::widget_button(buttonAttribs['text'], buttonAttribs, true)
+          btnOut << WidgetList::Widgets::widget_button(buttonAttribs['text'], buttonAttribs.deep_merge!({'page' => page}) , true)
         end
       }
 
@@ -2266,7 +2379,7 @@ module WidgetList
           $_SESSION['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
             if @items['fields'].key?(order[0])
               foundColumn = true
-              pieces['<!--ORDERBY-->'] += tick_field() + strip_aliases(order[0]) + tick_field() +  " " + strip_aliases(order[1])
+              pieces['<!--ORDERBY-->'] += tick_field() + strip_aliases(order[0]) + tick_field() +  " " + order[1]
             end
           } if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
         end
@@ -2274,11 +2387,11 @@ module WidgetList
         # Add base order by
         if ! @items['orderBy'].empty?
           pieces['<!--ORDERBY-->'] += ',' if foundColumn == true
-          pieces['<!--ORDERBY-->'] += strip_aliases(@items['orderBy'])
+          pieces['<!--ORDERBY-->'] += @items['orderBy']
         end
 
       elsif !@items['orderBy'].empty?
-        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + strip_aliases(@items['orderBy'])
+        pieces['<!--ORDERBY-->'] += ' ORDER BY ' + @items['orderBy']
       end
 
       if get_database.db_type == 'oracle' && pieces['<!--ORDERBY-->'].empty?
@@ -2327,6 +2440,7 @@ module WidgetList
     end
 
     def strip_aliases(name='')
+      name = (name.include?(' ') ? name.split(' ').last : name)
       ((name.include?('.')) ? name.split('.').last.gsub(/'||"/,'') : name.gsub(/'||"/,''))
     end
 
