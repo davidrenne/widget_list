@@ -1977,7 +1977,8 @@ module WidgetList
 
         if (renderButton)
           strCnt += (buttonAttribs['text'].length * 15)
-          btnOut << WidgetList::Widgets::widget_button(buttonAttribs['text'], buttonAttribs.deep_merge!({'page' => page}) , true)
+          attributes = buttonAttribs.dup.deep_merge!({'page' => page})
+          btnOut << WidgetList::Widgets::widget_button(buttonAttribs['text'], attributes , true)
         end
       }
 
