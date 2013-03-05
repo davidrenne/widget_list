@@ -2277,6 +2277,19 @@ module WidgetList
       if Rails.env == 'development' && ex != ''
         sqlDebug += "<br/><br/><strong style='color:red'>(" + ex.to_s + ") <pre>"  + $!.backtrace.join("\n\n") +  "</pre></strong>"
       end
+
+      if Rails.env != 'development'
+
+        if get_database.errors
+          Rails.logger.info get_database.last_error.to_s
+        end
+
+        if ex != ''
+          Rails.logger.info $!.backtrace.join("\n\n")
+        end
+
+      end
+
       Rails.logger.info sqlDebug
 
       sqlDebug
