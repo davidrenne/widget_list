@@ -29,7 +29,7 @@ table.widget_list tbody tr td span
 div.btn_outer
 {
     position:relative;
-    background: transparent url('../images/buttons/regular/green/rightside-regular-btn.png') no-repeat scroll top right;
+    background: transparent url('../assets/images/buttons/regular/green/rightside-regular-btn.png') no-repeat scroll top right;
     display: inline;
     float: left;
     font: normal 12px arial, sans-serif;
@@ -104,7 +104,7 @@ div.btn_sml_outer
 
 div.btn_sml_outer div.btn_sml_inner
 {
-    background: transparent url('../assets/imagesll/green/leftside-small-btn.png') no-repeat;
+    background: transparent url('../assets/images/buttons/small/green/leftside-small-btn.png') no-repeat;
     display: block;
     line-height: 8px;
     padding: 5px 0 0px 8px;
