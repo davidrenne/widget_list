@@ -291,21 +291,24 @@ Style a row based on the value of the column.
       #
       # Handle Dynamic Filters
       #
-      if $_REQUEST.key?('switch_grouping') && $_REQUEST['switch_grouping'] == 'Item Name'
-        groupByFilter                  = 'item'
-        countSQL                       = 'COUNT(1) as cnt,'
-        groupBySQL                     = 'GROUP BY name'
-        groupByDesc                    = ' (Grouped By Name)'
-      elsif  $_REQUEST.key?('switch_grouping') && $_REQUEST['switch_grouping'] == 'Sku Number'
-        groupByFilter                  = 'sku'
-        countSQL                       = 'COUNT(1) as cnt,'
-        groupBySQL                     = 'GROUP BY sku'
-        groupByDesc                    = ' (Grouped By Sku Number)'
-      else
-        groupByFilter                  = 'none'
-        countSQL                       = ''
-        groupBySQL                     = ''
-        groupByDesc                    = ''
+      groupBy  = WidgetList::List::get_group_by_selection(list_parms)
+
+      case groupBy
+        when 'Item Name'
+          groupByFilter                  = 'item'
+          countSQL                       = 'COUNT(1) as cnt,'
+          groupBySQL                     = 'GROUP BY name'
+          groupByDesc                    = ' (Grouped By Name)'
+        when 'Sku Number'
+          groupByFilter                  = 'sku'
+          countSQL                       = 'COUNT(1) as cnt,'
+          groupBySQL                     = 'GROUP BY sku'
+          groupByDesc                    = ' (Grouped By Sku Number)'
+        else
+          groupByFilter                  = 'none'
+          countSQL                       = ''
+          groupBySQL                     = ''
+          groupByDesc                    = ''
       end
 
       list_parms['filter']    = []

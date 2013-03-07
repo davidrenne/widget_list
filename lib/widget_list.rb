@@ -893,7 +893,7 @@ module WidgetList
 
       if $_REQUEST.key?('drill_down') && !$_REQUEST.key?('searchClear')
         drillDown = $_REQUEST['drill_down']
-        $_SESSION.deep_merge!({'DRILL_DOWNS' => { listId => drillDown} }) && !$_REQUEST.key?('searchClear')
+        $_SESSION.deep_merge!({'DRILL_DOWNS' => { listId => drillDown} })
       elsif $_SESSION.key?('DRILL_DOWNS') && $_SESSION['DRILL_DOWNS'].key?(listId) && !$_REQUEST.key?('searchClear')
         drillDown = $_SESSION['DRILL_DOWNS'][listId]
       else
@@ -907,6 +907,22 @@ module WidgetList
         filter = $_SESSION['DRILL_DOWN_FILTERS'][listId]
       end
       return drillDown, filter
+    end
+
+    def self.get_group_by_selection(list_parms)
+      groupBy = ''
+
+      if $_REQUEST.key?('switch_grouping')
+        groupBy = $_REQUEST['switch_grouping']
+        $_SESSION.deep_merge!({'CURRENT_GROUPING' => { list_parms['name'] => groupBy} })
+      elsif $_SESSION.key?('CURRENT_GROUPING') && $_SESSION['CURRENT_GROUPING'].key?(list_parms['name'])
+        groupBy = $_SESSION['CURRENT_GROUPING'][list_parms['name']]
+        list_parms['groupBySelected'] =  groupBy
+      else
+        groupBy = ''
+      end
+
+      return groupBy
     end
 
     def clear_sort_get_vars()
