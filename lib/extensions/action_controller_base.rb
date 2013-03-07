@@ -13,7 +13,7 @@ ActionController::Base.class_eval {
     def store_session
       # Store pre-defined widget_list session items to the actual session
 
-      %w(pageDisplayLimit DRILL_DOWNS ROW_LIMIT list_checks SEARCH_FILTER LIST_SEQUENCE LIST_COL_SORT list_count DRILL_DOWN_FILTERS).each { |key|
+      %w(pageDisplayLimit DRILL_DOWNS CURRENT_GROUPING ROW_LIMIT list_checks SEARCH_FILTER LIST_SEQUENCE LIST_COL_SORT list_count DRILL_DOWN_FILTERS).each { |key|
         self.session[key] = $_SESSION[key]
       }
 
