@@ -149,25 +149,25 @@ module WidgetList
 
       @items.deep_merge!({'template_pagination_next_active' =>
                             "
-                            <li><span onclick=\"<!--FUNCTION-->('<!--NEXT_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(<!--HTTP_SERVER-->images/page-next.gif) no-repeat\">&nbsp;</span></li>
+                            <li><span id=\"<!--LIST_NAME-->_next\" onclick=\"<!--FUNCTION-->('<!--NEXT_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(<!--HTTP_SERVER-->images/page-next.gif) no-repeat\">&nbsp;</span></li>
                             "
                          })
 
       @items.deep_merge!({'template_pagination_next_disabled' =>
                             "
-                            <li><span style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(<!--HTTP_SERVER-->images/page-next.gif) no-repeat\">&nbsp;</span></li>
+                            <li><span id=\"<!--LIST_NAME-->_next\" style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(<!--HTTP_SERVER-->images/page-next.gif) no-repeat\">&nbsp;</span></li>
                             "
                          })
 
       @items.deep_merge!({'template_pagination_previous_active' =>
                             "
-                            <li><span onclick=\"<!--FUNCTION-->('<!--PREVIOUS_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(<!--HTTP_SERVER-->images/page-back.gif) no-repeat\">&nbsp;</span></li>
+                            <li><span id=\"<!--LIST_NAME-->_previous\" onclick=\"<!--FUNCTION-->('<!--PREVIOUS_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(<!--HTTP_SERVER-->images/page-back.gif) no-repeat\">&nbsp;</span></li>
                             "
                          })
 
       @items.deep_merge!({'template_pagination_previous_disabled' =>
                             "
-                            <li><span style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(<!--HTTP_SERVER-->images/page-back.gif) no-repeat\">&nbsp;</span></li>
+                            <li><span id=\"<!--LIST_NAME-->_previous\" style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(<!--HTTP_SERVER-->images/page-back.gif) no-repeat\">&nbsp;</span></li>
                             "
                          })
 
@@ -1312,7 +1312,7 @@ module WidgetList
 
       # WidgetSelect( todo)
       pageSelect = <<-EOD
-        <select onchange="#{@items['ajaxFunction']}(this.value,'#{@items['name']}');#{@items['ajaxFunctionAll']}" style="width:58px">
+        <select id="<!--LIST_NAME-->_per_page" onchange="#{@items['ajaxFunction']}(this.value,'#{@items['name']}');#{@items['ajaxFunctionAll']}" style="width:58px">
           #{options}
         </select>
       EOD
