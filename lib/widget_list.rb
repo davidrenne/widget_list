@@ -1857,48 +1857,27 @@ module WidgetList
           link = %[q'[<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}("#{items[:drill_down_name]}", ListDrillDownGetRowValue(this) ,"#{items[:list_id]}"#{items[:extra_js_func_params]});#{items[:extra_function]}'>]' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])} q'[</script>]' #{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
         end
       else
-        if $_REQUEST.key?('export_widget_list')
-          link = "#{items[:column_to_show]} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}"
+        if WidgetList::List.get_db_type(items[:primary_database]) == 'postgres'
+          link = %['<a style="cursor:pointer;color:#{items[:link_color]};" class="#{items[:column_alias]}_drill#{items[:column_class]}" onclick="#{items[:js_function_name]}(''#{items[:drill_down_name]}'', ListDrillDownGetRowValue(this) ,''#{items[:list_id]}''#{items[:extra_js_func_params]});#{items[:extra_function]}">"' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}'</a><script class="val-db" type="text">' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])}'</script>' #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
         else
           link = %[#{WidgetList::List::concat_inner(items[:primary_database])}"<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}(#{WidgetList::List::double_quote(items[:primary_database])}#{items[:drill_down_name]}#{WidgetList::List::double_quote(items[:primary_database])}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(items[:primary_database])}#{items[:list_id]}#{WidgetList::List::double_quote(items[:primary_database])}#{items[:extra_js_func_params]});#{items[:extra_function]}'>"#{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])}"</script>"#{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
         end
       end
+      
+      if $_REQUEST.key?('export_widget_list')
+        link = "#{items[:column_to_show]} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}"
+      end
+      
       return link
 
-    end
-
-    def self.build_drill_down_link(listId,drillDownName,dataToPassFromView,columnToShow,columnAlias='',extraFunction='',functionName='ListDrillDown',columnClass='',color='blue',extraJSFunctionParams='',primary=true)
-      ActiveSupport::Deprecation.warn "`build_drill_down_link` is deprecated. Use `build_drill_down` instead."
-      if columnAlias.empty?
-        columnAlias = columnToShow
-      end
-
-      if !columnClass.empty?
-        columnClass = ' "' + WidgetList::List::concat_string(primary) + columnClass + WidgetList::List::concat_string(primary) + '"'
-      end
-
-      if WidgetList::List.get_db_type(primary) == 'oracle'
-        if $_REQUEST.key?('export_widget_list')
-          link = "#{columnToShow} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}"
-        else
-          link = %[q'[<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}("#{drillDownName}", ListDrillDownGetRowValue(this) ,"#{listId}"#{extraJSFunctionParams});#{extraFunction}'>]' #{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)} q'[</script>]' #{WidgetList::List::concat_outer(primary)} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}]
-        end
-      else
-        if $_REQUEST.key?('export_widget_list')
-          link = "#{columnToShow} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}"
-        else
-          link = %[#{WidgetList::List::concat_inner(primary)}"<a style='cursor:pointer;color:#{color};' class='#{columnAlias}_drill#{columnClass}' onclick='#{functionName}(#{WidgetList::List::double_quote(primary)}#{drillDownName}#{WidgetList::List::double_quote(primary)}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(primary)}#{listId}#{WidgetList::List::double_quote(primary)}#{extraJSFunctionParams});#{extraFunction}'>"#{WidgetList::List::concat_string(primary)}#{columnToShow}#{WidgetList::List::concat_string(primary)}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(primary)} #{dataToPassFromView} #{WidgetList::List::concat_string(primary)}"</script>"#{WidgetList::List::concat_outer(primary)} #{WidgetList::List::is_sequel(primary) ? " as #{columnAlias} " : ""}]
-        end
-      end
-      return link
-    end
-
+    end 
+ 
     def self.concat_string(primary)
 
       case WidgetList::List.get_db_type(primary)
         when 'mysql'
           ' , '
-        when 'oracle','sqlite'
+        when 'oracle','sqlite','postgres'
           ' || '
         else
           ','
