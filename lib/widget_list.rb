@@ -149,25 +149,25 @@ module WidgetList
 
       @items.deep_merge!({'template_pagination_next_active' =>
                             "
-                            <li><span id=\"<!--LIST_NAME-->_next\" onclick=\"<!--FUNCTION-->('<!--NEXT_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(<!--HTTP_SERVER-->images/page-next.gif) no-repeat\">&nbsp;</span></li>
+                            <li><span id=\"<!--LIST_NAME-->_next\" onclick=\"<!--FUNCTION-->('<!--NEXT_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(/assets/images/page-next.gif) no-repeat\">&nbsp;</span></li>
                             "
                          })
 
       @items.deep_merge!({'template_pagination_next_disabled' =>
                             "
-                            <li><span id=\"<!--LIST_NAME-->_next\" style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(<!--HTTP_SERVER-->images/page-next.gif) no-repeat\">&nbsp;</span></li>
+                            <li><span id=\"<!--LIST_NAME-->_next\" style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(/assets/images/page-next.gif) no-repeat\">&nbsp;</span></li>
                             "
                          })
 
       @items.deep_merge!({'template_pagination_previous_active' =>
                             "
-                            <li><span id=\"<!--LIST_NAME-->_previous\" onclick=\"<!--FUNCTION-->('<!--PREVIOUS_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(<!--HTTP_SERVER-->images/page-back.gif) no-repeat\">&nbsp;</span></li>
+                            <li><span id=\"<!--LIST_NAME-->_previous\" onclick=\"<!--FUNCTION-->('<!--PREVIOUS_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(/assets/images/page-back.gif) no-repeat\">&nbsp;</span></li>
                             "
                          })
 
       @items.deep_merge!({'template_pagination_previous_disabled' =>
                             "
-                            <li><span id=\"<!--LIST_NAME-->_previous\" style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(<!--HTTP_SERVER-->images/page-back.gif) no-repeat\">&nbsp;</span></li>
+                            <li><span id=\"<!--LIST_NAME-->_previous\" style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(/assets/images/page-back.gif) no-repeat\">&nbsp;</span></li>
                             "
                          })
 
@@ -1264,7 +1264,6 @@ module WidgetList
       pieces = {
         '<!--NEXT_URL-->'     => nextUrl,
         '<!--LIST_NAME-->'    => @items['name'],
-        '<!--HTTP_SERVER-->'  => $_SERVER['rack.url_scheme'] + '://' + $_SERVER['HTTP_HOST'] + '/assets/',
         '<!--PREVIOUS_URL-->' => prevUrl,
         '<!--FUNCTION-->'     => @items['ajaxFunction'],
         '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
