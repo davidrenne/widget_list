@@ -1,7 +1,11 @@
 # WidgetList
 ====================
 
+****
+
 ## Introduction
+
+****
 
 This is my first gem ever!
 
@@ -11,18 +15,24 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 
 * A sleek ajaxified list
 * Supports *ALL Databases (Haven't tested everything yet though, I am sure there are tweaks for each DB). mysql, postgres, oracle and sqllite tested (basic example)
-* Full sorting ASC/DESC of list via ajax
+* Full sorting ASC/DESC and paging/limits of list via ajax
 * Easily add row level buttons for each row
 * Custom tags to pass to be replaced by actual data from each column/value
-* Search bar/Ajax searching
+* Automatic wildcard search support as well as CSV numeric parsing of when to perform a LIKE search or an IN statement on the primary keys
 * Column mappings and names
+* Drill down link helper functions to allow user to click and filter the list by the particular record value
 * Checkboxes for each row for custom selection and mass actions
 * Session rememberance for each list/view of what was last sorted, which page the person was on, the limit and search filters
-* Ability to set a cool custom HTML arrow which draws a hidden DIV intended for someone to put custom widgets inside of to pass new filters to the list before it executes
+* Ability to set a custom HTML arrow which draws a hidden DIV intended for someone to put custom widgets inside of to pass new filters to the list before it executes
 * Buttons for each row and areas on the bottom of the grid where you can add "Action buttons"
 * Export visible data as CSV
+* Grouping/Predefined report filter feature
+
+****
 
 ## Screenshots
+
+****
 
 Main Example Loaded:
 ![](http://davidrenne.com/github/widget_list/main.png)
@@ -30,11 +40,24 @@ Main Example Loaded:
 Filter Drop Downs:
 ![](http://davidrenne.com/github/widget_list/filtered.png)
 
-Searching a row:
+Searching a row (with wild card search):
 ![](http://davidrenne.com/github/widget_list/search.png)
 
+Searching "name=asdf_18" (With ActiveRecord and Ransack hook):
+![](http://davidrenne.com/github/widget_list/ransack1.png)
+
+Searching "name=asdf_18" and "sku<9000"(With ActiveRecord and Ransack hook):
+![](http://davidrenne.com/github/widget_list/ransack2.png)
+
+Searching "name=asdf_18" and "sku < 9000" and "price > 67" (With ActiveRecord and Ransack hook):
+![](http://davidrenne.com/github/widget_list/ransack3.png)
+
+
+****
 
 ## Installation
+
+****
 
 Add this line to your application's Gemfile:
 
@@ -49,14 +72,23 @@ Or install it yourself as:
 ```ruby
     $ gem install widget_list
 ```
+
+****
+
 ## Usage/Examples
+
+****
 
 You can either follow the below instructions or take a look at the changes here https://github.com/davidrenne/widget_list_example/commit/e4e8ab54edcf8bc4538b1850ee762c13bc6f5316
 
 I recommend if you use widget_list in production that you use config.consider_all_requests_local = true as errors will be handled but the base lists will still draw.
 
 
+****
+
 ## Feature Configurations
+
+****
 
 widget_list features and configurations primarily work by a single large hash passed to the constructor with the features you need for the given request which changes how the list is displayed or filtered.
 
@@ -154,6 +186,8 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `listSearchForm` -  Allows you to pass a custom form for the ARROW drop down for advanced searching `default=''`
 
+`ransackSearch` -  If you pass ModelName.search(params[:q]) ransack will show up in your advanced search `default=false`
+
 `columnStyle` -  Column styles.  KEY=column name VALUE= the inline style applied `default={}`
 
 `columnClass` -  Column class.  KEY=column name VALUE= the class name `default={}`
@@ -246,8 +280,11 @@ Style a row based on the value of the column.
   
   Go To http://localhost:3000/widget_list_examples/ruby_items
 
+****
+
 ### Example Calling Page That Sets up Config and calls WidgetList.render
 
+****
    
 ```ruby
     #
@@ -547,7 +584,11 @@ Style a row based on the value of the column.
     end
 ```
 
+****
+
 ## Contributing
+
+****
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)

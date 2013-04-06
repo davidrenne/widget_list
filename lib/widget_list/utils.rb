@@ -23,7 +23,11 @@ module WidgetList
     def self.build_query_string(args)
       q = []
       args.each { |k,v|
-        q << k.to_s + '=' + URI.encode(URI.decode(v.to_s))
+        if v.class.name == 'Hash'
+          q << {k => v}.to_params
+        else
+          q << k.to_s + '=' + URI.encode(URI.decode(v.to_s))
+        end
       }
       q.join('&')
     end
