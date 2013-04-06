@@ -23,7 +23,9 @@ Gem::Specification.new do |gem|
   # SEQUEL IS NOW OPTIONAL!! I am sure most people will be using ActiveRecord ORM
   # I am including it as a dependency just because it is easier to pull it down and have it available
   #
-  gem.add_dependency('sequel', '3.42.0')  
+  gem.add_dependency('sequel', '3.42.0')
+
+  gem.add_dependency('ransack', '0.7.2')
   
   gem.files         = `git ls-files`.split($/)
   

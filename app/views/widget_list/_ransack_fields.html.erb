@@ -1,0 +1,14 @@
+<%= search_form_for local_assigns['search_object'], url: local_assigns['url'], method: :post, :authenticity_token => false do |f| %>
+
+  <%= f.condition_fields do |c| %>
+    <%= raw ActionController::Base.new.render_to_string(:partial => 'widget_list/condition_fields', :locals => {  'ransack' => c }) %>
+  <% end %>
+
+<%
+   new_object = f.object.send "build_condition"
+   fields = f.send("condition_fields", new_object, child_index: "new_condition") do |c|
+     raw ActionController::Base.new.render_to_string(:partial => 'widget_list/condition_fields', :locals => {  'ransack' => c })
+   end
+%>
+  <%= link_to("Add Conditions", '#', class: "add_fields", data: {id: "new_condition", fields: fields.gsub("\n", "")}) %>
+<% end %>

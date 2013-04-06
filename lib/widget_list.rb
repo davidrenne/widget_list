@@ -1,3 +1,4 @@
+require 'ransack'
 require 'widget_list/version'
 require 'widget_list/hash'
 require 'widget_list/string'
@@ -191,6 +192,11 @@ module WidgetList
       end
 
       @items = WidgetList::Widgets::populate_items(list,@items)
+
+      # If ransack is used
+      if @items['view'].class.name == 'ActiveRecord::Relation' && @items['ransackSearch'].class.name == 'Ransack::Search'
+        @items['ransackSearch'].build_condition if @items['ransackSearch'].conditions.empty?
+      end
 
       # current_db is a flag of the last known primary or secondary YML used or defaulted when running a list
       @current_db_selection = @items['database']
@@ -586,7 +592,7 @@ module WidgetList
         #
         # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
         #
-        'carryOverRequsts'    => ['switch_grouping','group_row_id'],
+        'carryOverRequsts'    => ['switch_grouping','group_row_id','q'],
 
         #
         # Head/Foot
@@ -632,6 +638,7 @@ module WidgetList
         # Advanced searching
         #
         'listSearchForm'      => '',
+        'ransackSearch'       => false,
 
         #
         # Column Specific
@@ -814,7 +821,7 @@ module WidgetList
         if key.include?(name)
           $_SESSION['list_checks'].delete(key)
         end
-      } if $_SESSION.key?('list_checks')
+      } if $_SESSION.key?('list_checks')  && !$_SESSION['list_checks'].nil? && !$_SESSION['list_checks'].empty?
 
     end
 
@@ -1022,9 +1029,6 @@ module WidgetList
         @templateFill['<!--HEADER_TXT_COLOR-->']     = @items['headerFontColor']
         @templateFill['<!--FOOTER_TXT_COLOR-->']     = @items['footerFontColor']
         @templateFill['<!--TITLE-->']                = @items['title']
-        @templateFill['<!--NAME-->']                 = @items['name']
-        @templateFill['<!--JUMP_URL-->']             = WidgetList::Utils::build_url(@items['pageId'],listJumpUrl,(!$_REQUEST.key?('BUTTON_VALUE')))
-        @templateFill['<!--JUMP_URL_NAME-->']        = @items['name'] + '_jump_url'
         @templateFill['<!--CLASS-->']                = @items['class']
 
         if @totalRowCount > 0
@@ -1103,6 +1107,10 @@ module WidgetList
               @headerPieces['searchBar']            = WidgetList::Widgets::widget_input(list_search)
               @templateFill['<!--FILTER_HEADER-->'] = @headerPieces['searchBar']
 
+              if @items['ransackSearch'] != false
+                @templateFill['<!--RANSACK-->'] = ActionController::Base.new.render_to_string(:partial => 'widget_list/ransack_fields', :locals => { 'search_object' => @items['ransackSearch'], 'url' => '--JUMP_URL--'})
+              end
+
             end
 
             #
@@ -1170,6 +1178,11 @@ module WidgetList
 
           end
         end
+
+        @templateFill['<!--NAME-->']                 = @items['name']
+        @templateFill['<!--JUMP_URL-->']             = WidgetList::Utils::build_url(@items['pageId'],listJumpUrl,(!$_REQUEST.key?('BUTTON_VALUE')))
+        @templateFill['--JUMP_URL--']                = @templateFill['<!--JUMP_URL-->']
+        @templateFill['<!--JUMP_URL_NAME-->']        = @items['name'] + '_jump_url'
 
       rescue Exception => e
         out = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output(e) + @items['noDataMessage'] + '</div></td></tr>'
@@ -1850,11 +1863,7 @@ module WidgetList
       end
 
       if WidgetList::List.get_db_type(items[:primary_database]) == 'oracle'
-        if $_REQUEST.key?('export_widget_list')
-          link = "#{items[:column_to_show]} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}"
-        else
-          link = %[q'[<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}("#{items[:drill_down_name]}", ListDrillDownGetRowValue(this) ,"#{items[:list_id]}"#{items[:extra_js_func_params]});#{items[:extra_function]}'>]' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])} q'[</script>]' #{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
-        end
+        link = %[q'[<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}("#{items[:drill_down_name]}", ListDrillDownGetRowValue(this) ,"#{items[:list_id]}"#{items[:extra_js_func_params]});#{items[:extra_function]}'>]' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])} q'[</script>]' #{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}] 
       else
         if WidgetList::List.get_db_type(items[:primary_database]) == 'postgres'
           link = %['<a style="cursor:pointer;color:#{items[:link_color]};" class="#{items[:column_alias]}_drill#{items[:column_class]}" onclick="#{items[:js_function_name]}(''#{items[:drill_down_name]}'', ListDrillDownGetRowValue(this) ,''#{items[:list_id]}''#{items[:extra_js_func_params]});#{items[:extra_function]}">"' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}'</a><script class="val-db" type="text">' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])}'</script>' #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
@@ -1869,8 +1878,8 @@ module WidgetList
       
       return link
 
-    end 
- 
+    end
+
     def self.concat_string(primary)
 
       case WidgetList::List.get_db_type(primary)

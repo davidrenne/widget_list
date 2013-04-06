@@ -1,0 +1,10 @@
+<div class="field">
+  <% local_assigns['ransack'].attribute_fields do |a| %>
+    <%= a.attribute_select %>
+  <% end %>
+  <%= local_assigns['ransack'].predicate_select %>
+  <% local_assigns['ransack'].value_fields do |v| %>
+    <%= v.text_field :value, :size => 10 %>
+  <% end %>
+  <%= link_to "remove", '#', class: "remove_fields" %>
+</div>
