@@ -13,6 +13,26 @@ require 'extensions/action_controller_base'
 
 module WidgetList
 
+  #
+  # WidgetList Administration/Setup
+  #
+  def self.go!()
+    list = WidgetList::List.new()
+    return list.render()
+  end
+
+  class Administration
+    def show_interface()
+      return '
+      <h1 style="font-size:24px;"><!--TITLE--></h1><div class="horizontal_rule"></div>
+      '
+    end
+  end
+
+
+  #
+  # WidgetList Core Logic
+  #
   if defined?(Rails) && defined?(Rails::Engine)
     class Engine < ::Rails::Engine
       require 'widget_list/engine'
@@ -23,6 +43,8 @@ module WidgetList
 
     @debug = true
 
+    attr_accessor :isAdministrating
+
     include ActionView::Helpers::SanitizeHelper
 
     # @param [Hash] list
@@ -30,7 +52,15 @@ module WidgetList
 
       # Defaults for all configs
       # See https://github.com/davidrenne/widget_list/blob/master/README.md#feature-configurations
+
       @items        = WidgetList::List::get_defaults()
+
+      if list.empty? || list == @items
+        @isAdministrating = true
+        return
+      else
+        @isAdministrating = false
+      end
 
       @csv          = []
       @csv          << []
@@ -49,146 +79,58 @@ module WidgetList
       @results      = {}
       @headerPieces = {}
 
+      ac = ActionController::Base.new()
+
       #the main template and outer shell
-      @items.deep_merge!({'template' =>
-                            '
-                              <!--WRAP_START-->
-                              <!--HEADER-->
-                              <!--CUSTOM_CONTENT_TOP-->
-                              <div class="<!--CLASS-->" id="<!--NAME-->">
-                                 <table class="widget_list <!--TABLE_CLASS-->" style="<!--INLINE_STYLE-->;border:<!--TABLE_BORDER-->;" width="100%" cellpadding="0" cellspacing="0">
-                                    <!--LIST_TITLE-->
-                                    <tr class="widget_list_header" style="background-color:<!--HEADER_COLOR-->;color:<!--HEADER_TXT_COLOR-->;"><!--HEADERS--></tr>
-                                       <!--DATA-->
-                                    <tr>
-                                       <td colspan="<!--COLSPAN_FULL-->" align="left" style="padding:0px;margin:0px;text-align:left">
-                                          <div style="background-color:<!--FOOTER_COLOR-->;hieght:50px;color:<!--FOOTER_TXT_COLOR-->;"><div style="padding:10px"><!--CUSTOM_CONTENT_BOTTOM--></div>
-                                       </td>
-                                    </tr>
-                                 </table>
-                                 <div class="pagination" style="float:left;text-align:left;width:100%;margin:0px;padding:0px;"><div style="margin:auto;float:left;margin:0px;padding:0px;"><!--PAGINATION_LIST--></div></div>
-                                 <!--FILTER-->
-                                 <input type="hidden" name="<!--JUMP_URL_NAME-->" id="<!--JUMP_URL_NAME-->" value="<!--JUMP_URL-->">
-                              </div>
-                            <!--WRAP_END-->
-                             '
-                         })
+      @items.deep_merge!({ 'template'                              => ac.render_to_string(:partial => 'widget_list/list_partials/outer_shell') })
+      @items.deep_merge!({ 'row'                                   => ac.render_to_string(:partial => 'widget_list/list_partials/row') })
+      @items.deep_merge!({ 'list_description'                      => ac.render_to_string(:partial => 'widget_list/list_partials/list_description') })
+      @items.deep_merge!({ 'col'                                   => ac.render_to_string(:partial => 'widget_list/list_partials/col') })
+      @items.deep_merge!({ 'templateSequence'                      => ac.render_to_string(:partial => 'widget_list/list_partials/sequence') })
 
-      @items.deep_merge!({'row' =>
-                            '
-                                          <tr style="background-color:<!--BGCOLOR-->;<!--ROWSTYLE-->" class="<!--ROWCLASS-->"><!--CONTENT--></tr>
-                              '
-                         })
-
-      @items.deep_merge!({'list_description' =>
-                            '
-                                          <tr class="summary">
-                                             <td id="<!--LIST_NAME-->_list_description" class="header" style="text-align: left;padding-bottom: 2px;padding-top: 7px;font-size: 14px;" colspan="<!--COLSPAN-->"><!--LIST_DESCRIPTION--></td>
-                                          </tr>
-                              '
-                         })
-
-      @items.deep_merge!({'col' =>
-                            '
-                                          <td class="<!--CLASS-->" align="<!--ALIGN-->" title="<!--TITLE-->" onclick="<!--ONCLICK-->" style="<!--STYLE-->"><!--CONTENT--></td>
-                              '
-                         })
-
-      @items.deep_merge!({'templateSequence' =>
-                            '
-                                          <!--LIST_SEQUENCE--> of <!--TOTAL_PAGES-->
-                              '
-                         })
       #Sorting
       #
-      @items.deep_merge!({'templateSortColumn' =>
-                            '
-                                          <td style="font-weight:bold;<!--INLINE_STYLE--><!--INLINE_STYLE-->" id="<!--COL_HEADER_ID-->" class="<!--COL_HEADER_CLASS-->" title="<!--TITLE_POPUP-->" valign="middle"><span onclick="<!--FUNCTION-->(\'<!--COLSORTURL-->\',\'<!--NAME-->\');<!--FUNCTION_ALL-->" style="cursor:pointer;background:none;"><!--TITLE--><!--COLSORTICON-></span></td>
-                              '
-                         })
-
-      @items.deep_merge!({'templateNoSortColumn' =>
-                            '
-                                          <td style="font-weight:bold;<!--INLINE_STYLE-->" title="<!--TITLE_POPUP-->" id="<!--COL_HEADER_ID-->" class="<!--COL_HEADER_CLASS-->" valign="middle"><span style="background:none;"><!--TITLE--></span></td>
-                              '
-                         })
-
-      @items.deep_merge!({'statement' =>
-                            {'select'=>
-                               {'view' =>
-                                  '
-                                   SELECT <!--FIELDS--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
-                                   '
-                               }
-                            }
-                         })
-
-      @items.deep_merge!({'statement' =>
-                            {'count'=>
-                               {'view' =>
-                                  '
-                                   SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->
-                                  '
-                               }
-                            }
-                         })
+      @items.deep_merge!({ 'templateSortColumn'                    => ac.render_to_string(:partial => 'widget_list/list_partials/sort_column') })
+      @items.deep_merge!({ 'templateNoSortColumn'                  => ac.render_to_string(:partial => 'widget_list/list_partials/no_sort_column') })
 
       #Pagintion
       #
+      @items.deep_merge!({ 'template_pagination_wrapper'           => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_wrapper') })
+      @items.deep_merge!({ 'template_pagination_next_active'       => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_next_active') })
+      @items.deep_merge!({ 'template_pagination_next_disabled'     => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_next_disabled') })
+      @items.deep_merge!({ 'template_pagination_previous_active'   => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_previous_active') })
+      @items.deep_merge!({ 'template_pagination_previous_disabled' => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_previous_disabled') })
+      @items.deep_merge!({ 'template_pagination_jump_active'       => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_jump_active') })
+      @items.deep_merge!({ 'template_pagination_jump_unactive'     => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_jump_unactive') })
 
-      @items.deep_merge!({'template_pagination_wrapper' =>
-                            '
-                              <ul id="pagination" class="page_legacy">
-                                 Page <!--PREVIOUS_BUTTON-->
-                                 <input type="text" value="<!--SEQUENCE-->" size="1" style="width:15px;padding:0px;font-size:10px;" onblur="">
-                                 <input type="hidden" id="<!--LIST_NAME-->_total_rows" value="<!--TOTAL_ROWS-->">
-                                 <!--NEXT_BUTTON--> of <!--TOTAL_PAGES--> pages <span style="margin-left:20px">Total <!--TOTAL_ROWS--> records found</span>
-                                 <span style="padding-left:20px;">Show <!--PAGE_SEQUENCE_JUMP_LIST--> per page</span>
-                              </ul>
-                            '
+
+      @items.deep_merge!({ 'statement' =>
+                             {'select'=>
+                                {'view' =>
+                                   '
+                                   SELECT <!--FIELDS--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
+                                  '
+                                }
+                             }
                          })
 
-      @items.deep_merge!({'template_pagination_next_active' =>
-                            "
-                            <li><span id=\"<!--LIST_NAME-->_next\" onclick=\"<!--FUNCTION-->('<!--NEXT_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(/assets/images/page-next.gif) no-repeat\">&nbsp;</span></li>
-                            "
+      @items.deep_merge!({ 'statement' =>
+                             {'count'=>
+                                {'view' =>
+                                   '
+                                   SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->
+                                  '
+                                }
+                             }
                          })
-
-      @items.deep_merge!({'template_pagination_next_disabled' =>
-                            "
-                            <li><span id=\"<!--LIST_NAME-->_next\" style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(/assets/images/page-next.gif) no-repeat\">&nbsp;</span></li>
-                            "
-                         })
-
-      @items.deep_merge!({'template_pagination_previous_active' =>
-                            "
-                            <li><span id=\"<!--LIST_NAME-->_previous\" onclick=\"<!--FUNCTION-->('<!--PREVIOUS_URL-->','<!--LIST_NAME-->');<!--FUNCTION_ALL-->\" style=\"cursor:pointer;background: transparent url(/assets/images/page-back.gif) no-repeat\">&nbsp;</span></li>
-                            "
-                         })
-
-      @items.deep_merge!({'template_pagination_previous_disabled' =>
-                            "
-                            <li><span id=\"<!--LIST_NAME-->_previous\" style=\"opacity:0.4;filter:alpha(opacity=40);background: transparent url(/assets/images/page-back.gif) no-repeat\">&nbsp;</span></li>
-                            "
-                         })
-
-      @items.deep_merge!({'template_pagination_jump_active' =>
-                            '
-                            <li><div class="active"><!--SEQUENCE--></div></li>
-                            '
-                         })
-
-      @items.deep_merge!({'template_pagination_jump_unactive' =>
-                            '
-                            <li onclick="<!--FUNCTION-->(\'<!--JUMP_URL-->\',\'<!--LIST_NAME-->\');<!--FUNCTION_ALL-->"><div><!--SEQUENCE--></div></li>
-                            '
-                         })
-
-
       #inject site wide configs before list specific configs if a helper exists
 
       if defined?(WidgetListHelper) == 'constant' && WidgetListHelper::SiteDefaults.class == Class && WidgetListHelper::SiteDefaults.respond_to?('get_site_widget_list_defaults')
         @items = WidgetList::Widgets::populate_items(WidgetListHelper::SiteDefaults::get_site_widget_list_defaults() ,@items)
+      end
+
+      if defined?(WidgetListThemeHelper) == 'constant' && WidgetListThemeHelper::ThemeDefaults.class == Class && WidgetListThemeHelper::ThemeDefaults.respond_to?('get_theme_widget_list_defaults')
+        @items = WidgetList::Widgets::populate_items(WidgetListThemeHelper::ThemeDefaults::get_theme_widget_list_defaults() ,@items)
       end
 
       @items = WidgetList::Widgets::populate_items(list,@items)
@@ -196,6 +138,19 @@ module WidgetList
       # If ransack is used
       if @items['view'].class.name == 'ActiveRecord::Relation' && @items['ransackSearch'].class.name == 'Ransack::Search'
         @items['ransackSearch'].build_condition if @items['ransackSearch'].conditions.empty?
+
+        if @items['listSearchForm'].empty?
+
+          #
+          # if no one passed a listSearchForm inject a default one to show the ransack form
+          #
+          fill = {
+            '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items)}),
+            '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)"
+          }
+          @items['listSearchForm'] = WidgetList::Utils::fill( fill , ac.render_to_string(:partial => 'widget_list/ransack_widget_list_advanced_search') )
+
+        end
       end
 
       # current_db is a flag of the last known primary or secondary YML used or defaulted when running a list
@@ -664,6 +619,7 @@ module WidgetList
         'footerFontColor'     => '#494949',
         'headerFontColor'     => '#494949',
         'tableBorder'         => '1',
+        'cornerRadius'        => 15,
 
         #
         # Row specifics
@@ -966,6 +922,10 @@ module WidgetList
     # pass results of $DATABASE.final_results after running a _select query
     def render(results={})
 
+      if @isAdministrating
+        return WidgetList::Administration.new.show_interface()
+      end
+
       begin
         if !results.empty?
           @items['data'] = results
@@ -1012,6 +972,7 @@ module WidgetList
           listJumpUrl['switch_grouping'] = $_REQUEST['switch_grouping']
         end
 
+        @templateFill['<!--CORNER_RADIUS-->']        = get_radius_value()
         @templateFill['<!--CUSTOM_CONTENT_BOTTOM-->']= @items['customFooter']
         @templateFill['<!--CUSTOM_CONTENT_TOP-->']   = @items['customHeader']
         @templateFill['<!--WRAP_START-->']           = ''
@@ -1202,6 +1163,10 @@ module WidgetList
       else
         return WidgetList::Utils::fill(@templateFill, @items['template'])
       end
+    end
+
+    def get_radius_value()
+      @items['cornerRadius'].to_s.include?('px') ? @items['cornerRadius'].to_s : @items['cornerRadius'].to_s + 'px'
     end
 
     def get_header_pieces()
@@ -1434,6 +1399,8 @@ module WidgetList
 
     def build_headers()
       headers = []
+
+      ii = 0
       @items['fields'].each { |field, fieldTitle|
         colWidthStyle = '';
         colClass      = '';
@@ -1509,6 +1476,16 @@ module WidgetList
             @csv[0] << fieldTitle
           end
 
+        end
+
+        #Add in radius
+        if ii == @items['fields'].length - 1
+          colWidthStyle += '-moz-border-radius-topright:' + get_radius_value() + ';-webkit-border-top-right-radius:' + get_radius_value() + ';border-top-right-radius:' + get_radius_value() + ';'
+
+        end
+
+        if ii == 0
+          colWidthStyle += '-moz-border-radius-topleft:' + get_radius_value() + ';-webkit-border-top-left-radius:' + get_radius_value() + ';border-top-left-radius:' + get_radius_value() + ';'
         end
 
         if (@items['useSort'] && (@items['columnSort'].include?(field) || (@items['columnSort'].key?(field)) && !@items['columnNoSort'].include?(field)) || (@items['columnSort'].empty? && !@items['columnNoSort'].include?(field)))
@@ -1606,6 +1583,7 @@ module WidgetList
           headers << WidgetList::Utils::fill(pieces, @items[templateIdx])
         end
 
+        ii = ii + 1
       }
 
       @templateFill['<!--COLSPAN_FULL-->'] = headers.count()
@@ -1779,7 +1757,11 @@ module WidgetList
         #
         # Else assign to variable for view
         #
-        return ['html', list.render() ]
+        if list.isAdministrating
+          return list.render()
+        else
+          return ['html', list.render() ]
+        end
       end
 
     end
@@ -1863,7 +1845,7 @@ module WidgetList
       end
 
       if WidgetList::List.get_db_type(items[:primary_database]) == 'oracle'
-        link = %[q'[<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}("#{items[:drill_down_name]}", ListDrillDownGetRowValue(this) ,"#{items[:list_id]}"#{items[:extra_js_func_params]});#{items[:extra_function]}'>]' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])} q'[</script>]' #{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}] 
+        link = %[q'[<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}("#{items[:drill_down_name]}", ListDrillDownGetRowValue(this) ,"#{items[:list_id]}"#{items[:extra_js_func_params]});#{items[:extra_function]}'>]' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])} q'[</script>]' #{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
       else
         if WidgetList::List.get_db_type(items[:primary_database]) == 'postgres'
           link = %['<a style="cursor:pointer;color:#{items[:link_color]};" class="#{items[:column_alias]}_drill#{items[:column_class]}" onclick="#{items[:js_function_name]}(''#{items[:drill_down_name]}'', ListDrillDownGetRowValue(this) ,''#{items[:list_id]}''#{items[:extra_js_func_params]});#{items[:extra_function]}">"' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}'</a><script class="val-db" type="text">' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])}'</script>' #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
@@ -1871,11 +1853,11 @@ module WidgetList
           link = %[#{WidgetList::List::concat_inner(items[:primary_database])}"<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}(#{WidgetList::List::double_quote(items[:primary_database])}#{items[:drill_down_name]}#{WidgetList::List::double_quote(items[:primary_database])}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(items[:primary_database])}#{items[:list_id]}#{WidgetList::List::double_quote(items[:primary_database])}#{items[:extra_js_func_params]});#{items[:extra_function]}'>"#{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])}"</script>"#{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
         end
       end
-      
+
       if $_REQUEST.key?('export_widget_list')
         link = "#{items[:column_to_show]} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}"
       end
-      
+
       return link
 
     end
@@ -2061,7 +2043,6 @@ module WidgetList
             #
             # For each column (field) in this row
             #
-
             @items['fields'].each { |column , fieldTitle|
               column = strip_aliases(column)
 

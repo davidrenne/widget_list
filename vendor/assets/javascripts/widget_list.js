@@ -150,7 +150,13 @@ function ajaxStatus(eToHide, fadeInOut)
       }
       else
       {
-         var overLay = '<div style="position:relative;top:0px;"><div class="ajaxLoad" id="' + eHider + '" style="height:' + jQuery(elmToHide).height() + 'px;width:' + jQuery(elmToHide).width() + 'px;top:-' + jQuery(elmToHide).height() + 'px;"></div></div>';
+         var radius  = '';
+         if(document.getElementById(eToHide + '_radius'))
+         {
+            var radiusValue = document.getElementById(eToHide + '_radius').value;
+            radius = '-moz-border-radius-bottomleft:' + radiusValue + ';-webkit-border-bottom-left-radius:' + radiusValue + ';border-bottom-left-radius:' + radiusValue + ';-moz-border-radius-bottomright:' + radiusValue + ';-webkit-border-bottom-right-radius:' + radiusValue + ';border-bottom-right-radius:' + radiusValue + ';-moz-border-radius-topright:' + radiusValue + ';-webkit-border-top-right-radius:' + radiusValue + ';border-top-right-radius:' + radiusValue + ';-moz-border-radius-topleft:' + radiusValue + ';-webkit-border-top-left-radius:' + radiusValue + ';border-top-left-radius:' + radiusValue + ';';
+         }
+         var overLay = '<div style="position:relative;top:0px;"><div class="ajaxLoad" id="' + eHider + '" style="height:' + jQuery(elmToHide).height() + 'px;width:' + jQuery(elmToHide).width() + 'px;top:-' + jQuery(elmToHide).height() + 'px;' + radius + '"></div></div>';
 
          jQuery(elmToHide).append(overLay);
 

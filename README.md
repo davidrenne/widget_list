@@ -27,6 +27,8 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 * Buttons for each row and areas on the bottom of the grid where you can add "Action buttons"
 * Export visible data as CSV
 * Grouping/Predefined report filter feature
+* Either use a custom advanced searching form you build, or use the ransack dependency to build out a powerful filtering mechanism on the DOWN ARROW form users click.  (See screenshots below)
+* Granular control over site-wide list parameter defaults using [A WidgetList Helper][1] or by simply copying the desired partial from the gem's app/views/widget_list/list_partials into your app/views/widget_list/list_partials and modifying the template for your "site-wide template" and outer list shells
 
 ****
 
@@ -187,6 +189,8 @@ widget_list features and configurations primarily work by a single large hash pa
 `listSearchForm` -  Allows you to pass a custom form for the ARROW drop down for advanced searching `default=''`
 
 `ransackSearch` -  If you pass ModelName.search(params[:q]) ransack will show up in your advanced search `default=false`
+
+`cornerRadius` -  Either int number of pixels for radius corners.  Or '14px' or whatever you want. `default=15`
 
 `columnStyle` -  Column styles.  KEY=column name VALUE= the inline style applied `default={}`
 
@@ -624,3 +628,5 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+[1]: https://github.com/davidrenne/widget_list_example/blob/master/app/helpers/widget_list_helper.rb
