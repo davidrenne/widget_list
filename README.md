@@ -29,6 +29,7 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 * Grouping/Predefined report filter feature
 * Either use a custom advanced searching form you build, or use the ransack dependency to build out a powerful filtering mechanism on the DOWN ARROW form users click.  (See screenshots below)
 * Granular control over site-wide list parameter defaults using [A WidgetList Helper][1] or by simply copying the desired partial from the gem's app/views/widget_list/list_partials into your app/views/widget_list/list_partials and modifying the template for your "site-wide template" and outer list shells
+** Support for theme plugins such as [The Blue Sky Basin Theme][2]
 
 ****
 
@@ -630,3 +631,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 [1]: https://github.com/davidrenne/widget_list_example/blob/master/app/helpers/widget_list_helper.rb
+[2]: https://github.com/davidrenne/widget_list_theme_blue_sky_basin
