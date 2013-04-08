@@ -44,24 +44,31 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 ****
 
 ### Main Example Loaded:
+
 ![](http://davidrenne.com/github/widget_list/main.png)
 
 ###Filter Drop Downs:
+
 ![](http://davidrenne.com/github/widget_list/filtered.png)
 
 ###Searching a row (with wild card search):
+
 ![](http://davidrenne.com/github/widget_list/search.png)
 
 ###Searching "name=asdf_18" (With ActiveRecord and Ransack hook):
+
 ![](http://davidrenne.com/github/widget_list/ransack1.png)
 
 ###Searching "name=asdf_18" and "sku<9000"(With ActiveRecord and Ransack hook):
+
 ![](http://davidrenne.com/github/widget_list/ransack2.png)
 
 ###Searching "name=asdf_18" and "sku < 9000" and "price > 67" (With ActiveRecord and Ransack hook):
+
 ![](http://davidrenne.com/github/widget_list/ransack3.png)
 
 ###Theme plugins/gem support ([The Blue Sky Basin Theme][2]):
+
 ![](http://davidrenne.com/github/widget_list/theme_blue_sky_basin.png)
 
 
