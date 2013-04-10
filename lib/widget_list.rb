@@ -23,9 +23,77 @@ module WidgetList
 
   class Administration
     def show_interface()
-      return '
-      <h1 style="font-size:24px;"><!--TITLE--></h1><div class="horizontal_rule"></div>
-      '
+      ac = ActionController::Base.new()
+
+      request = $_REQUEST.dup
+
+      config_id =  ''
+      config_id += request['controller'] if request.key?('controller')
+      config_id += request['action'] if request.key?('action')
+      config_file = Rails.root.join("config", "widget-list-administration.json")
+
+      if config_file.file?
+        configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration.json")).read)
+      else
+        configuration = {}
+      end
+
+      if configuration.key?(config_id)
+        @isEditing  = true
+        page_config = configuration[config_id]
+      else
+        @isEditing  = false
+        page_config = {}
+      end
+
+      #Loop models
+      models = Dir[ Rails.root.join("app", "models").to_s + '**/*'].reject {|fn| File.directory?(fn) }
+      if !models.empty?
+        model_options = '<option value="">Select a Model</option>' + models.collect { |model|
+          model_name = model.split('/').last.to_s.camelize.gsub(/.rb/,'')
+          "<option value='#{model_name}' #{((@isEditing && page_config['view'] == model_name) ? 'selected' : '')}>#{model_name}</option>"
+        }.sort.uniq.join('')
+      else
+        model_options = '<option value="">No Models Found in ' + Rails.root.join("app", "models").to_s + '</option>'
+      end
+
+      @fill = {}
+      @fill['<!--TITLE-->']        = 'Stub Out A New WidgetList Implementation'
+      @fill['<!--NAME_VALUE-->']   = (!@isEditing) ? config_id : page_config['name']
+      @fill['<!--VIEW_OPTIONS-->'] = model_options
+      @fill['<!--BUTTONS-->']      = WidgetList::Widgets::widget_button('Step One - Start',  {'onclick' => "ShowStart();"  } ) +
+                                     WidgetList::Widgets::widget_button('Step Two - Fields', {'onclick' => "ShowFields();"  } )
+      @fill['<!--TITLE_VALUE-->']  = (!@isEditing) ? '' : page_config['title']
+      @fill['<!--POST_URL-->']     = $_SERVER['PATH_INFO']
+
+      return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output') )
+    end
+
+    def save_and_show_code()
+      ac = ActionController::Base.new()
+      request = $_REQUEST.dup
+
+      config_id =  ''
+      config_id += request['controller'] if request.key?('controller')
+      config_id += request['action'] if request.key?('action')
+
+      request.delete('controller') if request.key?('controller')
+      request.delete('action') if request.key?('action')
+
+      config_file = Rails.root.join("config", "widget-list-administration.json")
+      if config_file.file?
+        configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration.json")).read)
+      else
+        configuration = {}
+      end
+      configuration[config_id] = request
+
+      File.open(Rails.root.join("config", "widget-list-administration.json"), "w") do |file|
+        file.puts configuration.to_json
+      end
+
+      @fill = {}
+      return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output_save') )
     end
   end
 
@@ -145,12 +213,18 @@ module WidgetList
           # if no one passed a listSearchForm inject a default one to show the ransack form
           #
           fill = {
-            '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items)}),
+            '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items), 'innerClass' => @items['defaultButtonClass'] }),
             '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)"
           }
           @items['listSearchForm'] = WidgetList::Utils::fill( fill , ac.render_to_string(:partial => 'widget_list/ransack_widget_list_advanced_search') )
 
         end
+      end
+
+      # I have several different styles for borders, but using borders Everywhere will setup everything with one call
+      if @items['bordersEverywhere?']
+        @items['borderedColumns'] = @items['borderHeadFoot'] = @items['borderedRows'] = true
+        @items['borderColumnStyle'] = @items['borderRowStyle'] = @items['headFootBorderStyle'] = @items['tableBorder'] = @items['borderEverywhere']
       end
 
       # current_db is a flag of the last known primary or secondary YML used or defaulted when running a list
@@ -412,7 +486,7 @@ module WidgetList
 
         if ! $_REQUEST.key?('BUTTON_VALUE') && !@items['title'].empty?
           @items['templateHeader'] = '
-                                       <h1 style="font-size:24px;"><!--TITLE--></h1><div class="horizontal_rule"></div>
+                                       <h1 style="font-size:' + get_header_px_value() + ';"><!--TITLE--></h1><div class="horizontal_rule"></div>
                                        <!--FILTER_HEADER-->
                                      '
         elsif !$_REQUEST.key?('BUTTON_VALUE')
@@ -606,10 +680,38 @@ module WidgetList
         'columnNoSort'        => {},
 
         #
-        # Column Border (on right)
+        # Column Border (on right of each column)
         #
         'borderedColumns'     => false,
         'borderColumnStyle'   => '1px solid #CCCCCC',
+
+        #
+        # Row Border (on top of each row)
+        #
+        'borderedRows'        => true,
+        'borderRowStyle'      => '1px solid #CCCCCC',
+
+        #
+        # Head/Foot border
+        #
+        'borderHeadFoot'      => false,
+        'headFootBorderStyle' => '1px solid #CCCCCC',
+
+        'bordersEverywhere?'  => false,
+        'borderEverywhere'    => '1px solid #CCCCCC',
+
+        #
+        # Buttons
+        #
+        'defaultButtonClass'  => 'info',
+
+        #
+        # Font
+        #
+        'fontFamily'           => '"Times New Roman", Times, serif',
+        'headerFooterFontSize' => '14px',
+        'dataFontSize'         => '14px',
+        'titleFontSize'        => '24px',
 
         #
         # Table Colors
@@ -621,10 +723,16 @@ module WidgetList
         'tableBorder'         => '1',
         'cornerRadius'        => 15,
 
+        'useBoxShadow'        => true,
+        'shadowInset'         => 10,
+        'shadowSpread'        => 20,
+        'shadowColor'         => '#888888',
+
         #
         # Row specifics
         #
         'rowClass'            => '',
+        'rowFontColor'        => 'black',
         'rowColorByStatus'    => {},
         'rowStylesByStatus'   => {},
         'rowOffsets'          => ['#FFFFFF','#FFFFFF'],
@@ -923,7 +1031,11 @@ module WidgetList
     def render(results={})
 
       if @isAdministrating
-        return WidgetList::Administration.new.show_interface()
+        if $_REQUEST.key?('name')
+          return WidgetList::Administration.new.save_and_show_code()
+        else
+          return WidgetList::Administration.new.show_interface()
+        end
       end
 
       begin
@@ -973,6 +1085,15 @@ module WidgetList
         end
 
         @templateFill['<!--CORNER_RADIUS-->']        = get_radius_value()
+        @templateFill['<!--BOX_SHADOW-->']           = @items['useBoxShadow'] ? 'box-shadow: <!--SHADOW_INSET--> <!--SHADOW_INSET--> <!--SHADOW_SPREAD--> <!--SHADOW_COLOR-->;'  : ''
+        @templateFill['<!--SHADOW_INSET-->']         = get_shadow_inset_value()
+        @templateFill['<!--SHADOW_SPREAD-->']        = get_shadow_spread_value()
+        @templateFill['<!--SHADOW_COLOR-->']         = @items['shadowColor']
+        @templateFill['<!--BORDER_HEAD_FOOT_TOP-->'] = @items['borderHeadFoot'] ? 'border-top:' + @items['headFootBorderStyle'] + ';' : ''
+        @templateFill['<!--FONT-->']                 = @items['fontFamily']
+        @templateFill['<!--FONT_HEADER-->']          = @items['headerFooterFontSize']
+
+
         @templateFill['<!--CUSTOM_CONTENT_BOTTOM-->']= @items['customFooter']
         @templateFill['<!--CUSTOM_CONTENT_TOP-->']   = @items['customHeader']
         @templateFill['<!--WRAP_START-->']           = ''
@@ -1133,7 +1254,7 @@ module WidgetList
             end
 
             if @items['showExport']
-              @headerPieces['exportButton']           =  '<span class="' + @items['name'] + '-export">' + WidgetList::Widgets::widget_button(@items['exportButtonTitle'], {'onclick' => 'ListExport(\'' + @items['name'] + '\');'}, true) + '</span>'
+              @headerPieces['exportButton']           =  '<span class="' + @items['name'] + '-export">' + WidgetList::Widgets::widget_button(@items['exportButtonTitle'], { 'onclick' => 'ListExport(\'' + @items['name'] + '\');' , 'innerClass' => @items['defaultButtonClass'] }, true) + '</span>'
               @templateFill['<!--FILTER_HEADER-->']  += @headerPieces['exportButton']
             end
 
@@ -1167,6 +1288,18 @@ module WidgetList
 
     def get_radius_value()
       @items['cornerRadius'].to_s.include?('px') ? @items['cornerRadius'].to_s : @items['cornerRadius'].to_s + 'px'
+    end
+
+    def get_shadow_inset_value()
+      @items['shadowInset'].to_s.include?('px') ? @items['shadowInset'].to_s : @items['shadowInset'].to_s + 'px'
+    end
+
+    def get_shadow_spread_value()
+      @items['shadowSpread'].to_s.include?('px') ? @items['shadowSpread'].to_s : @items['shadowSpread'].to_s + 'px'
+    end
+
+    def get_header_px_value()
+      @items['titleFontSize'].to_s.include?('px') ? @items['titleFontSize'].to_s : @items['titleFontSize'].to_s + 'px'
     end
 
     def get_header_pieces()
@@ -1426,6 +1559,8 @@ module WidgetList
         if @items['borderedColumns']
           colWidthStyle += 'border-right: ' + @items['borderColumnStyle'] + ';'
         end
+
+        colWidthStyle +=  @items['borderHeadFoot'] ? 'border-bottom:' + @items['headFootBorderStyle'] + ';' : ''
 
         $_SESSION.deep_merge!({'LIST_SEQUENCE' => { @sqlHash => @sequence} })
 
@@ -1963,6 +2098,7 @@ module WidgetList
         if (renderButton)
           strCnt += (buttonAttribs['text'].length * 15)
           attributes = buttonAttribs.dup.deep_merge!({'page' => page})
+          attributes['innerClass'] = @items['defaultButtonClass']
           btnOut << WidgetList::Widgets::widget_button(buttonAttribs['text'], attributes , true)
         end
       }
@@ -2043,6 +2179,9 @@ module WidgetList
             #
             # For each column (field) in this row
             #
+
+            changedFontColor = false
+
             @items['fields'].each { |column , fieldTitle|
               column = strip_aliases(column)
 
@@ -2166,6 +2305,9 @@ module WidgetList
                 @items['rowStylesByStatus'][column].each { |status,inlineStyle|
                   if status === content
                     customRowStyle = inlineStyle
+                    if inlineStyle.include?('color:') || inlineStyle.include?('color :')
+                      changedFontColor = true
+                    end
                   end
                 }
               end
@@ -2179,6 +2321,10 @@ module WidgetList
 
               if @items['borderedColumns']
                 colPieces['<!--STYLE-->'] += 'border-right: ' + @items['borderColumnStyle'] + ';'
+              end
+
+              if @items['borderedRows']
+                colPieces['<!--STYLE-->'] += 'border-top: ' + @items['borderRowStyle'] + ';'
               end
 
               colPieces['<!--ONCLICK-->'] = onClick
@@ -2220,6 +2366,12 @@ module WidgetList
               pieces['<!--ROWSTYLE-->']  = !customRowStyle.empty? ? customRowStyle : ''
               pieces['<!--ROWCLASS-->']  = @items['rowClass']
             end
+            pieces['<!--ROWSTYLE-->']    += 'font-size:' + @items['dataFontSize'] + ';'
+
+            if !changedFontColor
+              pieces['<!--ROWSTYLE-->']  += 'color:' + @items['rowFontColor'] + ';'
+            end
+
             rows << WidgetList::Utils::fill(pieces, @items['row'])
 
           end

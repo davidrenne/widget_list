@@ -125,9 +125,9 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `data` - A "sequel" formatted resultset like would be returned from _select() method.  Instead of running a SQL query, you can pass an array to populate the list `default={}`
 
-`collClass` - Your custom <td> class for all <td>'s `default=''`
+`collClass` - Your custom td class for all td's `default=''`
 
-`align` - <td> align attribute for all <td>'s `default=''`
+`align` - td align attribute for all td's `default=''`
 
 `fields` - The visible fields shown in the current list.  KEY=column name VALUE= displayed column header `default={}`
 
@@ -221,9 +221,33 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `borderedColumns` - Add a right border to each column. `default=false`
 
+`borderedRows` - Style the border of each row. `default=false`
+
+`borderRowStyle` - Border style of each row. `default='1px solid #CCCCCC'`
+
+`borderHeadFoot` - Style the border of header (bottom) and footer (top). `default=false`
+
+`headFootBorderStyle` - Border style of header (bottom) and footer (top). `default='1px solid #CCCCCC'`
+
 `borderColumnStyle` - Style of row if you use this above feature. `default='1px solid #CCCCCC'`
+
+`bordersEverywhere?` - If true, use borderEverywhere for all four borders you can pass separately `default=false`
+
+`borderEverywhere` - The catch all style of borders for headers, rows, outer table border and columns. `default='1px solid #CCCCCC'`
  
+`defaultButtonClass`  - As you have seen in many screenshots, there are several buttons.  This controls the innerClass of those drawn from the list.  See lib/widget_list/widgets.rb `default='info'`
+
+`useBoxShadow`  - Show shadow or not on list `default=true`
+
+`shadowInset`  - Number or string with '11Px' for an 11PX Inset `default=10`
+
+`shadowSpread` - Number or string with '11Px' for an 11PX spread `default=20`
+
+`shadowColor` - Color of bottom right shadow `default='shadowColor'`
+
 `rowClass` - Class added to all rows `default=''`
+
+`rowFontColor` - Font color of all data rows that dont have a rowStylesByStatus color: passed to it `default='black'`
 
 `rowColorByStatus` - {'rowColorByStatus' =>
                                 {'active'=>
