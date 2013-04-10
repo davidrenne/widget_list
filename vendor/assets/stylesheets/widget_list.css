@@ -672,6 +672,23 @@ div.inputOuter .inputInner input.search-ahead-advanced {width: 90% !important;}
 /*
  * Pagination
  */
+.pagination
+{
+   float:left;
+   text-align:left;
+   width:100%;
+   margin:0px;
+   padding:0px;
+}
+
+.pagination div
+{
+   margin:auto;
+   float:left;
+   margin:0px;
+   padding:0px;
+}
+
 .page_legacy li
 {
    display:inline;

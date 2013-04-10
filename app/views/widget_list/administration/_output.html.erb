@@ -1,0 +1,89 @@
+<style type="text/css">
+  input[type="text"] {
+    font-size:25px;
+    height:33px;
+    left:0;
+    line-height:33px;
+    padding:8px 8px 7px;
+    top:0;
+    width:800px;
+  }
+  select {
+    font-size:25px;
+    height:50px;
+    left:0;
+    line-height:33px;
+    top:0;
+    width:820px;
+  }
+</style>
+
+<script type="text/javascript">
+  var all = '.start,.fields,.rows,.search,.footer,misc_submit';
+  function ShowStart() {
+    jQuery(all).fadeOut('slow',function() {
+      jQuery('.start').fadeIn('fast');
+    });
+  }
+  function ShowFields() {
+    jQuery(all).fadeOut('slow',function() {
+      jQuery('.fields').fadeIn('fast');
+    });
+  }
+</script>
+<form action="<!--POST_URL-->" method="post">
+  <h1 style="font-size:24;"><!--TITLE--></h1><div class="horizontal_rule"></div>
+  <h3>Get started quickly by selecting the features you need for this list</h3>
+  <table>
+    <tr id="sections">
+      <td colspan="2">
+        <h3><!--BUTTONS--></h3>
+      </td>
+    </tr>
+    <tr class="start">
+      <td>
+        <h3>Internal Name:</h3>
+      </td>
+      <td>
+        <input type="text" name="name" value="<!--NAME_VALUE-->"/>
+      </td>
+    </tr>
+    <tr class="start">
+      <td>
+        <h3>Title:</h3>
+      </td>
+      <td>
+        <input type="text" name="title" value="<!--TITLE_VALUE-->"/>
+      </td>
+    </tr>
+    <tr class="start">
+      <td>
+        <h3>Model:</h3>
+      </td>
+      <td>
+        <select name="view" id="view">
+          <!--VIEW_OPTIONS-->
+        </select>
+      </td>
+    </tr>
+    <tr class="fields" style="display:none;">
+      <td>
+        <h3>asdfasdf:</h3>
+      </td>
+      <td>
+        <select name="asdfasdf" id="asdfasdf">
+          <!--asfdsdf-->
+        </select>
+      </td>
+    </tr>
+
+    <tr id="submit" style="display:none;">
+      <td>
+        <h3>Submit:</h3>
+      </td>
+      <td>
+        <input type="submit" value="Submit"/>
+      </td>
+    </tr>
+  </table>
+</form>
