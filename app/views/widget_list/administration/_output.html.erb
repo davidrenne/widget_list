@@ -22,93 +22,178 @@
   var all = '.start,.fields,.rows,.search,.footer,.misc_submit';
   var all_btns = '#start,#fields,#rows,#search,#footer,#misc_submit';
   jQuery(document).ready(function () {
-      if (jQuery('#view').val() != '') {
-          jQuery(all_btns).removeClass('disabled');
-      }
+    if (jQuery('#view').val() != '') {
+      jQuery(all_btns).removeClass('disabled');
+    }
   });
 
   function VerifyOK(func_name) {
-      var ok = false;
-      if (jQuery('#view').val() != '') {
-         ok = true;
-      } else {
-         alert('Please select a Model to use as your base widget_list');
-      }
-      return ok;
+    var ok = true;
+    if (jQuery('#view').val() == '') {
+      ok = false;
+      alert('Please select a Model to use as your base widget_list');
+    }
+    else if (jQuery('#rowLimit').val() != '10' && jQuery('#rowLimit').val() != '20' && jQuery('#rowLimit').val() != '50' && jQuery('#rowLimit').val() != '100' && jQuery('#rowLimit').val() != '500' && jQuery('#rowLimit').val() != '1000') {
+      ok = false;
+      alert('Invalid Row Limit, please see help button.');
+    }
+    return ok;
   }
 
   function ClickTab(which_class,func_name) {
-      if (VerifyOK(func_name)) {
-          jQuery('.search_dependent').hide(0,function() {
-              jQuery(all).hide(0,function() {
-                  jQuery(which_class).fadeIn(0,function() {
-                      if (func_name == 'ShowSearch') {
-                          ShowSearchOptions();
-                          ShowGroupingOptions();
-                      }
-                  });
+    if (VerifyOK(func_name)) {
+      jQuery('.search_dependent').hide(0,function() {
+        jQuery(all).hide(0,function() {
+          jQuery(which_class).fadeIn(0,function() {
+            if (func_name == 'ShowSearch') {
+              ShowSearchOptions(function() {
+                ShowGroupingOptions();
               });
+            }
+            if (func_name == 'ShowFields') {
+              ShowHiddenOptions();
+              ShowFunctionOptions();
+            }
+            if (func_name == 'ShowSubmit') {
+              ShowCheckboxOptions();
+            }
           });
-      }
+        });
+      });
+    }
   }
 
   function ShowStart() {
-      ClickTab('.start',arguments.callee.name);
+    ClickTab('.start',arguments.callee.name);
   }
 
   function ShowFields() {
-      ClickTab('.fields',arguments.callee.name);
+    ClickTab('.fields',arguments.callee.name);
   }
 
   function ShowRows() {
-      ClickTab('.rows',arguments.callee.name);
+    ClickTab('.rows',arguments.callee.name);
   }
 
   function ShowSearch() {
-      ClickTab('.search',arguments.callee.name);
+    ClickTab('.search',arguments.callee.name);
   }
 
   function ShowFooter() {
-      ClickTab('.footer',arguments.callee.name);
+    ClickTab('.footer',arguments.callee.name);
   }
 
   function ShowSubmit() {
-      ClickTab('.misc_submit',arguments.callee.name);
+    ClickTab('.misc_submit',arguments.callee.name);
   }
 
-  function ShowSearchOptions() {
-      if (jQuery('#showSearch').is(':checked')) {
-          jQuery('.search_dependent').show();
-      } else {
-          jQuery('.search_dependent').hide();
-      }
+  function ShowSearchOptions(callback) {
+    if (jQuery('#showSearch').is(':checked')) {
+      jQuery('.search_dependent').show();
+    } else {
+      jQuery('.search_dependent').hide();
+    }
+    if (typeof(callback) == 'function') {
+      (callback)();
+    }
   }
 
   function ShowGroupingOptions() {
-      if (jQuery('#useGrouping').is(':checked')) {
-          jQuery('.grouping_dependent').show();
-      } else {
-          jQuery('.grouping_dependent').hide();
-      }
+    if (jQuery('#useGrouping').is(':checked') && jQuery('#showSearch').is(':checked')) {
+      jQuery('.grouping_dependent').show();
+    } else {
+      jQuery('.grouping_dependent').hide();
+    }
+  }
+
+  function ShowRansackOptions() {
+    if (jQuery('#useRansack').is(':checked') && jQuery('#showSearch').is(':checked')) {
+      jQuery('.ransack_dependent').show();
+    } else {
+      jQuery('.ransack_dependent').hide();
+    }
+  }
+
+  function ShowExportOptions() {
+    if (jQuery('#showExport').is(':checked') && jQuery('#showSearch').is(':checked')) {
+      jQuery('.export_dependent').show();
+    } else {
+      jQuery('.export_dependent').hide();
+    }
+  }
+
+  function ShowHiddenOptions() {
+    if (jQuery('#showHidden').is(':checked')) {
+      jQuery('.hidden_fields_dependent').show();
+    } else {
+      jQuery('.hidden_fields_dependent').hide();
+    }
+  }
+  function ShowFunctionOptions() {
+    if (jQuery('#fieldFunctionOn').is(':checked')) {
+      jQuery('.function_dependent').show();
+    } else {
+      jQuery('.function_dependent').hide();
+    }
+  }
+
+  function ShowCheckboxOptions() {
+    if (jQuery('#checkboxEnabled').is(':checked')) {
+      jQuery('.checkbox_dependent').show();
+    } else {
+      jQuery('.checkbox_dependent').hide();
+    }
   }
 
   function AddGroupingItem() {
-      jQuery('#grouping_items').html(jQuery('#grouping_items').html() + jQuery('#grouping_items_default').html());
+    jQuery('#grouping_items').html(jQuery('#grouping_items').html() + jQuery('#grouping_items_default').html());
   }
 
+  function AddField() {
+    jQuery('#field_table').html(jQuery('#field_table').html() + jQuery('#default_field_template').html());
+  }
+
+  function AddHiddenField() {
+    jQuery('#hidden_field_table').html(jQuery('#hidden_field_table').html() + jQuery('#default_hidden_field_template').html());
+  }
+
+  function RemoveField(obj) {
+    jQuery(obj).closest('tr').remove();
+  }
 
   function ChangeViewModel(obj) {
-      jQuery(all_btns).addClass('disabled');
-      if (jQuery(obj).val() != '') {
+    jQuery(all_btns).addClass('disabled');
+    if(jQuery(obj).val() != '') {
+      jQuery.post(jQuery('#widget_list_administration').attr('action'), 'ajax=1&model=' + jQuery(obj).val(), function(response)
+      {
+        jQuery('#field_table').html(response['fields']);
+        jQuery('#hidden_field_table').html(response['fields_hidden']);
+        jQuery('#checkboxField').html(response['checked_fields']);
+
+        if (jQuery(obj).val() != '') {
           jQuery(all_btns).removeClass('disabled');
-      }
-      if (jQuery(obj).val() != '' && (jQuery('#title').val() == '' || jQuery('#title').val().search(/Showing All/i) == 0) ) {
+        }
+
+        if (jQuery(obj).val() != '' && (jQuery('#title').val() == '' || jQuery('#title').val().search(/Showing All/i) == 0) ) {
           jQuery(all_btns).removeClass('disabled');
           jQuery('#title').val('Showing All ' + jQuery(obj).val() + 's');
-      }
-      if (jQuery(obj).val() != '' && jQuery('#noDataMessage').val() == '') {
+        }
+
+        if (jQuery(obj).val() != '' && jQuery('#noDataMessage').val() == '') {
           jQuery('#noDataMessage').val('No ' + jQuery(obj).val() + 's Found Within Your Criteria');
-      }
+        }
+
+        if (jQuery(obj).val() != '' && jQuery('#showExport').is(':checked')) {
+          jQuery('#exportButtonTitle').val('Export All ' + jQuery(obj).val() + 's');
+        }
+      }, "json");
+    }
+  }
+
+  function Submit() {
+    if (VerifyOK('')) {
+      jQuery('#widget_list_administration').submit();
+    }
   }
 </script>
 <form action="<!--POST_URL-->" method="post" id="widget_list_administration">
@@ -116,133 +201,316 @@
   <h3>Get started quickly by selecting the features you need for this list</h3>
   <table>
     <!--BUTTON SECTION-->
-    <tr id="sections">
-      <td colspan="2">
-        <h3><!--BUTTONS--></h3>
-      </td>
-    </tr>
+      <tr id="sections">
+        <td colspan="3">
+          <h3><!--BUTTONS--></h3>
+        </td>
+      </tr>
 
     <!--START SECTION-->
-    <tr class="start">
-      <td>
-        <h3>Internal Name:</h3>
-      </td>
-      <td>
-        <input type="text" name="name" value="<!--NAME_VALUE-->"/>
-      </td>
-    </tr>
-    <tr class="start">
-      <td>
-        <h3>Model:</h3>
-      </td>
-      <td>
-        <select name="view" id="view" onchange="ChangeViewModel(this)">
-          <!--VIEW_OPTIONS-->
-        </select>
-      </td>
-    </tr>
-    <tr class="start">
-      <td>
-        <h3>Title:</h3>
-      </td>
-      <td>
-        <input type="text" name="title" id="title" value="<!--TITLE_VALUE-->"/><!--TITLE_BUTTON-->
-      </td>
-    </tr>
+      <tr class="start">
+        <td>
+          <h3>Internal Name:</h3>
+        </td>
+        <td>
+          <input type="text" name="name" value="<!--NAME_VALUE-->"/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
+      <tr class="start">
+        <td>
+          <h3>Model:</h3>
+        </td>
+        <td>
+          <select name="view" id="view" onchange="ChangeViewModel(this)">
+            <!--VIEW_OPTIONS-->
+          </select>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
+      <tr class="start">
+        <td>
+          <h3>Title:</h3>
+        </td>
+        <td>
+          <input type="text" name="title" id="title" value="<!--TITLE_VALUE-->"/>
+        </td>
+        <td>
+          <!--TITLE_HELP_BUTTON-->
+        </td>
+      </tr>
 
     <!--FIELDS SECTION-->
-    <tr class="fields" style="display:none;">
-      <td>
-        <h3>Allow Sorting?:</h3>
-      </td>
-      <td>
-        <input type="checkbox" name="useSort" id="useSort" value="1" <!--SORTING_CHECKED-->/>
-      </td>
-    </tr>
+      <tr class="fields" style="display:none;">
+        <td>
+          <h3>Allow Sorting?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="useSort" id="useSort" value="1" <!--SORTING_CHECKED-->/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
 
-    <tr class="fields" style="display:none;">
-      <td>
-        <h3>No Data Message:</h3>
-      </td>
-      <td>
-        <input type="text" name="noDataMessage" id="noDataMessage" value="<!--NO_DATA_VALUE-->"/>
-      </td>
-    </tr>
+      <tr class="fields" style="display:none;">
+        <td>
+          <h3>No Data Message:</h3>
+        </td>
+        <td>
+          <input type="text" name="noDataMessage" id="noDataMessage" value="<!--NO_DATA_VALUE-->"/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
 
-    <!--ROWS SECTION-->
-    <tr class="rows" style="display:none;">
-      <td>
-        <h3>aadsfasdf asdfasdf?:</h3>
-      </td>
-      <td>
-        <input type="checkbox" name="adsffasd" id="asdfasdf" value="1" <!--SORTING_CHECKED-->/>
-      </td>
-    </tr>
+      <tr class="fields" style="display:none;">
+        <td colspan="3">
+          <h1>Field Selection:</h1>
+          <script type="text/plain" id="default_field_template">
+            <!--FIELD_TEMPLATE-->
+          </script>
+          <table style="margin-left:150px;" id="field_table">
+            <!--ALL_FIELDS-->
+          </table>
+          <table style="margin-left:150px;">
+            <tr>
+              <td colspan="3">
+                 <!--ADD_FIELD_BUTTON-->
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <tr class="fields" style="display:none;">
+        <td style="width:300px;">
+          <h3>Hidden Fields?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="showHidden" onchange="ShowHiddenOptions();" id="showHidden" value="1" <!--SHOW_HIDDEN_CHECKED-->/>
+        </td>
+        <td>
+          <!--HIDDEN_HELP_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="fields hidden_fields_dependent" style="display:none;">
+        <td colspan="3">
+          <h1>Hidden Field Selection:</h1>
+          <script type="text/plain" id="default_hidden_field_template">
+            <!--HIDDEN_FIELD_TEMPLATE-->
+          </script>
+          <table style="margin-left:150px;" id="hidden_field_table">
+            <!--ALL_HIDDEN_FIELDS-->
+          </table>
+          <table style="margin-left:150px;">
+            <tr>
+              <td colspan="3">
+                <!--ADD_HIDDEN_FIELD_BUTTON-->
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <tr class="fields" style="display:none;">
+        <td style="width:300px;">
+          <h3>Field Function?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="fieldFunctionOn" onchange="ShowFunctionOptions();" id="fieldFunctionOn" value="1" <!--SHOW_FUNCTION_CHECKED-->/>
+        </td>
+        <td>
+          <!--FUNC_HELP_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="fields function_dependent" style="display:none;">
+        <td colspan="3">
+          <h1>Hidden Field Selection:</h1>
+          <script type="text/plain" id="default_hidden_field_template">
+            <!--HIDDEN_FIELD_TEMPLATE-->
+          </script>
+          <table style="margin-left:150px;" id="hidden_field_table">
+            <!--ALL_HIDDEN_FIELDS-->
+          </table>
+          <table style="margin-left:150px;">
+            <tr>
+              <td colspan="3">
+                <!--ADD_HIDDEN_FIELD_BUTTON-->
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!--ROWS SECTION-->
+      <tr class="rows" style="display:none;">
+        <td>
+          <h3>Row Limit</h3>
+        </td>
+        <td>
+          <input type="text" name="rowLimit" id="rowLimit" value="<!--ROW_LIMIT_VALUE-->"/>
+        </td>
+        <td>
+          <!--ROW_HELP_BUTTON-->
+        </td>
+      </tr>
 
     <!--SEARCH SECTION-->
-    <tr class="search" style="display:none;">
-      <td style="width:300px;">
-        <h3>Show Search?:</h3>
-      </td>
-      <td>
-        <input type="checkbox" name="showSearch" onchange="ShowSearchOptions()" id="showSearch" value="1" <!--SHOW_SEARCH_CHECKED-->/>
-      </td>
-    </tr>
-    <tr class="search search_dependent" style="display:none;">
-      <td>
-        <h3>Search Description/Title:</h3>
-      </td>
-      <td>
-        <input type="text" name="searchTitle" id="searchTitle" value="<!--SEARCH_TITLE-->"/>
-      </td>
-    </tr>
-    <tr class="search search_dependent" style="display:none;">
-      <td>
-        <h3>Use Ransack Advanced Search?:</h3>
-      </td>
-      <td>
-        <input type="checkbox" name="useRansack" onchange="ShowRansackOptions()" id="useRansack" value="1" <!--USE_RANSACK-->/>
-      </td>
-    </tr>
-    <tr class="search search_dependent" style="display:none;">
-      <td>
-        <h3>Use Grouping?:</h3>
-      </td>
-      <td>
-        <input type="checkbox" name="useGrouping" onchange="ShowGroupingOptions()" id="useGrouping" value="1" <!--USE_GROUPING-->/>
-      </td>
-    </tr>
-    <tr class="search search_dependent grouping_dependent" style="display:none;">
-      <td colspan="2">
-        <h1>Custom Items To Group By:</h1>
-        <table style="margin-left:150px;">
-          <tr>
-            <td>
-              <h3>fasdfasdsf Advanced Search?:</h3>
-            </td>
-            <td>
-              <script type="text/plain" id="default_grouping">
-                 <!--DEFAULT_GROUPING-->
-              </script>
-              <table id="grouping_items">
-                <!--GROUPING_ITEMS-->
-              </table>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
+      <tr class="search" style="display:none;">
+        <td style="width:300px;">
+          <h3>Show Search?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="showSearch" onchange="ShowSearchOptions(function() {ShowGroupingOptions();})" id="showSearch" value="1" <!--SHOW_SEARCH_CHECKED-->/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
 
+      <tr class="search" style="display:none;">
+        <td style="width:300px;">
+          <h3>Show Export Button?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="showExport" onchange="ShowExportOptions();" id="showExport" value="1" <!--SHOW_EXPORT_CHECKED-->/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
+
+      <tr class="search search_dependent export_dependent" style="display:none;">
+        <td>
+          <h3>Export Button Title:</h3>
+        </td>
+        <td>
+          <input type="text" name="exportButtonTitle" id="exportButtonTitle" value="<!--EXPORT_VALUE-->"/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
+
+      <tr class="search search_dependent" style="display:none;">
+        <td>
+          <h3>Search Description/Title:</h3>
+        </td>
+        <td>
+          <input type="text" name="searchTitle" id="searchTitle" value="<!--SEARCH_TITLE-->"/>
+        </td>
+        <td>
+          <!--SEARCH_TITLE_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="search search_dependent" style="display:none;">
+        <td>
+          <h3>Use Ransack Advanced Search?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="useRansack" onchange="ShowRansackOptions()" id="useRansack" value="1" <!--USE_RANSACK-->/>
+        </td>
+        <td>
+          <!--RANSACK_HELP_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="search search_dependent ransack_dependent" style="display:none;">
+        <td>
+          <h3>Customized Ransack Form?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="ransackAdvancedForm" id="ransackAdvancedForm" value="1" <!--USE_RANSACK_ADV-->/>
+        </td>
+        <td>
+          <!--ADV_RANSACK_HELP_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="search search_dependent" style="display:none;">
+        <td>
+          <h3>Use Grouping?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="useGrouping" onchange="ShowGroupingOptions()" id="useGrouping" value="1" <!--USE_GROUPING-->/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
+
+      <tr class="search search_dependent grouping_dependent" style="display:none;">
+        <td colspan="3">
+          <h1>Custom Items To Group By:</h1>
+          <table style="margin-left:150px;">
+            <tr>
+              <td>
+                <h3>fasdfasdsf Advanced Search?:</h3>
+              </td>
+              <td>
+                <script type="text/plain" id="default_grouping">
+                   <!--DEFAULT_GROUPING-->
+                </script>
+                <table id="grouping_items">
+                  <!--GROUPING_ITEMS-->
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+    <!--FOOTER SECTION-->
 
 
     <!--MISC & SUBMIT SECTION-->
-    <tr class="misc_submit"  style="display:none;" >
-      <td>
-        <h3>Submit:</h3>
-      </td>
-      <td>
-        <!--SUBMIT_WIDGET_LIST-->
-      </td>
-    </tr>
+
+
+
+      <tr class="misc_submit" style="display:none;">
+        <td style="width:300px;">
+          <h3>Add Row Checkbox?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="checkboxEnabled" onchange="ShowCheckboxOptions();" id="checkboxEnabled" value="1" <!--SHOW_CHECKBOX_CHECKED-->/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
+
+      <tr class="misc_submit checkbox_dependent" style="display:none;">
+        <td>
+          <h3>Checkbox Value:</h3>
+        </td>
+        <td>
+          <select name="checkboxField" id="checkboxField">
+            <!--CHECKBOX_SELECTED_FIELDS-->
+          </select>
+        </td>
+        <td>
+          <!--CHECK_HELP_BUTTON-->
+        </td>
+      </tr>
+      <tr class="misc_submit"  style="display:none;" >
+        <td>
+          <h3>Submit:</h3>
+        </td>
+        <td>
+          <!--SUBMIT_WIDGET_LIST-->
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
   </table>
 </form>
