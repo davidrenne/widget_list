@@ -620,7 +620,7 @@ module WidgetList
         'href'       => '',        #alias of url
         'page'       => '',
         'parameters' => false,
-        'style'      => 'display:inline-block',
+        'style'      => 'display:inline-block;cursor:pointer;',
         'frmSubmit'  => '',        #this option adds hidden frmbutton
         'submit'     => '',
         'args'       => {},
