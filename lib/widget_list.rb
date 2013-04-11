@@ -24,7 +24,7 @@ module WidgetList
   class Administration
     def show_interface()
       ac = ActionController::Base.new()
-
+      default_config = WidgetList::List::get_defaults()
       request = $_REQUEST.dup
 
       config_id =  ''
@@ -57,14 +57,62 @@ module WidgetList
         model_options = '<option value="">No Models Found in ' + Rails.root.join("app", "models").to_s + '</option>'
       end
 
+      #Groupings
+      #default_grouping  : editing_grouping
+
+
+
       @fill = {}
-      @fill['<!--TITLE-->']        = 'Stub Out A New WidgetList Implementation'
-      @fill['<!--NAME_VALUE-->']   = (!@isEditing) ? config_id : page_config['name']
-      @fill['<!--VIEW_OPTIONS-->'] = model_options
-      @fill['<!--BUTTONS-->']      = WidgetList::Widgets::widget_button('Step One - Start',  {'onclick' => "ShowStart();"  } ) +
-                                     WidgetList::Widgets::widget_button('Step Two - Fields', {'onclick' => "ShowFields();"  } )
-      @fill['<!--TITLE_VALUE-->']  = (!@isEditing) ? '' : page_config['title']
-      @fill['<!--POST_URL-->']     = $_SERVER['PATH_INFO']
+      #
+      # Writing most of this interface while drunk trancing/coding out on ah.fm.
+      # This administration form should help people new to widget_list to easily stub out new implementations
+      #
+
+      #
+      # BASE
+      #
+      @fill['<!--POST_URL-->']            = $_SERVER['PATH_INFO']
+      @fill['<!--BUTTONS-->']             = WidgetList::Widgets::widget_button('Step One - Start ->',           {'id' => 'start'      , 'onclick' => "ShowStart();"    , 'innerClass' => "primary"  } ) +
+          WidgetList::Widgets::widget_button('Step Two - Fields ->',          {'id' => 'fields'     , 'onclick' => "ShowFields();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Three - Rows ->',          {'id' => 'rows'       , 'onclick' => "ShowRows();"    , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Four - Search ->',         {'id' => 'search'     , 'onclick' => "ShowSearch();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Four - Footer Actions ->', {'id' => 'footer'     , 'onclick' => "ShowFooter();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Five - Misc & Submit ->',  {'id' => 'misc_submit', 'onclick' => "ShowSubmit();"  , 'innerClass' => "success disabled"  } )
+
+
+      #
+      # START
+      #
+      @fill['<!--TITLE-->']               = 'Stub Out A New WidgetList Implementation'
+      @fill['<!--NAME_VALUE-->']          = (!@isEditing) ? config_id : page_config['name']
+      @fill['<!--VIEW_OPTIONS-->']        = model_options
+      @fill['<!--TITLE_VALUE-->']         = (!@isEditing) ? '' : page_config['title']
+      @fill['<!--TITLE_BUTTON-->']        =  WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('The title list_params will show above the list similar to the title of this page to stub out an implementation of the list.')", 'innerClass' => "primary disabled" }, true )
+
+      #
+      # FIELD LEVEL
+      #
+
+      @fill['<!--NO_DATA_VALUE-->']       = (!@isEditing) ? ''        : page_config['noDataMessage']
+      @fill['<!--SORTING_CHECKED-->']     = (!@isEditing) ? 'checked' : (page_config['useSort'] == "1") ? 'checked' : ''
+
+      #
+      # SEARCH
+      #
+      @fill['<!--SHOW_SEARCH_CHECKED-->'] = (!@isEditing) ? 'checked' : (page_config['showSearch'] == "1")  ? 'checked' : ''
+      @fill['<!--USE_RANSACK-->']         = (!@isEditing) ? 'checked' : (page_config['useRansack'] == "1")  ? 'checked' : ''
+      @fill['<!--USE_GROUPING-->']        = (!@isEditing) ? ''        : (page_config['useGrouping'] == "1") ? 'checked' : ''
+      @fill['<!--SEARCH_TITLE-->']        = (!@isEditing) ? default_config['searchTitle'] : page_config['searchTitle']
+=begin
+      @fill['<!--GROUPING_ITEMS-->']      = (!@isEditing) ? default_grouping  : editing_grouping
+      @fill['<!--DEFAULT_GROUPING-->']    = default_grouping
+=end
+
+
+      #
+      # MISC & SUBMIT
+      #
+      @fill['<!--SUBMIT_WIDGET_LIST-->']  = WidgetList::Widgets::widget_button('Submit',  {'onclick' => "jQuery('#widget_list_administration').submit()"  , 'innerClass' => "success"  } )
 
       return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output') )
     end
@@ -173,23 +221,23 @@ module WidgetList
 
 
       @items.deep_merge!({ 'statement' =>
-                             {'select'=>
-                                {'view' =>
-                                   '
+                               {'select'=>
+                                    {'view' =>
+                                         '
                                    SELECT <!--FIELDS--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
                                   '
-                                }
-                             }
+                                    }
+                               }
                          })
 
       @items.deep_merge!({ 'statement' =>
-                             {'count'=>
-                                {'view' =>
-                                   '
+                               {'count'=>
+                                    {'view' =>
+                                         '
                                    SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->
                                   '
-                                }
-                             }
+                                    }
+                               }
                          })
       #inject site wide configs before list specific configs if a helper exists
 
@@ -213,8 +261,8 @@ module WidgetList
           # if no one passed a listSearchForm inject a default one to show the ransack form
           #
           fill = {
-            '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items), 'innerClass' => @items['defaultButtonClass'] }),
-            '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)"
+              '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items), 'innerClass' => @items['defaultButtonClass'] }),
+              '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)"
           }
           @items['listSearchForm'] = WidgetList::Utils::fill( fill , ac.render_to_string(:partial => 'widget_list/ransack_widget_list_advanced_search') )
 
@@ -233,19 +281,19 @@ module WidgetList
       if get_database.db_type == 'oracle'
 
         @items.deep_merge!({'statement' =>
-                              {'count'=>
-                                 {'view' =>
-                                    '
+                                {'count'=>
+                                     {'view' =>
+                                          '
                                    SELECT count(1) total FROM <!--VIEW--> ' + ((@items['groupBy'].empty? && !@active_record_model) ? '<!--WHERE-->  <!--GROUPBY-->' : '' )
-                                 }
-                              }
+                                     }
+                                }
                            })
         @items.deep_merge!({'statement' =>
-                              {'select'=>
-                                 {'view' =>
-                                    'SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a ' + ((@items['groupBy'].empty?) ? '<!--WHERE-->' : '') + ' <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '')
-                                 }
-                              }
+                                {'select'=>
+                                     {'view' =>
+                                          'SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a ' + ((@items['groupBy'].empty?) ? '<!--WHERE-->' : '') + ' <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '')
+                                     }
+                                }
                            })
 
       end
@@ -541,230 +589,230 @@ module WidgetList
     def get_grouping_functions()
       #http://docs.oracle.com/cd/E11882_01/server.112/e10592/functions003.htm
       [
-        'AVG(',
-        'COLLECT(',
-        'CORR(',
-        'COUNT(',
-        'COVAR_POP(',
-        'COVAR_SAMP(',
-        'CUME_DIST(',
-        'DENSE_RANK(',
-        'FIRST(',
-        'GROUP_ID(',
-        'GROUPING_ID(',
-        'LAST(',
-        'LISTAGG(',
-        'MAX(',
-        'MEDIAN(',
-        'MIN(',
-        'PERCENT_RANK(',
-        'PERCENTILE_CONT(',
-        'PERCENTILE_DISC(',
-        'RANK(',
-        'REGR_SLOPE(',
-        'REGR_INTERCEPT(',
-        'REGR_COUNT(',
-        'REGR_R2(',
-        'REGR_AVGX(',
-        'REGR_AVGY(',
-        'REGR_SXX(',
-        'REGR_SYY(',
-        'REGR_SXY(',
-        'STATS_MINOMIAL_TEST(',
-        'STATS_CROSSTAB(',
-        'STATS_F_TEST(',
-        'STATS_KS_TEST(',
-        'STATS_MODE(',
-        'STATS_MW_TEST(',
-        'STDDEV(',
-        'STDDEV_POP(',
-        'STDDEV_SAMP(',
-        'SUM(',
-        'SYS_XMLAGG(',
-        'VAR_POP(',
-        'VAR_SAMP(',
-        'VARIANCE(',
-        'XMLAGG(',
+          'AVG(',
+          'COLLECT(',
+          'CORR(',
+          'COUNT(',
+          'COVAR_POP(',
+          'COVAR_SAMP(',
+          'CUME_DIST(',
+          'DENSE_RANK(',
+          'FIRST(',
+          'GROUP_ID(',
+          'GROUPING_ID(',
+          'LAST(',
+          'LISTAGG(',
+          'MAX(',
+          'MEDIAN(',
+          'MIN(',
+          'PERCENT_RANK(',
+          'PERCENTILE_CONT(',
+          'PERCENTILE_DISC(',
+          'RANK(',
+          'REGR_SLOPE(',
+          'REGR_INTERCEPT(',
+          'REGR_COUNT(',
+          'REGR_R2(',
+          'REGR_AVGX(',
+          'REGR_AVGY(',
+          'REGR_SXX(',
+          'REGR_SYY(',
+          'REGR_SXY(',
+          'STATS_MINOMIAL_TEST(',
+          'STATS_CROSSTAB(',
+          'STATS_F_TEST(',
+          'STATS_KS_TEST(',
+          'STATS_MODE(',
+          'STATS_MW_TEST(',
+          'STDDEV(',
+          'STDDEV_POP(',
+          'STDDEV_SAMP(',
+          'SUM(',
+          'SYS_XMLAGG(',
+          'VAR_POP(',
+          'VAR_SAMP(',
+          'VARIANCE(',
+          'XMLAGG(',
       ]
     end
 
     def self.get_defaults()
       {
-        'errors'              => [],
-        'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
-        'database'            => 'primary', #
-        'title'               => '',
-        'listDescription'     => '',
-        'pageId'              => $_SERVER['PATH_INFO'],
-        'view'                => '',
-        'data'                => {},
-        'collClass'           => '',
-        'collAlign'           => '',
-        'fields'              => {},
-        'fieldsHidden'        => [],
-        'bindVars'            => [],
-        'bindVarsLegacy'      => {},
-        'links'               => {},
-        'buttons'             => {},
-        'inputs'              => {},
-        'filter'              => [],
-        'groupBy'             => '',
-        'rowStart'            => 0,
-        'rowLimit'            => 10,
-        'orderBy'             => '',
-        'allowHTML'           => true,
-        'searchClear'         => false,
-        'searchClearAll'      => false,
-        'showPagination'      => true,
-        'searchSession'       => true,
+          'errors'              => [],
+          'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
+          'database'            => 'primary', #
+          'title'               => '',
+          'listDescription'     => '',
+          'pageId'              => $_SERVER['PATH_INFO'],
+          'view'                => '',
+          'data'                => {},
+          'collClass'           => '',
+          'collAlign'           => '',
+          'fields'              => {},
+          'fieldsHidden'        => [],
+          'bindVars'            => [],
+          'bindVarsLegacy'      => {},
+          'links'               => {},
+          'buttons'             => {},
+          'inputs'              => {},
+          'filter'              => [],
+          'groupBy'             => '',
+          'rowStart'            => 0,
+          'rowLimit'            => 10,
+          'orderBy'             => '',
+          'allowHTML'           => true,
+          'searchClear'         => false,
+          'searchClearAll'      => false,
+          'showPagination'      => true,
+          'searchSession'       => true,
 
-        #
-        # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
-        #
-        'carryOverRequsts'    => ['switch_grouping','group_row_id','q'],
+          #
+          # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
+          #
+          'carryOverRequsts'    => ['switch_grouping','group_row_id','q'],
 
-        #
-        # Head/Foot
-        #
+          #
+          # Head/Foot
+          #
 
-        'customFooter'        => '',
-        'customHeader'        => '',
+          'customFooter'        => '',
+          'customHeader'        => '',
 
-        #
-        # Ajax
-        #
-        'ajaxFunctionAll'     => '',
-        'ajaxFunction'        => 'ListJumpMin',
+          #
+          # Ajax
+          #
+          'ajaxFunctionAll'     => '',
+          'ajaxFunction'        => 'ListJumpMin',
 
-        #
-        #  Search
-        #
-        'showSearch'          => true,
-        'searchOnkeyup'       => "SearchWidgetList('<!--URL-->', '<!--TARGET-->', this);",
-        'searchIdCol'         => 'id',
-        'searchTitle'         => 'Search by Id or a list of Ids and more',
-        'searchFieldsIn'      => {},
-        'searchFieldsOut'     => {'id'=>true},
-        'templateFilter'      => '',
+          #
+          #  Search
+          #
+          'showSearch'          => true,
+          'searchOnkeyup'       => "SearchWidgetList('<!--URL-->', '<!--TARGET-->', this);",
+          'searchIdCol'         => 'id',
+          'searchTitle'         => 'Search by Id or a list of Ids and more',
+          'searchFieldsIn'      => {},
+          'searchFieldsOut'     => {'id'=>true},
+          'templateFilter'      => '',
 
-        #
-        #  Export
-        #
-        'showExport'          => true,
-        'exportButtonTitle'   => 'Export CSV',
+          #
+          #  Export
+          #
+          'showExport'          => true,
+          'exportButtonTitle'   => 'Export CSV',
 
-        #
-        # Group By Box
-        #
-        'groupByItems'        => [],
-        'groupBySelected'     => false,
-        'groupByLabel'        => 'Group By',
-        'groupByClick'        => '',
-        'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
+          #
+          # Group By Box
+          #
+          'groupByItems'        => [],
+          'groupBySelected'     => false,
+          'groupByLabel'        => 'Group By',
+          'groupByClick'        => '',
+          'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
 
 
-        #
-        # Advanced searching
-        #
-        'listSearchForm'      => '',
-        'ransackSearch'       => false,
+          #
+          # Advanced searching
+          #
+          'listSearchForm'      => '',
+          'ransackSearch'       => false,
 
-        #
-        # Column Specific
-        #
-        'columnStyle'         => {},
-        'columnClass'         => {},
-        'columnPopupTitle'    => {},
-        'columnSort'          => {},
-        'columnWidth'         => {},
-        'columnNoSort'        => {},
+          #
+          # Column Specific
+          #
+          'columnStyle'         => {},
+          'columnClass'         => {},
+          'columnPopupTitle'    => {},
+          'columnSort'          => {},
+          'columnWidth'         => {},
+          'columnNoSort'        => {},
 
-        #
-        # Column Border (on right of each column)
-        #
-        'borderedColumns'     => false,
-        'borderColumnStyle'   => '1px solid #CCCCCC',
+          #
+          # Column Border (on right of each column)
+          #
+          'borderedColumns'     => false,
+          'borderColumnStyle'   => '1px solid #CCCCCC',
 
-        #
-        # Row Border (on top of each row)
-        #
-        'borderedRows'        => true,
-        'borderRowStyle'      => '1px solid #CCCCCC',
+          #
+          # Row Border (on top of each row)
+          #
+          'borderedRows'        => true,
+          'borderRowStyle'      => '1px solid #CCCCCC',
 
-        #
-        # Head/Foot border
-        #
-        'borderHeadFoot'      => false,
-        'headFootBorderStyle' => '1px solid #CCCCCC',
+          #
+          # Head/Foot border
+          #
+          'borderHeadFoot'      => false,
+          'headFootBorderStyle' => '1px solid #CCCCCC',
 
-        'bordersEverywhere?'  => false,
-        'borderEverywhere'    => '1px solid #CCCCCC',
+          'bordersEverywhere?'  => false,
+          'borderEverywhere'    => '1px solid #CCCCCC',
 
-        #
-        # Buttons
-        #
-        'defaultButtonClass'  => 'info',
+          #
+          # Buttons
+          #
+          'defaultButtonClass'  => 'info',
 
-        #
-        # Font
-        #
-        'fontFamily'           => '"Times New Roman", Times, serif',
-        'headerFooterFontSize' => '14px',
-        'dataFontSize'         => '14px',
-        'titleFontSize'        => '24px',
+          #
+          # Font
+          #
+          'fontFamily'           => '"Times New Roman", Times, serif',
+          'headerFooterFontSize' => '14px',
+          'dataFontSize'         => '14px',
+          'titleFontSize'        => '24px',
 
-        #
-        # Table Colors
-        #
-        'footerBGColor'       => '#ECECEC',
-        'headerBGColor'       => '#ECECEC',
-        'footerFontColor'     => '#494949',
-        'headerFontColor'     => '#494949',
-        'tableBorder'         => '1',
-        'cornerRadius'        => 15,
+          #
+          # Table Colors
+          #
+          'footerBGColor'       => '#ECECEC',
+          'headerBGColor'       => '#ECECEC',
+          'footerFontColor'     => '#494949',
+          'headerFontColor'     => '#494949',
+          'tableBorder'         => '1',
+          'cornerRadius'        => 15,
 
-        'useBoxShadow'        => true,
-        'shadowInset'         => 10,
-        'shadowSpread'        => 20,
-        'shadowColor'         => '#888888',
+          'useBoxShadow'        => true,
+          'shadowInset'         => 10,
+          'shadowSpread'        => 20,
+          'shadowColor'         => '#888888',
 
-        #
-        # Row specifics
-        #
-        'rowClass'            => '',
-        'rowFontColor'        => 'black',
-        'rowColorByStatus'    => {},
-        'rowStylesByStatus'   => {},
-        'rowOffsets'          => ['#FFFFFF','#FFFFFF'],
+          #
+          # Row specifics
+          #
+          'rowClass'            => '',
+          'rowFontColor'        => 'black',
+          'rowColorByStatus'    => {},
+          'rowStylesByStatus'   => {},
+          'rowOffsets'          => ['#FFFFFF','#FFFFFF'],
 
-        'class'               => 'listContainerPassive',
-        'tableclass'          => 'tableBlowOutPreventer',
-        'noDataMessage'       => 'Currently no data.',
-        'useSort'             => true,
-        'headerClass'         => {},
-        'fieldFunction'       => {},
-        'buttonVal'           => 'templateListJump',
-        'linkFunction'        => 'ButtonLinkPost',
-        'template'            => '',
-        'LIST_COL_SORT_ORDER' => 'ASC',
-        'LIST_COL_SORT'       => '',
-        'LIST_FILTER_ALL'     => '',
-        'ROW_LIMIT'           => '',
-        'LIST_SEQUENCE'       => 1,
-        'NEW_SEARCH'          => false,
+          'class'               => 'listContainerPassive',
+          'tableclass'          => 'tableBlowOutPreventer',
+          'noDataMessage'       => 'Currently no data.',
+          'useSort'             => true,
+          'headerClass'         => {},
+          'fieldFunction'       => {},
+          'buttonVal'           => 'templateListJump',
+          'linkFunction'        => 'ButtonLinkPost',
+          'template'            => '',
+          'LIST_COL_SORT_ORDER' => 'ASC',
+          'LIST_COL_SORT'       => '',
+          'LIST_FILTER_ALL'     => '',
+          'ROW_LIMIT'           => '',
+          'LIST_SEQUENCE'       => 1,
+          'NEW_SEARCH'          => false,
 
-        #
-        # Checkbox
-        #
-        'checkedClass'        => 'widgetlist-checkbox',
-        'checkedFlag'         => {},
-        'storeSessionChecks'  => false,
+          #
+          # Checkbox
+          #
+          'checkedClass'        => 'widgetlist-checkbox',
+          'checkedFlag'         => {},
+          'storeSessionChecks'  => false,
 
-        #
-        # Hooks
-        #
-        'columnHooks'         => {},
-        'rowHooks'            => {}
+          #
+          # Hooks
+          #
+          'columnHooks'         => {},
+          'rowHooks'            => {}
       }
     end
 
@@ -1179,11 +1227,11 @@ module WidgetList
               list_search['name']        = 'list_search_name_' + @items['name']
               list_search['class']       = 'inputOuter widget-search-outer ' + @items['name'].downcase + '-search'
               list_search['search_ahead']       = {
-                'url'          => searchUrl,
-                'skip_queue'   => false,
-                'target'       => @items['name'],
-                'search_form'  => @items['listSearchForm'],
-                'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
+                  'url'          => searchUrl,
+                  'skip_queue'   => false,
+                  'target'       => @items['name'],
+                  'search_form'  => @items['listSearchForm'],
+                  'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
               }
 
               @headerPieces['searchBar']            = WidgetList::Widgets::widget_input(list_search)
@@ -1239,8 +1287,8 @@ module WidgetList
               }
 
               list_group['search_ahead']  = {
-                'skip_queue' => false,
-                'search_form'=>  '
+                  'skip_queue' => false,
+                  'search_form'=>  '
                                  <div id="advanced-search-container" style="height:100% !important;">
                                     ' + groupRows.join("\n") + '
                                  </div>'
@@ -1373,11 +1421,11 @@ module WidgetList
       #Assemble navigation buttons
       #
       pieces = {
-        '<!--NEXT_URL-->'     => nextUrl,
-        '<!--LIST_NAME-->'    => @items['name'],
-        '<!--PREVIOUS_URL-->' => prevUrl,
-        '<!--FUNCTION-->'     => @items['ajaxFunction'],
-        '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
+          '<!--NEXT_URL-->'     => nextUrl,
+          '<!--LIST_NAME-->'    => @items['name'],
+          '<!--PREVIOUS_URL-->' => prevUrl,
+          '<!--FUNCTION-->'     => @items['ajaxFunction'],
+          '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
       }
 
       templates['btn_next']     = WidgetList::Utils::fill(pieces,templates['btn_next'])
@@ -1480,23 +1528,23 @@ module WidgetList
         end
 
         jumpSection << WidgetList::Utils::fill({
-                                                 '<!--SEQUENCE-->'     => page,
-                                                 '<!--JUMP_URL-->'     => jumpUrl,
-                                                 '<!--LIST_NAME-->'    => @items['name'],
-                                                 '<!--FUNCTION-->'     => @items['ajaxFunction'],
-                                                 '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
+                                                   '<!--SEQUENCE-->'     => page,
+                                                   '<!--JUMP_URL-->'     => jumpUrl,
+                                                   '<!--LIST_NAME-->'    => @items['name'],
+                                                   '<!--FUNCTION-->'     => @items['ajaxFunction'],
+                                                   '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
                                                }, jumpTemplate)
       end
 
       pieces = {
-        '<!--PREVIOUS_BUTTON-->'         => templates['btn_previous'],
-        '<!--SEQUENCE-->'                => @sequence,
-        '<!--NEXT_BUTTON-->'             => templates['btn_next'],
-        '<!--TOTAL_PAGES-->'             => @totalPages,
-        '<!--TOTAL_ROWS-->'              => @totalRows,
-        '<!--PAGE_SEQUENCE_JUMP_LIST-->' => pageSelect,
-        '<!--JUMP-->'                    => jumpSection.join(''),
-        '<!--LIST_NAME-->'               => @items['name'],
+          '<!--PREVIOUS_BUTTON-->'         => templates['btn_previous'],
+          '<!--SEQUENCE-->'                => @sequence,
+          '<!--NEXT_BUTTON-->'             => templates['btn_next'],
+          '<!--TOTAL_PAGES-->'             => @totalPages,
+          '<!--TOTAL_ROWS-->'              => @totalRows,
+          '<!--PAGE_SEQUENCE_JUMP_LIST-->' => pageSelect,
+          '<!--JUMP-->'                    => jumpSection.join(''),
+          '<!--LIST_NAME-->'               => @items['name'],
       }
 
       paginationOutput = WidgetList::Utils::fill(pieces,@items['template_pagination_wrapper'])
@@ -1648,7 +1696,7 @@ module WidgetList
 
           if (
           ( (@items.key?('LIST_COL_SORT') && !@items['LIST_COL_SORT'].empty?) && @items['LIST_COL_SORT'] == colSort['LIST_COL_SORT']) ||
-            ( $_SESSION.key?('LIST_COL_SORT') &&  $_SESSION['LIST_COL_SORT'].key?(@sqlHash) && $_SESSION['LIST_COL_SORT'][@sqlHash].key?(field))
+              ( $_SESSION.key?('LIST_COL_SORT') &&  $_SESSION['LIST_COL_SORT'].key?(@sqlHash) && $_SESSION['LIST_COL_SORT'][@sqlHash].key?(field))
           )
             changedSession = false
             if @items.key?('LIST_COL_SORT') && !@items['LIST_COL_SORT'].empty?
@@ -1907,41 +1955,41 @@ module WidgetList
     def self.checkbox_helper(list_parms,primary_key)
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox'=>
-                                   {'type' => 'checkbox'
-                                   }
-                                }
+                                  {'checkbox'=>
+                                       {'type' => 'checkbox'
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox'=>
-                                   {'items' =>
-                                      {
-                                        'name'          => list_parms['name'] + '_visible_checks[]',
-                                        'value'         => primary_key, #the value should be a column name mapping
-                                        'class_handle'  => list_parms['name'] + '_info_tables',
-                                      }
-                                   }
-                                }
+                                  {'checkbox'=>
+                                       {'items' =>
+                                            {
+                                                'name'          => list_parms['name'] + '_visible_checks[]',
+                                                'value'         => primary_key, #the value should be a column name mapping
+                                                'class_handle'  => list_parms['name'] + '_info_tables',
+                                            }
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox_header'=>
-                                   {'type' => 'checkbox'
-                                   }
-                                }
+                                  {'checkbox_header'=>
+                                       {'type' => 'checkbox'
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox_header'=>
-                                   {'items' =>
-                                      {
-                                        'check_all'     => true,
-                                        'id'            => list_parms['name'] + '_info_tables_check_all',
-                                        'class_handle'  => list_parms['name'] + '_info_tables',
-                                      }
-                                   }
-                                }
+                                  {'checkbox_header'=>
+                                       {'items' =>
+                                            {
+                                                'check_all'     => true,
+                                                'id'            => list_parms['name'] + '_info_tables_check_all',
+                                                'class_handle'  => list_parms['name'] + '_info_tables',
+                                            }
+                                       }
+                                  }
                              })
       return list_parms
     end
@@ -1952,20 +2000,20 @@ module WidgetList
 
     def self.build_drill_down(*params)
       required_params = {
-        :list_id                  => true,              # -- your widget_list name (used for JS)
-        :drill_down_name          => true,              # -- an identifier that is pass for the "column" or "type of drill down" which is passed as $_REQUEST['drill_down'] when the user clicks and returned from get_filter_and_drilldown based on session or request
-        :data_to_pass_from_view   => true,              # -- Any SQL function or column name/value in the resultset in which would be the value passed when the user clicks the drill down
-        :column_to_show           => true,              # -- The visible column or SQL functions to display to user for the link
+          :list_id                  => true,              # -- your widget_list name (used for JS)
+          :drill_down_name          => true,              # -- an identifier that is pass for the "column" or "type of drill down" which is passed as $_REQUEST['drill_down'] when the user clicks and returned from get_filter_and_drilldown based on session or request
+          :data_to_pass_from_view   => true,              # -- Any SQL function or column name/value in the resultset in which would be the value passed when the user clicks the drill down
+          :column_to_show           => true,              # -- The visible column or SQL functions to display to user for the link
       }
 
       optional_params = {
-        :column_alias             => '',                # -- AS XXXX
-        :extra_function           => '',                # -- Onclick of link, call another JS function after the drill down function is called
-        :js_function_name         => 'ListDrillDown',   # -- name of JS Function
-        :column_class             => '',                # -- custom class on the <a> tag
-        :link_color               => 'blue',            # -- whatever color you want the link to be
-        :extra_js_func_params     => '',                # -- Add extra params to ListDrillDown outside of the default
-        :primary_database         => true,              # -- Since this function builds a column before widget_list is instantiated, tell which connection you are using
+          :column_alias             => '',                # -- AS XXXX
+          :extra_function           => '',                # -- Onclick of link, call another JS function after the drill down function is called
+          :js_function_name         => 'ListDrillDown',   # -- name of JS Function
+          :column_class             => '',                # -- custom class on the <a> tag
+          :link_color               => 'blue',            # -- whatever color you want the link to be
+          :extra_js_func_params     => '',                # -- Add extra params to ListDrillDown outside of the default
+          :primary_database         => true,              # -- Since this function builds a column before widget_list is instantiated, tell which connection you are using
       }
 
       valid = WidgetList::Widgets::validate_items(params[0],required_params)
@@ -2566,7 +2614,7 @@ module WidgetList
         when 'oracle'
 
           pieces['<!--LIMIT-->'] =
-            '
+              '
             WHERE
             (
                  rn >' + (@sequence > 1 ? '' : '=') + ' :LOW

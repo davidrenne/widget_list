@@ -19,27 +19,110 @@
 </style>
 
 <script type="text/javascript">
-  var all = '.start,.fields,.rows,.search,.footer,misc_submit';
-  function ShowStart() {
-    jQuery(all).fadeOut('slow',function() {
-      jQuery('.start').fadeIn('fast');
-    });
+  var all = '.start,.fields,.rows,.search,.footer,.misc_submit';
+  var all_btns = '#start,#fields,#rows,#search,#footer,#misc_submit';
+  jQuery(document).ready(function () {
+      if (jQuery('#view').val() != '') {
+          jQuery(all_btns).removeClass('disabled');
+      }
+  });
+
+  function VerifyOK(func_name) {
+      var ok = false;
+      if (jQuery('#view').val() != '') {
+         ok = true;
+      } else {
+         alert('Please select a Model to use as your base widget_list');
+      }
+      return ok;
   }
+
+  function ClickTab(which_class,func_name) {
+      if (VerifyOK(func_name)) {
+          jQuery('.search_dependent').hide(0,function() {
+              jQuery(all).hide(0,function() {
+                  jQuery(which_class).fadeIn(0,function() {
+                      if (func_name == 'ShowSearch') {
+                          ShowSearchOptions();
+                          ShowGroupingOptions();
+                      }
+                  });
+              });
+          });
+      }
+  }
+
+  function ShowStart() {
+      ClickTab('.start',arguments.callee.name);
+  }
+
   function ShowFields() {
-    jQuery(all).fadeOut('slow',function() {
-      jQuery('.fields').fadeIn('fast');
-    });
+      ClickTab('.fields',arguments.callee.name);
+  }
+
+  function ShowRows() {
+      ClickTab('.rows',arguments.callee.name);
+  }
+
+  function ShowSearch() {
+      ClickTab('.search',arguments.callee.name);
+  }
+
+  function ShowFooter() {
+      ClickTab('.footer',arguments.callee.name);
+  }
+
+  function ShowSubmit() {
+      ClickTab('.misc_submit',arguments.callee.name);
+  }
+
+  function ShowSearchOptions() {
+      if (jQuery('#showSearch').is(':checked')) {
+          jQuery('.search_dependent').show();
+      } else {
+          jQuery('.search_dependent').hide();
+      }
+  }
+
+  function ShowGroupingOptions() {
+      if (jQuery('#useGrouping').is(':checked')) {
+          jQuery('.grouping_dependent').show();
+      } else {
+          jQuery('.grouping_dependent').hide();
+      }
+  }
+
+  function AddGroupingItem() {
+      jQuery('#grouping_items').html(jQuery('#grouping_items').html() + jQuery('#grouping_items_default').html());
+  }
+
+
+  function ChangeViewModel(obj) {
+      jQuery(all_btns).addClass('disabled');
+      if (jQuery(obj).val() != '') {
+          jQuery(all_btns).removeClass('disabled');
+      }
+      if (jQuery(obj).val() != '' && (jQuery('#title').val() == '' || jQuery('#title').val().search(/Showing All/i) == 0) ) {
+          jQuery(all_btns).removeClass('disabled');
+          jQuery('#title').val('Showing All ' + jQuery(obj).val() + 's');
+      }
+      if (jQuery(obj).val() != '' && jQuery('#noDataMessage').val() == '') {
+          jQuery('#noDataMessage').val('No ' + jQuery(obj).val() + 's Found Within Your Criteria');
+      }
   }
 </script>
-<form action="<!--POST_URL-->" method="post">
+<form action="<!--POST_URL-->" method="post" id="widget_list_administration">
   <h1 style="font-size:24;"><!--TITLE--></h1><div class="horizontal_rule"></div>
   <h3>Get started quickly by selecting the features you need for this list</h3>
   <table>
+    <!--BUTTON SECTION-->
     <tr id="sections">
       <td colspan="2">
         <h3><!--BUTTONS--></h3>
       </td>
     </tr>
+
+    <!--START SECTION-->
     <tr class="start">
       <td>
         <h3>Internal Name:</h3>
@@ -50,39 +133,115 @@
     </tr>
     <tr class="start">
       <td>
-        <h3>Title:</h3>
-      </td>
-      <td>
-        <input type="text" name="title" value="<!--TITLE_VALUE-->"/>
-      </td>
-    </tr>
-    <tr class="start">
-      <td>
         <h3>Model:</h3>
       </td>
       <td>
-        <select name="view" id="view">
+        <select name="view" id="view" onchange="ChangeViewModel(this)">
           <!--VIEW_OPTIONS-->
         </select>
       </td>
     </tr>
-    <tr class="fields" style="display:none;">
+    <tr class="start">
       <td>
-        <h3>asdfasdf:</h3>
+        <h3>Title:</h3>
       </td>
       <td>
-        <select name="asdfasdf" id="asdfasdf">
-          <!--asfdsdf-->
-        </select>
+        <input type="text" name="title" id="title" value="<!--TITLE_VALUE-->"/><!--TITLE_BUTTON-->
       </td>
     </tr>
 
-    <tr id="submit" style="display:none;">
+    <!--FIELDS SECTION-->
+    <tr class="fields" style="display:none;">
+      <td>
+        <h3>Allow Sorting?:</h3>
+      </td>
+      <td>
+        <input type="checkbox" name="useSort" id="useSort" value="1" <!--SORTING_CHECKED-->/>
+      </td>
+    </tr>
+
+    <tr class="fields" style="display:none;">
+      <td>
+        <h3>No Data Message:</h3>
+      </td>
+      <td>
+        <input type="text" name="noDataMessage" id="noDataMessage" value="<!--NO_DATA_VALUE-->"/>
+      </td>
+    </tr>
+
+    <!--ROWS SECTION-->
+    <tr class="rows" style="display:none;">
+      <td>
+        <h3>aadsfasdf asdfasdf?:</h3>
+      </td>
+      <td>
+        <input type="checkbox" name="adsffasd" id="asdfasdf" value="1" <!--SORTING_CHECKED-->/>
+      </td>
+    </tr>
+
+    <!--SEARCH SECTION-->
+    <tr class="search" style="display:none;">
+      <td style="width:300px;">
+        <h3>Show Search?:</h3>
+      </td>
+      <td>
+        <input type="checkbox" name="showSearch" onchange="ShowSearchOptions()" id="showSearch" value="1" <!--SHOW_SEARCH_CHECKED-->/>
+      </td>
+    </tr>
+    <tr class="search search_dependent" style="display:none;">
+      <td>
+        <h3>Search Description/Title:</h3>
+      </td>
+      <td>
+        <input type="text" name="searchTitle" id="searchTitle" value="<!--SEARCH_TITLE-->"/>
+      </td>
+    </tr>
+    <tr class="search search_dependent" style="display:none;">
+      <td>
+        <h3>Use Ransack Advanced Search?:</h3>
+      </td>
+      <td>
+        <input type="checkbox" name="useRansack" onchange="ShowRansackOptions()" id="useRansack" value="1" <!--USE_RANSACK-->/>
+      </td>
+    </tr>
+    <tr class="search search_dependent" style="display:none;">
+      <td>
+        <h3>Use Grouping?:</h3>
+      </td>
+      <td>
+        <input type="checkbox" name="useGrouping" onchange="ShowGroupingOptions()" id="useGrouping" value="1" <!--USE_GROUPING-->/>
+      </td>
+    </tr>
+    <tr class="search search_dependent grouping_dependent" style="display:none;">
+      <td colspan="2">
+        <h1>Custom Items To Group By:</h1>
+        <table style="margin-left:150px;">
+          <tr>
+            <td>
+              <h3>fasdfasdsf Advanced Search?:</h3>
+            </td>
+            <td>
+              <script type="text/plain" id="default_grouping">
+                 <!--DEFAULT_GROUPING-->
+              </script>
+              <table id="grouping_items">
+                <!--GROUPING_ITEMS-->
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+
+
+    <!--MISC & SUBMIT SECTION-->
+    <tr class="misc_submit"  style="display:none;" >
       <td>
         <h3>Submit:</h3>
       </td>
       <td>
-        <input type="submit" value="Submit"/>
+        <!--SUBMIT_WIDGET_LIST-->
       </td>
     </tr>
   </table>
