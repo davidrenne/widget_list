@@ -157,6 +157,10 @@
     jQuery('#hidden_field_table').html(jQuery('#hidden_field_table').html() + jQuery('#default_hidden_field_template').html());
   }
 
+  function AddFieldFunction() {
+    jQuery('#field_function_table').html(jQuery('#field_function_table').html() + jQuery('#default_field_function_template').html());
+  }
+
   function RemoveField(obj) {
     jQuery(obj).closest('tr').remove();
   }
@@ -334,16 +338,16 @@
       <tr class="fields function_dependent" style="display:none;">
         <td colspan="3">
           <h1>Hidden Field Selection:</h1>
-          <script type="text/plain" id="default_hidden_field_template">
-            <!--HIDDEN_FIELD_TEMPLATE-->
+          <script type="text/plain" id="default_field_function_template">
+            <!--FIELD_FUNCTION_TEMPLATE-->
           </script>
-          <table style="margin-left:150px;" id="hidden_field_table">
-            <!--ALL_HIDDEN_FIELDS-->
+          <table style="margin-left:150px;" id="field_function_table">
+            <!--ALL_FIELD_FUNCTIONS-->
           </table>
           <table style="margin-left:150px;">
             <tr>
               <td colspan="3">
-                <!--ADD_HIDDEN_FIELD_BUTTON-->
+                <!--ADD_FIELD_FUNCTION_BUTTON-->
               </td>
             </tr>
           </table>
@@ -454,7 +458,7 @@
           <table style="margin-left:150px;">
             <tr>
               <td>
-                <h3>fasdfasdsf Advanced Search?:</h3>
+                <h3>Add a description and field_name to group by:</h3>
               </td>
               <td>
                 <script type="text/plain" id="default_grouping">
@@ -463,6 +467,14 @@
                 <table id="grouping_items">
                   <!--GROUPING_ITEMS-->
                 </table>
+              </td>
+            </tr>
+          </table>
+
+          <table style="margin-left:150px;">
+            <tr>
+              <td colspan="3">
+                <!--ADD_GROUPING_BUTTON-->
               </td>
             </tr>
           </table>
