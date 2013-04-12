@@ -1,12 +1,12 @@
 <tr>
   <td>
-    Text:&#160;<input type="text" style="width:170px" onblur="jQuery(this).attr('value',jQuery(this).val());" name="buttons[text][]" id="buttons[text][]" value="<!--BUTTON_TEXT-->"/>
+    <!--TEXT_DESC-->:&#160;<input type="text" class="<!--SUBJECT-->_<!--TEXT_KEY-->" style="width:170px" onblur="jQuery(this).attr('value',jQuery(this).val().trim());<!--ONBLUR1-->" name="<!--SUBJECT-->[<!--TEXT_KEY-->][]" id="<!--SUBJECT-->[<!--TEXT_KEY-->][]" value="<!--BUTTON_TEXT-->"/><%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('<!--TEXT_HELP-->')", 'innerClass' => "default <!--SUBJECT-->_<!--TEXT_KEY-->_button" }, true ) %>
   </td>
   <td>
-    URL:&#160;<input type="text" style="width:170px" onblur="jQuery(this).attr('value',jQuery(this).val());" name="buttons[url][]" id="buttons[url][]" value="<!--BUTTON_URL-->"/><%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('URLs include a RESTful path where you will pass controller/field_name/field_name/ where those will be replaced')", 'innerClass' => "default" }, true ) %>
+    <!--URL_DESC-->:&#160;<input type="text" class="<!--SUBJECT-->_<!--URL_KEY-->" style="width:170px" onblur="jQuery(this).attr('value',jQuery(this).val().trim());<!--ONBLUR2-->" name="<!--SUBJECT-->[<!--URL_KEY-->][]" id="<!--SUBJECT-->[<!--URL_KEY-->][]" value="<!--BUTTON_URL-->"/><%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('<!--URL_HELP->')", 'innerClass' => "default <!--SUBJECT-->_<!--URL_KEY-->_button" }, true ) %>
   </td>
   <td>
-    Color:&#160;<input type="text" style="width:170px" onblur="jQuery(this).attr('value',jQuery(this).val());" name="buttons[class][]" id="buttons[class][]" value="<!--BUTTON_CLASS-->"/><%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('primary=(blue) info=(light-blue) success=(green) danger=(red) disabled=(light grey) default=(grey)')", 'innerClass' => "default" }, true ) %>
+    <!--COLOR_DESC-->:&#160;<input type="text" class="<!--SUBJECT-->_<!--COLOR_KEY-->" style="width:170px" onblur="jQuery(this).attr('value',jQuery(this).val().trim());<!--ONBLUR3-->" name="<!--SUBJECT-->[<!--COLOR_KEY-->][]" id="<!--SUBJECT-->[<!--COLOR_KEY-->][]" value="<!--BUTTON_CLASS-->"/><%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('<!--COLOR_HELP-->')", 'innerClass' => "default <!--SUBJECT-->_<!--COLOR_KEY-->_button" }, true ) %>
   </td>
   <td>
     <!--REMOVE_FIELD_BUTTON-->
