@@ -6,7 +6,7 @@
     line-height:33px;
     padding:8px 8px 7px;
     top:0;
-    width:800px;
+    width:600px;
   }
   select {
     font-size:25px;
@@ -14,7 +14,7 @@
     left:0;
     line-height:33px;
     top:0;
-    width:820px;
+    width:600px;
   }
 </style>
 
@@ -170,6 +170,10 @@
 
   function AddField() {
     jQuery('#field_table').html(jQuery('#field_table').html() + jQuery('#default_field_template').html());
+  }
+
+  function AddGroupBy() {
+    jQuery('#grouping_table').html(jQuery('#grouping_table').html() + jQuery('#default_grouping_template').html());
   }
 
   function AddButton() {
@@ -328,8 +332,9 @@
       </tr>
 
       <tr class="fields hidden_fields_dependent" style="display:none;">
+
         <td colspan="3">
-          <h1>Hidden Field Selection:</h1>
+          <h1 style="margin-left: 75px;">Hidden Field Selection:</h1>
           <script type="text/plain" id="default_hidden_field_template">
             <!--HIDDEN_FIELD_TEMPLATE-->
           </script>
@@ -360,7 +365,7 @@
 
       <tr class="fields function_dependent" style="display:none;">
         <td colspan="3">
-          <h1>Field Functions To Wrap Around Fields:</h1>
+          <h1 style="margin-left: 75px;">Field Functions To Wrap Around Fields:</h1>
           <script type="text/plain" id="default_field_function_template">
             <!--FIELD_FUNCTION_TEMPLATE-->
           </script>
@@ -405,20 +410,26 @@
       </tr>
 
       <tr class="rows button_dependent" style="display:none;">
-        <td>
-          <h3>Row Button Column Name</h3>
-        </td>
-        <td>
-          <input type="text" name="rowButtonsName" id="rowButtonsName" value="<!--BUTTON_NAME_VALUE-->"/>
-        </td>
-        <td>
-          &#160;
+        <td colspan="3">
+          <table style="margin-left:75px;">
+            <tr>
+              <td>
+                <h3>Row Button Column Name</h3>
+              </td>
+              <td>
+                <input type="text" name="rowButtonsName" id="rowButtonsName" value="<!--BUTTON_NAME_VALUE-->"/>
+              </td>
+              <td>
+                &#160;
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 
       <tr class="rows button_dependent" style="display:none;">
         <td colspan="3">
-          <h1>Buttons:</h1>
+          <h1  style="margin-left:75px;">Buttons:</h1>
           <script type="text/plain" id="default_button_template">
             <!--THE_BUTTON_TEMPLATE-->
           </script>
@@ -461,14 +472,20 @@
       </tr>
 
       <tr class="search search_dependent export_dependent" style="display:none;">
-        <td>
-          <h3>Export Button Title:</h3>
-        </td>
-        <td>
-          <input type="text" name="exportButtonTitle" id="exportButtonTitle" value="<!--EXPORT_VALUE-->"/>
-        </td>
-        <td>
-          &#160;
+        <td colspan="3">
+          <table style="margin-left:75px;">
+            <tr>
+              <td>
+                <h3>Export Button Title:</h3>
+              </td>
+              <td>
+                <input type="text" name="exportButtonTitle" id="exportButtonTitle" value="<!--EXPORT_VALUE-->"/>
+              </td>
+              <td>
+                &#160;
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 
@@ -497,14 +514,20 @@
       </tr>
 
       <tr class="search search_dependent ransack_dependent" style="display:none;">
-        <td>
-          <h3>Customized Ransack Form?:</h3>
-        </td>
-        <td>
-          <input type="checkbox" name="ransackAdvancedForm" id="ransackAdvancedForm" value="1" <!--USE_RANSACK_ADV-->/>
-        </td>
-        <td>
-          <!--ADV_RANSACK_HELP_BUTTON-->
+        <td colspan="3">
+          <table style="margin-left:75px;">
+            <tr>
+              <td>
+                <h3>Customized Ransack Form?:</h3>
+              </td>
+              <td>
+                <input type="checkbox" name="ransackAdvancedForm" id="ransackAdvancedForm" value="1" <!--USE_RANSACK_ADV-->/>
+              </td>
+              <td>
+                <!--ADV_RANSACK_HELP_BUTTON-->
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 
@@ -522,18 +545,22 @@
 
       <tr class="search search_dependent grouping_dependent" style="display:none;">
         <td colspan="3">
-          <h1>Custom Items To Group By:</h1>
-          <table style="margin-left:150px;">
+          <h1  style="margin-left: 75px;">Custom Items To Group By:</h1>
+          <table>
             <tr>
               <td>
-                <h3>Add a description and field_name to group by:</h3>
-              </td>
-              <td>
-                <script type="text/plain" id="default_grouping">
+                <script type="text/plain" id="default_grouping_template">
                    <!--DEFAULT_GROUPING-->
                 </script>
-                <table id="grouping_items">
+                <table  style="margin-left:150px;" id="grouping_table">
                   <!--GROUPING_ITEMS-->
+                </table>
+                <table style="margin-left:150px;">
+                  <tr>
+                    <td colspan="3">
+                      <!--ADD_GROUP_BY_BUTTON-->
+                    </td>
+                  </tr>
                 </table>
               </td>
             </tr>
@@ -569,16 +596,22 @@
       </tr>
 
       <tr class="misc_submit checkbox_dependent" style="display:none;">
-        <td>
-          <h3>Checkbox Value:</h3>
-        </td>
-        <td>
-          <select name="checkboxField" id="checkboxField">
-            <!--CHECKBOX_SELECTED_FIELDS-->
-          </select>
-        </td>
-        <td>
-          <!--CHECK_HELP_BUTTON-->
+        <td colspan="3">
+          <table style="margin-left:75px;">
+            <tr>
+              <td>
+                <h3>Checkbox Value:</h3>
+              </td>
+              <td>
+                <select name="checkboxField" id="checkboxField">
+                  <!--CHECKBOX_SELECTED_FIELDS-->
+                </select>
+              </td>
+              <td>
+                <!--CHECK_HELP_BUTTON-->
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
       <tr class="misc_submit"  style="display:none;" >
