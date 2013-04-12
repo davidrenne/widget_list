@@ -16,6 +16,14 @@
     top:0;
     width:600px;
   }
+
+  .buttons_drill_down_name_button {
+    margin-right: 70px;
+  }
+
+  .buttons_data_to_pass_from_view_button {
+    margin-right: 120px;
+  }
 </style>
 
 <script type="text/javascript">
@@ -60,6 +68,7 @@
             }
             if (func_name == 'ShowRows') {
               ShowButtonOptions();
+              ShowDrillDownOptions();
             }
           });
         });
@@ -90,6 +99,46 @@
   function ShowSubmit() {
     ClickTab('.misc_submit',arguments.callee.name);
   }
+
+  function ReplaceColumnsToLinked(obj) {
+    found = false;
+    jQuery(obj).css('background-color','white');
+    jQuery('.fields_keys, .fields_hidden_keys, .fields_function_keys').each(
+      function(key, value) {
+        if(jQuery(value).val() == jQuery(obj).val().trim() && jQuery(value).val().search(/_linked/i) == -1) {
+          found = true;
+          jQuery(value).val(jQuery(obj).val().trim() + '_linked');
+          jQuery(obj).val(jQuery(obj).val().trim() + '_linked');
+          jQuery('#showHidden').attr('checked',true);
+          ShowHiddenOptions();
+
+          jQuery('.fields_hidden_keys[value=""]').each(
+            function(key1, value1) {
+              jQuery(value1).val();
+            }
+          );
+        }
+      }
+    );
+
+    if (!found) {
+      alert('Invalid Field Name defined.  Please change the value');
+      jQuery(obj).css('background-color','red');
+    }
+  }
+
+  function GoodClass(obj) {
+    found = false;
+    jQuery(obj).css('background-color','white');
+    if (jQuery(obj).val() == 'primary' || jQuery(obj).val() == 'info' || jQuery(obj).val() == 'success' || jQuery(obj).val() == 'danger' || jQuery(obj).val() == 'disabled' || jQuery(obj).val() == 'default') {
+      found = true;
+    }
+    if (!found) {
+      alert('Invalid Class Name.  Click Help icon for more information.');
+      jQuery(obj).css('background-color','red');
+    }
+  }
+
 
   function ShowSearchOptions(callback) {
     if (jQuery('#showSearch').is(':checked')) {
@@ -144,6 +193,16 @@
       jQuery('.button_dependent').hide();
     }
   }
+  function ShowDrillDownOptions() {
+    if (jQuery('#drillDownsOn').is(':checked')) {
+      if (jQuery('.buttons_drill_down_name').length == 0) {
+        AddDrillDown();
+      }
+      jQuery('.drill_down_dependent').show();
+    } else {
+      jQuery('.drill_down_dependent').hide();
+    }
+  }
 
   function ShowFunctionOptions() {
     if (jQuery('#fieldFunctionOn').is(':checked')) {
@@ -180,6 +239,14 @@
     jQuery('#button_table').html(jQuery('#button_table').html() + jQuery('#default_button_template').html());
   }
 
+  function AddDrillDown() {
+    jQuery('#drill_down_table').html(jQuery('#drill_down_table').html() + jQuery('#default_drill_down_template').html());
+  }
+
+  function AddFooterButton() {
+    jQuery('#footer_table').html(jQuery('#footer_table').html() + jQuery('#default_footer_template').html());
+  }
+
   function AddHiddenField() {
     jQuery('#hidden_field_table').html(jQuery('#hidden_field_table').html() + jQuery('#default_hidden_field_template').html());
   }
@@ -200,6 +267,8 @@
         jQuery('#field_table').html(response['fields']);
         jQuery('#hidden_field_table').html(response['fields_hidden']);
         jQuery('#checkboxField').html(response['checked_fields']);
+        jQuery('#footer_table').html(response['footer_buttons']);
+        jQuery('#grouping_table').html(response['group_by']);
 
         if (jQuery(obj).val() != '') {
           jQuery(all_btns).removeClass('disabled');
@@ -446,6 +515,40 @@
         </td>
       </tr>
 
+
+
+
+    <tr class="rows" style="display:none;">
+      <td style="width:300px;">
+        <h3>Drill Down Columns?:</h3>
+      </td>
+      <td>
+        <input type="checkbox" name="drillDownsOn" onchange="ShowDrillDownOptions();" id="drillDownsOn" value="1" <!--DRILL_DOWN_CHECKED-->/>
+      </td>
+      <td>
+        <!--DRILL_DOWN_HELP_BUTTON-->
+      </td>
+    </tr>
+
+    <tr class="rows drill_down_dependent" style="display:none;">
+      <td colspan="3">
+        <script type="text/plain" id="default_drill_down_template">
+          <!--THE_DRILL_DOWN_TEMPLATE-->
+        </script>
+        <table style="margin-left:150px;" id="drill_down_table">
+          <!--ALL_DRILL_DOWNS-->
+        </table>
+        <table style="margin-left:150px;">
+          <tr>
+            <td colspan="3">
+              <!--ADD_DRILL_DOWN_BUTTON-->
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+
     <!--SEARCH SECTION-->
       <tr class="search" style="display:none;">
         <td style="width:300px;">
@@ -539,7 +642,7 @@
           <input type="checkbox" name="useGrouping" onchange="ShowGroupingOptions()" id="useGrouping" value="1" <!--USE_GROUPING-->/>
         </td>
         <td>
-          &#160;
+          <!--GROUP_BY_HELP_BUTTON-->
         </td>
       </tr>
 
@@ -577,7 +680,24 @@
       </tr>
 
     <!--FOOTER SECTION-->
-
+    <tr class="footer" style="display:none;">
+      <td colspan="3">
+        <h1  style="margin-left:75px;">Footer Buttons:</h1>
+        <script type="text/plain" id="default_footer_template">
+          <!--FOOTER_BUTTON_TEMPLATE-->
+        </script>
+        <table style="margin-left:150px;" id="footer_table">
+          <!--ALL_FOOTER_BUTTONS-->
+        </table>
+        <table style="margin-left:150px;">
+          <tr>
+            <td colspan="3">
+              <!--ADD_THE_FOOTER_BUTTON-->
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
 
     <!--MISC & SUBMIT SECTION-->
 
