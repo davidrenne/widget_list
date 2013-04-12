@@ -97,7 +97,7 @@ module WidgetList
       @fieldFill['<!--FIELD-->']                = 'Field'
       @fieldFill['<!--DESC-->']                 = 'Desc'
       @fill['<!--HIDDEN_FIELD_TEMPLATE-->']     = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
-      @fill['<!--ADD_HIDDEN_FIELD_BUTTON-->']   = WidgetList::Widgets::widget_button('Add Field',  {'onclick' => "AddHiddenField();", 'innerClass' => "success" } )
+      @fill['<!--ADD_HIDDEN_FIELD_BUTTON-->']   = WidgetList::Widgets::widget_button('Add Hidden Field',  {'onclick' => "AddHiddenField();", 'innerClass' => "success" } )
       @fill['<!--ALL_HIDDEN_FIELDS-->']         = (!@isEditing) ? '' : page_json['fields_hidden']
 
 
@@ -127,7 +127,7 @@ module WidgetList
       @fieldFill['<!--BUTTON_URL-->']           = '/'
       @fieldFill['<!--BUTTON_CLASS-->']         = 'info'
       @fill['<!--THE_BUTTON_TEMPLATE-->']       = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
-      @fill['<!--ADD_THE_BUTTON_BUTTON-->']     = WidgetList::Widgets::widget_button('Add Field',  {'onclick' => "AddButton();", 'innerClass' => "success" } )
+      @fill['<!--ADD_THE_BUTTON_BUTTON-->']     = WidgetList::Widgets::widget_button('Add Button To Each Row',  {'onclick' => "AddButton();", 'innerClass' => "success" } )
       @fill['<!--ALL_BUTTONS-->']               = page_json['buttons']
 
       #
@@ -140,10 +140,18 @@ module WidgetList
       @fill['<!--USE_RANSACK_ADV-->']           = (!@isEditing) ? ''        : (page_config['ransackAdvancedForm'] == "1")  ? 'checked' : ''
       @fill['<!--USE_GROUPING-->']              = (!@isEditing) ? ''        : (page_config['useGrouping'] == "1") ? 'checked' : ''
       @fill['<!--SEARCH_TITLE-->']              = (!@isEditing) ? default_config['searchTitle'] : page_config['searchTitle']
-=begin
-      @fill['<!--GROUPING_ITEMS-->']            = (!@isEditing) ? default_grouping  : editing_grouping
-      @fill['<!--DEFAULT_GROUPING-->']          = default_grouping
-=end
+
+      @fieldFill = {}
+      @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
+      @fieldFill['<!--FIELD_VALUE-->']          = 'column_name'
+      @fieldFill['<!--FIELD_DESC-->']           = 'User Desc'
+      @fieldFill['<!--SUBJECT-->']              = 'group_by'
+      @fieldFill['<!--FIELD-->']                = 'Field'
+      @fieldFill['<!--DESC-->']                 = 'Desc'
+      @fill['<!--DEFAULT_GROUPING-->']          = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+      @fill['<!--ADD_GROUP_BY_BUTTON-->']       = WidgetList::Widgets::widget_button('Add New Group By',  {'onclick' => "AddGroupBy();", 'innerClass' => "success" } )
+      @fill['<!--GROUPING_ITEMS-->']            = (!@isEditing) ? '' : page_json['group_by']
+
 
 
       #
@@ -217,6 +225,7 @@ module WidgetList
       all_fields         = {}
       fields_function    = {}
       buttons            = {}
+      group_by           = {}
 
       if @isEditing
         model         = page_config['view'].constantize.new
@@ -239,6 +248,12 @@ module WidgetList
         if page_config.key?('fields_function')
           page_config['fields_function']['key'].each_with_index { |v,k|
             fields_function[v] = page_config['fields_function']['description'][k.to_i]
+          }
+        end
+
+        if page_config.key?('group_by')
+          page_config['group_by']['key'].each_with_index { |v,k|
+            group_by[v] = page_config['group_by']['description'][k.to_i]
           }
         end
 
@@ -270,6 +285,7 @@ module WidgetList
       @response['fields_hidden']   = ''
       @response['fields_function'] = ''
       @response['buttons']         = ''
+      @response['group_by']        = ''
       fields.each { |field,description|
         @fieldFill = {}
         @fieldFill['<!--SUBJECT-->']             = 'fields'
@@ -290,6 +306,18 @@ module WidgetList
         @fieldFill['<!--DESC-->']                = 'Desc'
         @fieldFill['<!--FIELD-->']               = 'Field'
         @response['fields_hidden'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+      }
+
+      group_by.each { |field,description|
+
+        @fieldFill = {}
+        @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
+        @fieldFill['<!--FIELD_VALUE-->']          = field
+        @fieldFill['<!--FIELD_DESC-->']           = description
+        @fieldFill['<!--SUBJECT-->']              = 'group_by'
+        @fieldFill['<!--FIELD-->']                = 'Field'
+        @fieldFill['<!--DESC-->']                 = 'Desc'
+        @response['group_by'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
       fields_function.each { |field,description|
