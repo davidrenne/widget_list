@@ -1,0 +1,14 @@
+<tr>
+  <td>
+    Text:&#160;<input type="text" style="width:170px" onkeyup="jQuery(this).attr('value',jQuery(this).val());" name="buttons[text][]" id="buttons[text][]" value="<!--BUTTON_TEXT-->"/>
+  </td>
+  <td>
+    URL:&#160;<input type="text" style="width:170px" onkeyup="jQuery(this).attr('value',jQuery(this).val());" name="buttons[url][]" id="buttons[url][]" value="<!--BUTTON_URL-->"/><%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('URLs include a RESTful path where you will pass controller/field_name/field_name/ where those will be replaced')", 'innerClass' => "default" }, true ) %>
+  </td>
+  <td>
+    Color:&#160;<input type="text" style="width:170px" onkeyup="jQuery(this).attr('value',jQuery(this).val());" name="buttons[class][]" id="buttons[class][]" value="<!--BUTTON_CLASS-->"/><%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('primary=(blue) info=(light-blue) success=(green) danger=(red) disabled=(light grey) default=(grey)')", 'innerClass' => "default" }, true ) %>
+  </td>
+  <td>
+    <!--REMOVE_FIELD_BUTTON-->
+  </td>
+</tr>

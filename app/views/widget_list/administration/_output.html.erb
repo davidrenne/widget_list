@@ -48,6 +48,7 @@
             if (func_name == 'ShowSearch') {
               ShowSearchOptions(function() {
                 ShowGroupingOptions();
+                ShowExportOptions();
               });
             }
             if (func_name == 'ShowFields') {
@@ -56,6 +57,9 @@
             }
             if (func_name == 'ShowSubmit') {
               ShowCheckboxOptions();
+            }
+            if (func_name == 'ShowRows') {
+              ShowButtonOptions();
             }
           });
         });
@@ -124,13 +128,28 @@
 
   function ShowHiddenOptions() {
     if (jQuery('#showHidden').is(':checked')) {
+      if (jQuery('.fields_hidden_keys').length == 0) {
+        AddHiddenField();
+      }
       jQuery('.hidden_fields_dependent').show();
     } else {
       jQuery('.hidden_fields_dependent').hide();
     }
   }
+
+  function ShowButtonOptions() {
+    if (jQuery('#rowButtonsOn').is(':checked')) {
+      jQuery('.button_dependent').show();
+    } else {
+      jQuery('.button_dependent').hide();
+    }
+  }
+
   function ShowFunctionOptions() {
     if (jQuery('#fieldFunctionOn').is(':checked')) {
+      if (jQuery('.fields_function_keys').length == 0) {
+        AddFieldFunction();
+      }
       jQuery('.function_dependent').show();
     } else {
       jQuery('.function_dependent').hide();
@@ -151,6 +170,10 @@
 
   function AddField() {
     jQuery('#field_table').html(jQuery('#field_table').html() + jQuery('#default_field_template').html());
+  }
+
+  function AddButton() {
+    jQuery('#button_table').html(jQuery('#button_table').html() + jQuery('#default_button_template').html());
   }
 
   function AddHiddenField() {
@@ -337,7 +360,7 @@
 
       <tr class="fields function_dependent" style="display:none;">
         <td colspan="3">
-          <h1>Hidden Field Selection:</h1>
+          <h1>Field Functions To Wrap Around Fields:</h1>
           <script type="text/plain" id="default_field_function_template">
             <!--FIELD_FUNCTION_TEMPLATE-->
           </script>
@@ -364,6 +387,51 @@
         </td>
         <td>
           <!--ROW_HELP_BUTTON-->
+        </td>
+      </tr>
+
+
+
+      <tr class="rows" style="display:none;">
+        <td style="width:300px;">
+          <h3>Row Buttons?:</h3>
+        </td>
+        <td>
+          <input type="checkbox" name="rowButtonsOn" onchange="ShowButtonOptions();" id="rowButtonsOn" value="1" <!--BUTTONS_ON_CHECKED-->/>
+        </td>
+        <td>
+          <!--BUTTON_HELP_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="rows button_dependent" style="display:none;">
+        <td>
+          <h3>Row Button Column Name</h3>
+        </td>
+        <td>
+          <input type="text" name="rowButtonsName" id="rowButtonsName" value="<!--BUTTON_NAME_VALUE-->"/>
+        </td>
+        <td>
+          &#160;
+        </td>
+      </tr>
+
+      <tr class="rows button_dependent" style="display:none;">
+        <td colspan="3">
+          <h1>Buttons:</h1>
+          <script type="text/plain" id="default_button_template">
+            <!--THE_BUTTON_TEMPLATE-->
+          </script>
+          <table style="margin-left:150px;" id="button_table">
+            <!--ALL_BUTTONS-->
+          </table>
+          <table style="margin-left:150px;">
+            <tr>
+              <td colspan="3">
+                <!--ADD_THE_BUTTON_BUTTON-->
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
 

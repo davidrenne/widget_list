@@ -26,11 +26,8 @@ module WidgetList
       ac = ActionController::Base.new()
       default_config = WidgetList::List::get_defaults()
       config_id, page_config = get_configuration()
-      if @isEditing
-        page_json   = JSON.parse(ajax_get_field_json(page_config['view']))
-      else
-        page_json   = {}
-      end
+      page_json   = JSON.parse(ajax_get_field_json(page_config['view']))
+
 
       #Loop models
       models = Dir[ Rails.root.join("app", "models").to_s + '**/*'].reject {|fn| File.directory?(fn) }
@@ -116,14 +113,22 @@ module WidgetList
       @fill['<!--ADD_FIELD_FUNCTION_BUTTON-->'] = WidgetList::Widgets::widget_button('Add Function',  {'onclick' => "AddFieldFunction();", 'innerClass' => "success" } )
       @fill['<!--ALL_FIELD_FUNCTIONS-->']       = (!@isEditing) ? '' : page_json['fields_function']
 
-
-
       #
       # ROW LEVEL
       #
 
       @fill['<!--ROW_LIMIT_VALUE-->']           = (!@isEditing) ? default_config['rowLimit'] : page_config['rowLimit']
+      @fill['<!--BUTTON_NAME_VALUE-->']         = (!@isEditing) ? 'Actions' : page_config['rowButtonsName']
+      @fill['<!--BUTTONS_ON_CHECKED-->']        = (!@isEditing) ? '' : (page_config['rowButtonsOn'] == "1")  ? 'checked' : ''
 
+      @fieldFill = {}
+      @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
+      @fieldFill['<!--BUTTON_TEXT-->']          = 'Button Text'
+      @fieldFill['<!--BUTTON_URL-->']           = '/'
+      @fieldFill['<!--BUTTON_CLASS-->']         = 'info'
+      @fill['<!--THE_BUTTON_TEMPLATE-->']       = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
+      @fill['<!--ADD_THE_BUTTON_BUTTON-->']     = WidgetList::Widgets::widget_button('Add Field',  {'onclick' => "AddButton();", 'innerClass' => "success" } )
+      @fill['<!--ALL_BUTTONS-->']               = page_json['buttons']
 
       #
       # SEARCH
@@ -160,6 +165,7 @@ module WidgetList
       @help['<!--CHECK_HELP_BUTTON-->']         = "This value is supposed to be the primary key to identify the row"
       @help['<!--ROW_HELP_BUTTON-->']           = "10,20,50,100,500,1000 are supported"
       @help['<!--FUNC_HELP_BUTTON-->']          = "A fieldFunction is a wrapper to call functions around columns that exist or possibly adding new fields that dont exist.  It is good for formatting data after the where clause."
+      @help['<!--BUTTON_HELP_BUTTON-->']        = "For each record.  Add several buttons which will pass tags which are the record values to another page or javascript function"
       @help['<!--ADV_RANSACK_HELP_BUTTON-->']   = "By default, widget_list will build the advanced form for you when this option is unchecked.  By checking, the code builder will place the advanced form inside your controller so you can add additional filtering options you will have to handle on your own"
 
       @help.each { |k,v|
@@ -210,12 +216,14 @@ module WidgetList
       fields_hidden      = {}
       all_fields         = {}
       fields_function    = {}
+      buttons            = {}
 
       if @isEditing
         model         = page_config['view'].constantize.new
         model.attributes.keys.each { |field|
           all_fields[field] = field.gsub(/_/,' _').camelize
         }
+
         if page_config.key?('fields')
           page_config['fields']['key'].each_with_index { |v,k|
             fields[v] = page_config['fields']['description'][k.to_i]
@@ -233,18 +241,35 @@ module WidgetList
             fields_function[v] = page_config['fields_function']['description'][k.to_i]
           }
         end
+
+        if page_config.key?('buttons')
+          page_config['buttons']['text'].each_with_index { |v,k|
+            buttons[v] = {}
+            buttons[v]['url']   = page_config['buttons']['url'][k.to_i]
+            buttons[v]['class'] = page_config['buttons']['class'][k.to_i]
+          }
+        end
       else
-        model         = model_name.constantize.new
-        model.attributes.keys.each { |field|
-          fields[field] = field.gsub(/_/,' _').camelize
-          all_fields[field] = field.gsub(/_/,' _').camelize
-          fields_function[field] = 'CNT(' + field + ') or NVL(' + field + ') or TO_DATE(' + field + ') etc...'
-        }
+        if $_REQUEST.key?('ajax')
+          model         = model_name.constantize.new
+          model.attributes.keys.each { |field|
+            fields[field] = field.gsub(/_/,' _').camelize
+            all_fields[field] = field.gsub(/_/,' _').camelize
+            fields_function[field] = 'CNT(' + field + ') or NVL(' + field + ') or TO_DATE(' + field + ') etc...'
+          }
+        end
+        buttons['Edit']            = {}
+        buttons['Delete']          = {}
+        buttons['Delete']['url']   = '/'
+        buttons['Delete']['class'] = 'danger'
+        buttons['Edit']['url']     = '/'
+        buttons['Edit']['class']   = 'success'
       end
 
       @response['fields']          = ''
       @response['fields_hidden']   = ''
       @response['fields_function'] = ''
+      @response['buttons']         = ''
       fields.each { |field,description|
         @fieldFill = {}
         @fieldFill['<!--SUBJECT-->']             = 'fields'
@@ -279,8 +304,19 @@ module WidgetList
         @response['fields_function'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
-      @response['all_fields']     = all_fields
-      @response['checked_fields'] = build_field_options(all_fields, page_config.key?('checkboxField') ? page_config['checkboxField'] : '')
+      buttons.each { |field|
+        @fieldFill = {}
+        @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
+        @fieldFill['<!--BUTTON_TEXT-->']          = field[0]
+        @fieldFill['<!--BUTTON_URL-->']           = field[1]['url']
+        @fieldFill['<!--BUTTON_CLASS-->']         = field[1]['class']
+        @response['buttons']             +=  WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
+      }
+
+      if $_REQUEST.key?('ajax') || @isEditing
+        @response['all_fields']     = all_fields
+        @response['checked_fields'] = build_field_options(all_fields, page_config.key?('checkboxField') ? page_config['checkboxField'] : '')
+      end
 
       return @response.to_json
     end
