@@ -33,6 +33,12 @@
     if (jQuery('#view').val() != '') {
       jQuery(all_btns).removeClass('disabled');
     }
+    if (jQuery('#preview').attr('src') == '') {
+      jQuery('#preview').hide();
+    } else {
+      jQuery('#preview').show();
+    }
+
   });
 
   function VerifyOK(func_name) {
@@ -57,6 +63,7 @@
               ShowSearchOptions(function() {
                 ShowGroupingOptions();
                 ShowExportOptions();
+
               });
             }
             if (func_name == 'ShowFields') {
@@ -70,9 +77,13 @@
               ShowButtonOptions();
               ShowDrillDownOptions();
             }
+            if (func_name == 'ShowFooter') {
+              ShowFooterOptions();
+            }
           });
         });
       });
+      SaveChanges();
     }
   }
 
@@ -140,6 +151,7 @@
 
 
           jQuery('#showHidden').attr('checked',true);
+          AddHiddenField();
           jQuery('.fields_hidden_keys[value=""]').each(
               function(key1, value1) {
                 jQuery(value1).val(id_original);
@@ -211,6 +223,14 @@
       jQuery('.ransack_dependent').show();
     } else {
       jQuery('.ransack_dependent').hide();
+    }
+  }
+
+  function ShowFooterOptions() {
+    if (jQuery('#footerOn').is(':checked')) {
+      jQuery('.footer_dependent').show();
+    } else {
+      jQuery('.footer_dependent').hide();
     }
   }
 
@@ -316,15 +336,15 @@
         jQuery('#checkboxField').html(response['checked_fields']);
         jQuery('#footer_table').html(response['footer_buttons']);
         jQuery('#grouping_table').html(response['group_by']);
-
+        SaveChanges();
         if (jQuery(obj).val() != '') {
           jQuery(all_btns).removeClass('disabled');
         }
 
-        if (jQuery(obj).val() != '' && (jQuery('#title').val() == '' || jQuery('#title').val().search(/Showing All/i) == 0) ) {
-          jQuery(all_btns).removeClass('disabled');
-          jQuery('#title').val('Showing All ' + jQuery(obj).val() + 's');
-        }
+
+        jQuery(all_btns).removeClass('disabled');
+        jQuery('#title').val(jQuery(obj).val() + 's');
+        jQuery('#listDescription').val('Showing All ' + jQuery(obj).val() + 's');
 
         if (jQuery(obj).val() != '' && jQuery('#noDataMessage').val() == '') {
           jQuery('#noDataMessage').val('No ' + jQuery(obj).val() + 's Found Within Your Criteria');
@@ -335,6 +355,18 @@
         }
       }, "json");
     }
+  }
+
+  function SaveChanges() {
+    jQuery(all_btns).addClass('disabled');
+    jQuery.post(jQuery('#widget_list_administration').attr('action'), 'ajax=1&save=1&' + jQuery('#widget_list_administration').serialize(), function(response)
+    {
+      jQuery(all_btns).removeClass('disabled');
+      jQuery('#preview').show();
+      jQuery('#preview').attr('src',jQuery('#widget_list_administration').attr('action') + '?iframe=1');
+      jQuery('#preview').css('width','100%');
+      jQuery('#preview').css('height','500px');
+    }, "json");
   }
 
   function Submit() {
@@ -388,6 +420,18 @@
         </td>
         <td>
           <!--TITLE_HELP_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="start">
+        <td>
+          <h3>Initial Description:</h3>
+        </td>
+        <td>
+          <input type="text" name="listDescription" id="listDescription" value="<!--DESC_VALUE-->"/>
+        </td>
+        <td>
+          <!--DESC_HELP_BUTTON-->
         </td>
       </tr>
 
@@ -609,7 +653,7 @@
         </td>
       </tr>
 
-      <tr class="search" style="display:none;">
+      <tr class="search search_dependent" style="display:none;">
         <td style="width:300px;">
           <h3>Show Export Button?:</h3>
         </td>
@@ -728,6 +772,17 @@
 
     <!--FOOTER SECTION-->
     <tr class="footer" style="display:none;">
+      <td style="width:300px;">
+        <h3>Build Customized Footer?:</h3>
+      </td>
+      <td>
+        <input type="checkbox" name="footerOn" onchange="ShowFooterOptions();" id="footerOn" value="1" <!--FOOTER_CHECKED-->/>
+      </td>
+      <td>
+
+      </td>
+    </tr>
+    <tr class="footer footer_dependent" style="display:none;">
       <td colspan="3">
         <h1  style="margin-left:75px;">Footer Buttons:</h1>
         <script type="text/plain" id="default_footer_template">
@@ -747,8 +802,6 @@
     </tr>
 
     <!--MISC & SUBMIT SECTION-->
-
-
 
       <tr class="misc_submit" style="display:none;">
         <td style="width:300px;">
@@ -792,5 +845,12 @@
           &#160;
         </td>
       </tr>
+
+      <tr>
+        <td colspan="3">
+          <iframe src="" id="preview"></iframe>
+        </td>
+      </tr>
+
   </table>
 </form>

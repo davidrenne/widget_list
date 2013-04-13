@@ -17,8 +17,13 @@ module WidgetList
   # WidgetList Administration/Setup
   #
   def self.go!()
-    list = WidgetList::List.new()
-    return list.render()
+    if $_REQUEST.key?('iframe')
+      eval(WidgetList::Administration.new.translate_config_to_code(true))
+      return @output
+    else
+      list = WidgetList::List.new()
+      return list.render()
+    end
   end
 
   class Administration
@@ -54,11 +59,11 @@ module WidgetList
       #
       @fill['<!--POST_URL-->']                  = $_SERVER['PATH_INFO']
       @fill['<!--BUTTONS-->']                   = WidgetList::Widgets::widget_button('Step One - Start ->',           {'id' => 'start'      , 'onclick' => "ShowStart();"    , 'innerClass' => "primary"  } ) +
-        WidgetList::Widgets::widget_button('Step Two - Fields ->',          {'id' => 'fields'     , 'onclick' => "ShowFields();"  , 'innerClass' => "primary disabled"  } ) +
-        WidgetList::Widgets::widget_button('Step Three - Rows ->',          {'id' => 'rows'       , 'onclick' => "ShowRows();"    , 'innerClass' => "primary disabled"  } ) +
-        WidgetList::Widgets::widget_button('Step Four - Search ->',         {'id' => 'search'     , 'onclick' => "ShowSearch();"  , 'innerClass' => "primary disabled"  } ) +
-        WidgetList::Widgets::widget_button('Step Four - Footer Actions ->', {'id' => 'footer'     , 'onclick' => "ShowFooter();"  , 'innerClass' => "primary disabled"  } ) +
-        WidgetList::Widgets::widget_button('Step Five - Misc & Submit ->',  {'id' => 'misc_submit', 'onclick' => "ShowSubmit();"  , 'innerClass' => "success disabled"  } )
+          WidgetList::Widgets::widget_button('Step Two - Fields ->',          {'id' => 'fields'     , 'onclick' => "ShowFields();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Three - Rows ->',          {'id' => 'rows'       , 'onclick' => "ShowRows();"    , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Four - Search ->',         {'id' => 'search'     , 'onclick' => "ShowSearch();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Four - Footer Actions ->', {'id' => 'footer'     , 'onclick' => "ShowFooter();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Five - Misc & Submit ->',  {'id' => 'misc_submit', 'onclick' => "ShowSubmit();"  , 'innerClass' => "success disabled"  } )
 
 
       #
@@ -68,6 +73,7 @@ module WidgetList
       @fill['<!--NAME_VALUE-->']                = (!@isEditing) ? config_id : page_config['name']
       @fill['<!--VIEW_OPTIONS-->']              = model_options
       @fill['<!--TITLE_VALUE-->']               = (!@isEditing) ? '' : page_config['title']
+      @fill['<!--DESC_VALUE-->']                = (!@isEditing) ? '' : page_config['listDescription']
 
       #
       # FIELD LEVEL
@@ -146,7 +152,7 @@ module WidgetList
       @fieldFill['<!--SUBJECT-->']              = 'buttons'
 
       @fill['<!--THE_BUTTON_TEMPLATE-->']       = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
-      @fill['<!--ADD_THE_BUTTON_BUTTON-->']     = WidgetList::Widgets::widget_button('Add Button To Each Row',  {'onclick' => "AddButton();", 'innerClass' => "success" } )
+      @fill['<!--ADD_THE_BUTTON_BUTTON-->']     = WidgetList::Widgets::widget_button('Add Button To Each Row',  {'onclick' => "AddButton();", 'innerClass' => "info" } )
       @fill['<!--ALL_BUTTONS-->']               = page_json['buttons']
 
       @fieldFill = {}
@@ -227,6 +233,7 @@ module WidgetList
       @fill['<!--FOOTER_BUTTON_TEMPLATE-->']    = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
       @fill['<!--ADD_THE_FOOTER_BUTTON-->']     = WidgetList::Widgets::widget_button('Add Footer Button',  {'onclick' => "AddFooterButton();", 'innerClass' => "success" } )
       @fill['<!--ALL_FOOTER_BUTTONS-->']        = page_json['footer_buttons']
+      @fill['<!--FOOTER_CHECKED-->']            = (!@isEditing) ? '' : (page_config['footerOn'] == "1")  ? 'checked' : ''
 
 
 
@@ -263,16 +270,321 @@ module WidgetList
       return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output') )
     end
 
-    def get_configuration()
+    def translate_config_to_code(tmp=false)
+      config_id, page_config = get_configuration(tmp)
+      fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs = normalize_configs(page_config)
+      drill_down_code  = ''
+      case_statements  = ''
+      case_statements2 = ''
+      drill_down_links = ''
+      view_code        = ''
+      export_code      = ''
+      visible_field_code       = ''
+      hidden_field_code       = ''
+      variable_code    = ''
+      checkbox_code    = ''
+      button_code      = ''
+      grouping_code    = ''
+      field_function_code      = ''
+
+      #------------ DRILL DOWNS ------------
+      if page_config['drillDownsOn'] == "1" && !drill_downs.empty?
+        #@todo - (groupByFilter == 'none') ? 'a.name' : 'MAX(a.name)'
+
+        drill_downs.each { |field|
+          drill_down_links+= "
+        list_parms['fieldFunction']['#{field[1]['column_to_show']}']    = WidgetList::List::build_drill_down(
+          :list_id => list_parms['name'],
+          :drill_down_name => '#{field[0]}',
+          :data_to_pass_from_view => '#{field[1]['column_to_show'].gsub(/_linked/,'')}',
+          :column_to_show => '#{field[1]['column_to_show'].gsub(/_linked/,'')}',
+          :column_alias => '#{field[1]['column_to_show']}'
+        )"
+          case_statements += <<-EOD
+
+        when '#{field[0]}'
+          list_parms['filter']   << " #{field[1]['column_to_show'].gsub(/_linked/,'')} = ? "
+          list_parms['bindVars'] << #{page_config['view']}.sanitize(filterValue)
+          list_parms['listDescription']  = ' Filtered by #{field[1]['column_to_show'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
+          EOD
+        }
+
+        drill_down_code = <<-EOD
+
+      #
+      # Handle Dynamic Filters
+      #
+
+      drillDown, filterValue  = WidgetList::List::get_filter_and_drilldown(list_parms['name'])
+
+      case drillDown#{case_statements}
+        else
+          list_parms['listDescription']  = '#{page_config['listDescription']}'
+      end
+        EOD
+
+      else
+        drill_down_code = "
+      list_parms['listDescription']  = '#{page_config['listDescription']}'
+        "
+      end
+
+
+      if page_config['rowButtonsOn'] == '1'
+        variable_code += "
+      button_column_name          = '#{page_config['rowButtonsName']}'"
+      end
+
+      #------------ VIEW ------------
+
+      if page_config['useRansack'] == '1' && page_config['showSearch'] == '1'
+        view_code = "
+      list_parms['ransackSearch']  = #{page_config['view']}.search($_REQUEST[:q])
+      list_parms['view']           = list_parms['ransackSearch'].result
+        "
+        if page_config['ransackAdvancedForm'] == '1'
+          view_code += "
+      list_parms['listSearchForm'] = WidgetList::Utils::fill( {
+                                                                      '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', WidgetList::List::build_search_button_click(list_parms)),
+                                                                      '<!--BUTTON_CLOSE-->'        => \"HideAdvancedSearch(this)\" } ,
+                                                                  '
+      <!-- Customize your form as well as keep RANSACK tag -->
+      <div id=\"advanced-search-container\">
+          <div class=\"widget-search-drilldown-close\" onclick=\"<!--BUTTON_CLOSE-->\">X</div>
+            <ul class=\"advanced-search-container-inline\" id=\"search_columns\">
+              <li>
+                <!--RANSACK-->
+              </li>
+            </ul>
+           <br/>
+                <div style=\"text-align:right;width:100%;height:30px;\" class=\"advanced-search-container-buttons\"><!--BUTTON_RESET--><!--BUTTON_SEARCH--></div>
+      </div>
+                                                                  '
+        "
+
+        end
+
+      else
+        view_code = "
+      list_parms['view']           = #{page_config['view']}
+        "
+      end
+
+      #------------ EXPORT ------------
+
+      if page_config['showExport'] == '1' && page_config['showSearch'] == '1'
+        export_code += "list_parms['showExport']        = #{page_config['showExport'] == '1' ? 'true' : 'false'}
+      list_parms['exportButtonTitle'] = '#{page_config['exportButtonTitle']}'"
+      end
+
+      if page_config['showSearch'] == '1'
+        export_code += "
+      list_parms['searchTitle']        = '#{page_config['searchTitle']}'"
+      end
+
+
+      #------------ VISIBLE FIELDS ------------
+      if page_config['checkboxEnabled'] == '1'
+        checkbox_code += "
+      list_parms = WidgetList::List.checkbox_helper(list_parms,'#{page_config['checkboxField']}')
+        "
+        visible_field_code += "
+      list_parms['fields']['checkbox']           = 'checkbox_header'"
+      end
+
+      fields.each { |field,description|
+        visible_field_code += "
+      list_parms['fields']['#{field}']           = '#{description}'"
+      }
+
+      #------------ BUTTONS ------------
+
+      if page_config['rowButtonsOn'] == '1'
+        visible_field_code += "
+      list_parms['fields'][button_column_name.downcase] = button_column_name.capitalize"
+      end
+
+      button_code += "
+      mini_buttons = {}
+      "
+
+      buttons.each { |field|
+        button_code += "
+      mini_buttons['button_#{field[0].downcase}'] = {'page'       => '#{field[1]['url']}',
+                                                     'text'       => '#{field[0]}',
+                                                     'function'   => 'Redirect',
+                                                     'innerClass' => '#{field[1]['class']}',
+                                                     'tags'       => {'all'=>'all'}
+                                                    }
+      "
+      }
+
+      button_code += "
+      list_parms['buttons']       = {button_column_name.downcase => mini_buttons}
+      "
+
+
+
+      #------------ FOOTER ------------
+      if page_config['footerOn'] == '1' && !footer_buttons.empty?
+        btns = []
+        footer_buttons.each {|field|
+          btns << " WidgetList::Widgets::widget_button('#{field[0]}', {'page'       => '#{field[1]['url']}','innerClass' => '#{field[1]['class']}'})"
+        }
+
+        button_code += "
+      list_parms['customFooter'] = " + btns.join(' + ')
+      end
+
+
+
+
+      #------------ GROUPING ------------
+
+      if page_config['useGrouping'] == '1' && page_config['showSearch'] == '1' && !group_by.empty?
+        variable_code += "
+      groupByDesc          = ''     # Initialize a variable you can use in listDescription to show what the current grouping selection is
+      groupByFilter        = 'none' # This variable should be used to control business logic based on the grouping and is a short hand key rather than using what is returned from get_group_by_selection
+        "
+        descriptions = []
+        group_by.each { |field,description|
+          descriptions << "'" + description + "'"
+          desc = ''
+          filter = ''
+          unless field.empty?
+            desc = " (Grouped By #{field.camelize})"
+            filter = "group_#{description.gsub(/ /,'_').downcase}"
+          else
+            filter = 'none'
+          end
+          case_statements2 += <<-EOD
+
+        when '#{description}'
+          list_parms['groupBy']  = '#{field}'
+          groupByFilter          = '#{filter}'
+          groupByDesc            = '#{desc}'
+          EOD
+        }
+        grouping_code = <<-EOD
+
+      #
+      # Group By
+      #
+
+      groupBy  = WidgetList::List::get_group_by_selection(list_parms)
+
+      case groupBy#{case_statements2}
+        else
+          list_parms['groupBy']  = ''
+      end
+        EOD
+
+        grouping_code += "
+        list_parms['groupByItems'] = " + '[' + descriptions.join(', ') + ']' + ""
+      end
+
+
+
+      #------------ FIELD FUNCTIONS ------------
+
+      if page_config['fieldFunctionOn'] == '1' && !fields_function.empty?
+        fields_function.each { |field,command|
+          field_function_code += "
+      list_parms['fieldFunction']['#{field}']           = '#{command}'"
+        }
+      end
+
+      if page_config['showHidden'] == '1'
+        fields_hidden.each { |field|
+          hidden_field_code += "
+      list_parms['fieldsHidden'] << '#{field[1]}'"
+        }
+      end
+
+      if page_config['rowButtonsOn'] == '1'
+        field_function_code += "
+      list_parms['fieldFunction'][button_column_name.downcase] = \"''\""
+      end
+
+
+      if page_config['checkboxEnabled'] == '1'
+        field_function_code += "
+      list_parms['fieldFunction']['checkbox'] = \"''\""
+      end
+
+      <<-EOD
+    begin
+
+      #{variable_code}
+      list_parms                    = WidgetList::List::init_config()
+      list_parms['name']            = '#{page_config['name']}'
+      list_parms['noDataMessage']   = '#{page_config['noDataMessage']}'
+      list_parms['rowLimit']        = '#{page_config['rowLimit']}'
+      list_parms['title']           = '#{page_config['title']}'
+      list_parms['listDescription'] = '#{page_config['listDescription']}'
+      list_parms['useSort']         =  #{page_config['useSort'] == '1' ? 'true' : 'false'}
+      #{export_code}
+
+      #{drill_down_code}
+      #{drill_down_links}
+      #{grouping_code}
+
+      #{visible_field_code}
+      #{hidden_field_code}
+      #{field_function_code}
+
+      #{view_code}
+
+      #{checkbox_code}
+      #{button_code}
+
+
+      output_type, output  = WidgetList::List.build_list(list_parms)
+
+      case output_type
+        when 'html'
+          @output = output
+        when 'json'
+          return render :inline => output
+        when 'export'
+          send_data(output, :filename => list_parms['name'] + '.csv')
+          return
+      end
+
+    rescue Exception => e
+
+      Rails.logger.info e.to_s + "\\n\\n" + $!.backtrace.join("\\n\\n")
+
+      if Rails.env == 'development'
+        list_parms['errors'] << '<br/><br/><strong style="color:maroon;">(Ruby Exception - Still attempted to render list with given config ' + list_parms.inspect + ') Exception ==> ' + e.to_s + "<br/><br/>Backtrace:<br/><br/>" + $!.backtrace.join("<br/><br/>") + "</strong>"
+      end
+
+      output_type, output  = WidgetList::List.build_list(list_parms)
+
+      case output_type
+        when 'html'
+          @output = output
+        when 'json'
+          return render :inline => output
+        when 'export'
+          send_data(output, :filename => list_parms['name'] + '.csv')
+          return
+      end
+    end
+      EOD
+    end
+
+    def get_configuration(tmp=false)
+      temp = (tmp) ? '-tmp': ''
 
       request = $_REQUEST.dup
       config_id =  ''
       config_id += request['controller'] if request.key?('controller')
       config_id += request['action'] if request.key?('action')
-      config_file = Rails.root.join("config", "widget-list-administration.json")
+      config_file = Rails.root.join("config", "widget-list-administration#{temp}.json")
 
       if config_file.file?
-        configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration.json")).read)
+        configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration#{temp}.json")).read)
       else
         configuration = {}
       end
@@ -280,6 +592,12 @@ module WidgetList
       if configuration.key?(config_id)
         @isEditing  = true
         page_config = configuration[config_id]
+
+        ['useSort','showHidden','fieldFunctionOn','rowButtonsOn','drillDownsOn','showSearch','showExport','useRansack','ransackAdvancedForm','useGrouping','footerOn','checkboxEnabled'].each { |item|
+          unless page_config.key?(item)
+            page_config[item] = "0"
+          end
+        }
       else
         @isEditing  = false
         page_config = {}
@@ -293,6 +611,66 @@ module WidgetList
         options += "<option value='#{field}' #{((selected == field) ? 'selected' : '')}>#{description}</option>"
       }
       return options
+    end
+
+    def normalize_configs(page_config)
+      fields             = {}
+      fields_hidden      = {}
+      fields_function    = {}
+      buttons            = {}
+      footer_buttons     = {}
+      group_by           = {}
+      drill_downs        = {}
+
+      if page_config.key?('fields')
+        page_config['fields']['key'].each_with_index { |v,k|
+          fields[v] = page_config['fields']['description'][k.to_i]
+        }
+      end
+
+      if page_config.key?('fields_hidden')
+        page_config['fields_hidden']['key'].each { |v|
+          fields_hidden[v] = v
+        }
+      end
+
+      if page_config.key?('fields_function')
+        page_config['fields_function']['key'].each_with_index { |v,k|
+          fields_function[v] = page_config['fields_function']['description'][k.to_i]
+        }
+      end
+
+      if page_config.key?('group_by')
+        page_config['group_by']['key'].each_with_index { |v,k|
+          group_by[v] = page_config['group_by']['description'][k.to_i]
+        }
+      end
+
+      if page_config.key?('buttons')
+        page_config['buttons']['text'].each_with_index { |v,k|
+          buttons[v] = {}
+          buttons[v]['url']   = page_config['buttons']['url'][k.to_i]
+          buttons[v]['class'] = page_config['buttons']['class'][k.to_i]
+        }
+      end
+
+      if page_config.key?('footer_buttons')
+        page_config['footer_buttons']['text'].each_with_index { |v,k|
+          footer_buttons[v] = {}
+          footer_buttons[v]['url']   = page_config['footer_buttons']['url'][k.to_i]
+          footer_buttons[v]['class'] = page_config['footer_buttons']['class'][k.to_i]
+        }
+      end
+
+      if page_config.key?('drill_downs')
+        page_config['drill_downs']['drill_down_name'].each_with_index { |v,k|
+          drill_downs[v] = {}
+          drill_downs[v]['data_to_pass_from_view']   = page_config['drill_downs']['data_to_pass_from_view'][k.to_i]
+          drill_downs[v]['column_to_show']           = page_config['drill_downs']['column_to_show'][k.to_i]
+        }
+      end
+
+      return [fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs]
     end
 
     def ajax_get_field_json(model_name)
@@ -314,53 +692,7 @@ module WidgetList
           all_fields[field] = field.gsub(/_/,' _').camelize
         }
 
-        if page_config.key?('fields')
-          page_config['fields']['key'].each_with_index { |v,k|
-            fields[v] = page_config['fields']['description'][k.to_i]
-          }
-        end
-
-        if page_config.key?('fields_hidden')
-          page_config['fields_hidden']['key'].each { |v|
-            fields_hidden[v] = v
-          }
-        end
-
-        if page_config.key?('fields_function')
-          page_config['fields_function']['key'].each_with_index { |v,k|
-            fields_function[v] = page_config['fields_function']['description'][k.to_i]
-          }
-        end
-
-        if page_config.key?('group_by')
-          page_config['group_by']['key'].each_with_index { |v,k|
-            group_by[v] = page_config['group_by']['description'][k.to_i]
-          }
-        end
-
-        if page_config.key?('buttons')
-          page_config['buttons']['text'].each_with_index { |v,k|
-            buttons[v] = {}
-            buttons[v]['url']   = page_config['buttons']['url'][k.to_i]
-            buttons[v]['class'] = page_config['buttons']['class'][k.to_i]
-          }
-        end
-
-        if page_config.key?('footer_buttons')
-          page_config['footer_buttons']['text'].each_with_index { |v,k|
-            footer_buttons[v] = {}
-            footer_buttons[v]['url']   = page_config['footer_buttons']['url'][k.to_i]
-            footer_buttons[v]['class'] = page_config['footer_buttons']['class'][k.to_i]
-          }
-        end
-
-        if page_config.key?('drill_downs')
-          page_config['drill_downs']['drill_down_name'].each_with_index { |v,k|
-            drill_downs[v] = {}
-            drill_downs[v]['data_to_pass_from_view']   = page_config['drill_downs']['data_to_pass_from_view'][k.to_i]
-            drill_downs[v]['column_to_show']           = page_config['drill_downs']['column_to_show'][k.to_i]
-          }
-        end
+        fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs = normalize_configs(page_config)
       else
         if $_REQUEST.key?('ajax')
           model         = model_name.constantize.new
@@ -371,7 +703,7 @@ module WidgetList
           }
           footer_buttons['Add New ' + model_name]            = {}
           footer_buttons['Add New ' + model_name]['url']     = '/' + $_REQUEST['controller'] + '/add/'
-          footer_buttons['Add New ' + model_name]['class']   = 'success'
+          footer_buttons['Add New ' + model_name]['class']   = 'info'
         end
         buttons['Edit']              = {}
         buttons['Delete']            = {}
@@ -379,7 +711,7 @@ module WidgetList
         buttons['Delete']['class']   = 'danger'
         buttons['Delete']['url']     = '/' + $_REQUEST['controller'] + '/delete/id/'
         buttons['Edit']['url']       = '/' + $_REQUEST['controller'] + '/edit/id/'
-        buttons['Edit']['class']     = 'success'
+        buttons['Edit']['class']     = 'info'
         if $_REQUEST.key?('ajax')
           group_by['']               = 'All ' + model_name + 's'
           group_by['field_name']     = 'This will group by field_name and show Count'
@@ -534,28 +866,31 @@ module WidgetList
     def save_and_show_code()
       ac = ActionController::Base.new()
       request = $_REQUEST.dup
-
       config_id =  ''
       config_id += request['controller'] if request.key?('controller')
       config_id += request['action'] if request.key?('action')
 
-      request.delete('controller') if request.key?('controller')
-      request.delete('action') if request.key?('action')
+      tmp = (request.key?('ajax')) ? '-tmp': ''
 
-      config_file = Rails.root.join("config", "widget-list-administration.json")
+      config_file = Rails.root.join("config", "widget-list-administration#{tmp}.json")
       if config_file.file?
-        configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration.json")).read)
+        configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration#{tmp}.json")).read)
       else
         configuration = {}
       end
       configuration[config_id] = request
 
-      File.open(Rails.root.join("config", "widget-list-administration.json"), "w") do |file|
+      File.open(Rails.root.join("config", "widget-list-administration#{tmp}.json"), "w") do |file|
         file.puts configuration.to_json
       end
 
+
       @fill = {}
-      return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output_save') )
+      unless request.key?('ajax')
+        @fill['<!--CODE-->'] = translate_config_to_code()
+      end
+      return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output_save') )  unless request.key?('ajax')
+      return @fill.to_json
     end
   end
 
@@ -635,23 +970,23 @@ module WidgetList
 
 
       @items.deep_merge!({ 'statement' =>
-                             {'select'=>
-                                {'view' =>
-                                   '
+                               {'select'=>
+                                    {'view' =>
+                                         '
                                    SELECT <!--FIELDS--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
                                   '
-                                }
-                             }
+                                    }
+                               }
                          })
 
       @items.deep_merge!({ 'statement' =>
-                             {'count'=>
-                                {'view' =>
-                                   '
+                               {'count'=>
+                                    {'view' =>
+                                         '
                                    SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->
                                   '
-                                }
-                             }
+                                    }
+                               }
                          })
       #inject site wide configs before list specific configs if a helper exists
 
@@ -675,8 +1010,8 @@ module WidgetList
           # if no one passed a listSearchForm inject a default one to show the ransack form
           #
           fill = {
-            '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items), 'innerClass' => @items['defaultButtonClass'] }),
-            '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)"
+              '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items), 'innerClass' => @items['defaultButtonClass'] }),
+              '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)"
           }
           @items['listSearchForm'] = WidgetList::Utils::fill( fill , ac.render_to_string(:partial => 'widget_list/ransack_widget_list_advanced_search') )
 
@@ -695,19 +1030,19 @@ module WidgetList
       if get_database.db_type == 'oracle'
 
         @items.deep_merge!({'statement' =>
-                              {'count'=>
-                                 {'view' =>
-                                    '
+                                {'count'=>
+                                     {'view' =>
+                                          '
                                    SELECT count(1) total FROM <!--VIEW--> ' + ((@items['groupBy'].empty? && !@active_record_model) ? '<!--WHERE-->  <!--GROUPBY-->' : '' )
-                                 }
-                              }
+                                     }
+                                }
                            })
         @items.deep_merge!({'statement' =>
-                              {'select'=>
-                                 {'view' =>
-                                    'SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a ' + ((@items['groupBy'].empty?) ? '<!--WHERE-->' : '') + ' <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '')
-                                 }
-                              }
+                                {'select'=>
+                                     {'view' =>
+                                          'SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a ' + ((@items['groupBy'].empty?) ? '<!--WHERE-->' : '') + ' <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '')
+                                     }
+                                }
                            })
 
       end
@@ -1003,230 +1338,230 @@ module WidgetList
     def get_grouping_functions()
       #http://docs.oracle.com/cd/E11882_01/server.112/e10592/functions003.htm
       [
-        'AVG(',
-        'COLLECT(',
-        'CORR(',
-        'COUNT(',
-        'COVAR_POP(',
-        'COVAR_SAMP(',
-        'CUME_DIST(',
-        'DENSE_RANK(',
-        'FIRST(',
-        'GROUP_ID(',
-        'GROUPING_ID(',
-        'LAST(',
-        'LISTAGG(',
-        'MAX(',
-        'MEDIAN(',
-        'MIN(',
-        'PERCENT_RANK(',
-        'PERCENTILE_CONT(',
-        'PERCENTILE_DISC(',
-        'RANK(',
-        'REGR_SLOPE(',
-        'REGR_INTERCEPT(',
-        'REGR_COUNT(',
-        'REGR_R2(',
-        'REGR_AVGX(',
-        'REGR_AVGY(',
-        'REGR_SXX(',
-        'REGR_SYY(',
-        'REGR_SXY(',
-        'STATS_MINOMIAL_TEST(',
-        'STATS_CROSSTAB(',
-        'STATS_F_TEST(',
-        'STATS_KS_TEST(',
-        'STATS_MODE(',
-        'STATS_MW_TEST(',
-        'STDDEV(',
-        'STDDEV_POP(',
-        'STDDEV_SAMP(',
-        'SUM(',
-        'SYS_XMLAGG(',
-        'VAR_POP(',
-        'VAR_SAMP(',
-        'VARIANCE(',
-        'XMLAGG(',
+          'AVG(',
+          'COLLECT(',
+          'CORR(',
+          'COUNT(',
+          'COVAR_POP(',
+          'COVAR_SAMP(',
+          'CUME_DIST(',
+          'DENSE_RANK(',
+          'FIRST(',
+          'GROUP_ID(',
+          'GROUPING_ID(',
+          'LAST(',
+          'LISTAGG(',
+          'MAX(',
+          'MEDIAN(',
+          'MIN(',
+          'PERCENT_RANK(',
+          'PERCENTILE_CONT(',
+          'PERCENTILE_DISC(',
+          'RANK(',
+          'REGR_SLOPE(',
+          'REGR_INTERCEPT(',
+          'REGR_COUNT(',
+          'REGR_R2(',
+          'REGR_AVGX(',
+          'REGR_AVGY(',
+          'REGR_SXX(',
+          'REGR_SYY(',
+          'REGR_SXY(',
+          'STATS_MINOMIAL_TEST(',
+          'STATS_CROSSTAB(',
+          'STATS_F_TEST(',
+          'STATS_KS_TEST(',
+          'STATS_MODE(',
+          'STATS_MW_TEST(',
+          'STDDEV(',
+          'STDDEV_POP(',
+          'STDDEV_SAMP(',
+          'SUM(',
+          'SYS_XMLAGG(',
+          'VAR_POP(',
+          'VAR_SAMP(',
+          'VARIANCE(',
+          'XMLAGG(',
       ]
     end
 
     def self.get_defaults()
       {
-        'errors'              => [],
-        'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
-        'database'            => 'primary', #
-        'title'               => '',
-        'listDescription'     => '',
-        'pageId'              => $_SERVER['PATH_INFO'],
-        'view'                => '',
-        'data'                => {},
-        'collClass'           => '',
-        'collAlign'           => '',
-        'fields'              => {},
-        'fieldsHidden'        => [],
-        'bindVars'            => [],
-        'bindVarsLegacy'      => {},
-        'links'               => {},
-        'buttons'             => {},
-        'inputs'              => {},
-        'filter'              => [],
-        'groupBy'             => '',
-        'rowStart'            => 0,
-        'rowLimit'            => 10,
-        'orderBy'             => '',
-        'allowHTML'           => true,
-        'searchClear'         => false,
-        'searchClearAll'      => false,
-        'showPagination'      => true,
-        'searchSession'       => true,
+          'errors'              => [],
+          'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
+          'database'            => 'primary', #
+          'title'               => '',
+          'listDescription'     => '',
+          'pageId'              => $_SERVER['PATH_INFO'],
+          'view'                => '',
+          'data'                => {},
+          'collClass'           => '',
+          'collAlign'           => '',
+          'fields'              => {},
+          'fieldsHidden'        => [],
+          'bindVars'            => [],
+          'bindVarsLegacy'      => {},
+          'links'               => {},
+          'buttons'             => {},
+          'inputs'              => {},
+          'filter'              => [],
+          'groupBy'             => '',
+          'rowStart'            => 0,
+          'rowLimit'            => 10,
+          'orderBy'             => '',
+          'allowHTML'           => true,
+          'searchClear'         => false,
+          'searchClearAll'      => false,
+          'showPagination'      => true,
+          'searchSession'       => true,
 
-        #
-        # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
-        #
-        'carryOverRequsts'    => ['switch_grouping','group_row_id','q'],
+          #
+          # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
+          #
+          'carryOverRequsts'    => ['switch_grouping','group_row_id','q'],
 
-        #
-        # Head/Foot
-        #
+          #
+          # Head/Foot
+          #
 
-        'customFooter'        => '',
-        'customHeader'        => '',
+          'customFooter'        => '',
+          'customHeader'        => '',
 
-        #
-        # Ajax
-        #
-        'ajaxFunctionAll'     => '',
-        'ajaxFunction'        => 'ListJumpMin',
+          #
+          # Ajax
+          #
+          'ajaxFunctionAll'     => '',
+          'ajaxFunction'        => 'ListJumpMin',
 
-        #
-        #  Search
-        #
-        'showSearch'          => true,
-        'searchOnkeyup'       => "SearchWidgetList('<!--URL-->', '<!--TARGET-->', this);",
-        'searchIdCol'         => 'id',
-        'searchTitle'         => 'Search by Id or CSV of Ids and more',
-        'searchFieldsIn'      => {},
-        'searchFieldsOut'     => {'id'=>true},
-        'templateFilter'      => '',
+          #
+          #  Search
+          #
+          'showSearch'          => true,
+          'searchOnkeyup'       => "SearchWidgetList('<!--URL-->', '<!--TARGET-->', this);",
+          'searchIdCol'         => 'id',
+          'searchTitle'         => 'Search by Id or CSV of Ids and more',
+          'searchFieldsIn'      => {},
+          'searchFieldsOut'     => {'id'=>true},
+          'templateFilter'      => '',
 
-        #
-        #  Export
-        #
-        'showExport'          => true,
-        'exportButtonTitle'   => 'Export CSV',
+          #
+          #  Export
+          #
+          'showExport'          => true,
+          'exportButtonTitle'   => 'Export CSV',
 
-        #
-        # Group By Box
-        #
-        'groupByItems'        => [],
-        'groupBySelected'     => false,
-        'groupByLabel'        => 'Group By',
-        'groupByClick'        => '',
-        'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
+          #
+          # Group By Box
+          #
+          'groupByItems'        => [],
+          'groupBySelected'     => false,
+          'groupByLabel'        => 'Group By',
+          'groupByClick'        => '',
+          'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
 
 
-        #
-        # Advanced searching
-        #
-        'listSearchForm'      => '',
-        'ransackSearch'       => false,
+          #
+          # Advanced searching
+          #
+          'listSearchForm'      => '',
+          'ransackSearch'       => false,
 
-        #
-        # Column Specific
-        #
-        'columnStyle'         => {},
-        'columnClass'         => {},
-        'columnPopupTitle'    => {},
-        'columnSort'          => {},
-        'columnWidth'         => {},
-        'columnNoSort'        => {},
+          #
+          # Column Specific
+          #
+          'columnStyle'         => {},
+          'columnClass'         => {},
+          'columnPopupTitle'    => {},
+          'columnSort'          => {},
+          'columnWidth'         => {},
+          'columnNoSort'        => {},
 
-        #
-        # Column Border (on right of each column)
-        #
-        'borderedColumns'     => false,
-        'borderColumnStyle'   => '1px solid #CCCCCC',
+          #
+          # Column Border (on right of each column)
+          #
+          'borderedColumns'     => false,
+          'borderColumnStyle'   => '1px solid #CCCCCC',
 
-        #
-        # Row Border (on top of each row)
-        #
-        'borderedRows'        => true,
-        'borderRowStyle'      => '1px solid #CCCCCC',
+          #
+          # Row Border (on top of each row)
+          #
+          'borderedRows'        => true,
+          'borderRowStyle'      => '1px solid #CCCCCC',
 
-        #
-        # Head/Foot border
-        #
-        'borderHeadFoot'      => false,
-        'headFootBorderStyle' => '1px solid #CCCCCC',
+          #
+          # Head/Foot border
+          #
+          'borderHeadFoot'      => false,
+          'headFootBorderStyle' => '1px solid #CCCCCC',
 
-        'bordersEverywhere?'  => false,
-        'borderEverywhere'    => '1px solid #CCCCCC',
+          'bordersEverywhere?'  => false,
+          'borderEverywhere'    => '1px solid #CCCCCC',
 
-        #
-        # Buttons
-        #
-        'defaultButtonClass'  => 'info',
+          #
+          # Buttons
+          #
+          'defaultButtonClass'  => 'info',
 
-        #
-        # Font
-        #
-        'fontFamily'           => '"Times New Roman", Times, serif',
-        'headerFooterFontSize' => '14px',
-        'dataFontSize'         => '14px',
-        'titleFontSize'        => '24px',
+          #
+          # Font
+          #
+          'fontFamily'           => '"Times New Roman", Times, serif',
+          'headerFooterFontSize' => '14px',
+          'dataFontSize'         => '14px',
+          'titleFontSize'        => '24px',
 
-        #
-        # Table Colors
-        #
-        'footerBGColor'       => '#ECECEC',
-        'headerBGColor'       => '#ECECEC',
-        'footerFontColor'     => '#494949',
-        'headerFontColor'     => '#494949',
-        'tableBorder'         => '1',
-        'cornerRadius'        => 15,
+          #
+          # Table Colors
+          #
+          'footerBGColor'       => '#ECECEC',
+          'headerBGColor'       => '#ECECEC',
+          'footerFontColor'     => '#494949',
+          'headerFontColor'     => '#494949',
+          'tableBorder'         => '1',
+          'cornerRadius'        => 15,
 
-        'useBoxShadow'        => true,
-        'shadowInset'         => 10,
-        'shadowSpread'        => 20,
-        'shadowColor'         => '#888888',
+          'useBoxShadow'        => true,
+          'shadowInset'         => 10,
+          'shadowSpread'        => 20,
+          'shadowColor'         => '#888888',
 
-        #
-        # Row specifics
-        #
-        'rowClass'            => '',
-        'rowFontColor'        => 'black',
-        'rowColorByStatus'    => {},
-        'rowStylesByStatus'   => {},
-        'rowOffsets'          => ['#FFFFFF','#FFFFFF'],
+          #
+          # Row specifics
+          #
+          'rowClass'            => '',
+          'rowFontColor'        => 'black',
+          'rowColorByStatus'    => {},
+          'rowStylesByStatus'   => {},
+          'rowOffsets'          => ['#FFFFFF','#FFFFFF'],
 
-        'class'               => 'listContainerPassive',
-        'tableclass'          => 'tableBlowOutPreventer',
-        'noDataMessage'       => 'Currently no data.',
-        'useSort'             => true,
-        'headerClass'         => {},
-        'fieldFunction'       => {},
-        'buttonVal'           => 'templateListJump',
-        'linkFunction'        => 'ButtonLinkPost',
-        'template'            => '',
-        'LIST_COL_SORT_ORDER' => 'ASC',
-        'LIST_COL_SORT'       => '',
-        'LIST_FILTER_ALL'     => '',
-        'ROW_LIMIT'           => '',
-        'LIST_SEQUENCE'       => 1,
-        'NEW_SEARCH'          => false,
+          'class'               => 'listContainerPassive',
+          'tableclass'          => 'tableBlowOutPreventer',
+          'noDataMessage'       => 'Currently no data.',
+          'useSort'             => true,
+          'headerClass'         => {},
+          'fieldFunction'       => {},
+          'buttonVal'           => 'templateListJump',
+          'linkFunction'        => 'ButtonLinkPost',
+          'template'            => '',
+          'LIST_COL_SORT_ORDER' => 'ASC',
+          'LIST_COL_SORT'       => '',
+          'LIST_FILTER_ALL'     => '',
+          'ROW_LIMIT'           => '',
+          'LIST_SEQUENCE'       => 1,
+          'NEW_SEARCH'          => false,
 
-        #
-        # Checkbox
-        #
-        'checkedClass'        => 'widgetlist-checkbox',
-        'checkedFlag'         => {},
-        'storeSessionChecks'  => false,
+          #
+          # Checkbox
+          #
+          'checkedClass'        => 'widgetlist-checkbox',
+          'checkedFlag'         => {},
+          'storeSessionChecks'  => false,
 
-        #
-        # Hooks
-        #
-        'columnHooks'         => {},
-        'rowHooks'            => {}
+          #
+          # Hooks
+          #
+          'columnHooks'         => {},
+          'rowHooks'            => {}
       }
     end
 
@@ -1497,6 +1832,8 @@ module WidgetList
           return WidgetList::Administration.new.save_and_show_code()
         elsif $_REQUEST.key?('ajax') && $_REQUEST.key?('model')
           return WidgetList::Administration.new.ajax_get_field_json($_REQUEST['model'])
+        elsif $_REQUEST.key?('ajax') && $_REQUEST.key?('save')
+          return WidgetList::Administration.new.save_and_show_code()
         else
           return WidgetList::Administration.new.show_interface()
         end
@@ -1643,11 +1980,11 @@ module WidgetList
               list_search['name']        = 'list_search_name_' + @items['name']
               list_search['class']       = 'inputOuter widget-search-outer ' + @items['name'].downcase + '-search'
               list_search['search_ahead']       = {
-                'url'          => searchUrl,
-                'skip_queue'   => false,
-                'target'       => @items['name'],
-                'search_form'  => @items['listSearchForm'],
-                'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
+                  'url'          => searchUrl,
+                  'skip_queue'   => false,
+                  'target'       => @items['name'],
+                  'search_form'  => @items['listSearchForm'],
+                  'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
               }
 
               @headerPieces['searchBar']            = WidgetList::Widgets::widget_input(list_search)
@@ -1703,8 +2040,8 @@ module WidgetList
               }
 
               list_group['search_ahead']  = {
-                'skip_queue' => false,
-                'search_form'=>  '
+                  'skip_queue' => false,
+                  'search_form'=>  '
                                  <div id="advanced-search-container" style="height:100% !important;">
                                     ' + groupRows.join("\n") + '
                                  </div>'
@@ -1837,11 +2174,11 @@ module WidgetList
       #Assemble navigation buttons
       #
       pieces = {
-        '<!--NEXT_URL-->'     => nextUrl,
-        '<!--LIST_NAME-->'    => @items['name'],
-        '<!--PREVIOUS_URL-->' => prevUrl,
-        '<!--FUNCTION-->'     => @items['ajaxFunction'],
-        '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
+          '<!--NEXT_URL-->'     => nextUrl,
+          '<!--LIST_NAME-->'    => @items['name'],
+          '<!--PREVIOUS_URL-->' => prevUrl,
+          '<!--FUNCTION-->'     => @items['ajaxFunction'],
+          '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
       }
 
       templates['btn_next']     = WidgetList::Utils::fill(pieces,templates['btn_next'])
@@ -1944,23 +2281,23 @@ module WidgetList
         end
 
         jumpSection << WidgetList::Utils::fill({
-                                                 '<!--SEQUENCE-->'     => page,
-                                                 '<!--JUMP_URL-->'     => jumpUrl,
-                                                 '<!--LIST_NAME-->'    => @items['name'],
-                                                 '<!--FUNCTION-->'     => @items['ajaxFunction'],
-                                                 '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
+                                                   '<!--SEQUENCE-->'     => page,
+                                                   '<!--JUMP_URL-->'     => jumpUrl,
+                                                   '<!--LIST_NAME-->'    => @items['name'],
+                                                   '<!--FUNCTION-->'     => @items['ajaxFunction'],
+                                                   '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
                                                }, jumpTemplate)
       end
 
       pieces = {
-        '<!--PREVIOUS_BUTTON-->'         => templates['btn_previous'],
-        '<!--SEQUENCE-->'                => @sequence,
-        '<!--NEXT_BUTTON-->'             => templates['btn_next'],
-        '<!--TOTAL_PAGES-->'             => @totalPages,
-        '<!--TOTAL_ROWS-->'              => @totalRows,
-        '<!--PAGE_SEQUENCE_JUMP_LIST-->' => pageSelect,
-        '<!--JUMP-->'                    => jumpSection.join(''),
-        '<!--LIST_NAME-->'               => @items['name'],
+          '<!--PREVIOUS_BUTTON-->'         => templates['btn_previous'],
+          '<!--SEQUENCE-->'                => @sequence,
+          '<!--NEXT_BUTTON-->'             => templates['btn_next'],
+          '<!--TOTAL_PAGES-->'             => @totalPages,
+          '<!--TOTAL_ROWS-->'              => @totalRows,
+          '<!--PAGE_SEQUENCE_JUMP_LIST-->' => pageSelect,
+          '<!--JUMP-->'                    => jumpSection.join(''),
+          '<!--LIST_NAME-->'               => @items['name'],
       }
 
       paginationOutput = WidgetList::Utils::fill(pieces,@items['template_pagination_wrapper'])
@@ -2112,7 +2449,7 @@ module WidgetList
 
           if (
           ( (@items.key?('LIST_COL_SORT') && !@items['LIST_COL_SORT'].empty?) && @items['LIST_COL_SORT'] == colSort['LIST_COL_SORT']) ||
-            ( $_SESSION.key?('LIST_COL_SORT') &&  $_SESSION['LIST_COL_SORT'].key?(@sqlHash) && $_SESSION['LIST_COL_SORT'][@sqlHash].key?(field))
+              ( $_SESSION.key?('LIST_COL_SORT') &&  $_SESSION['LIST_COL_SORT'].key?(@sqlHash) && $_SESSION['LIST_COL_SORT'][@sqlHash].key?(field))
           )
             changedSession = false
             if @items.key?('LIST_COL_SORT') && !@items['LIST_COL_SORT'].empty?
@@ -2371,41 +2708,41 @@ module WidgetList
     def self.checkbox_helper(list_parms,primary_key)
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox'=>
-                                   {'type' => 'checkbox'
-                                   }
-                                }
+                                  {'checkbox'=>
+                                       {'type' => 'checkbox'
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox'=>
-                                   {'items' =>
-                                      {
-                                        'name'          => list_parms['name'] + '_visible_checks[]',
-                                        'value'         => primary_key, #the value should be a column name mapping
-                                        'class_handle'  => list_parms['name'] + '_info_tables',
-                                      }
-                                   }
-                                }
+                                  {'checkbox'=>
+                                       {'items' =>
+                                            {
+                                                'name'          => list_parms['name'] + '_visible_checks[]',
+                                                'value'         => primary_key, #the value should be a column name mapping
+                                                'class_handle'  => list_parms['name'] + '_info_tables',
+                                            }
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox_header'=>
-                                   {'type' => 'checkbox'
-                                   }
-                                }
+                                  {'checkbox_header'=>
+                                       {'type' => 'checkbox'
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox_header'=>
-                                   {'items' =>
-                                      {
-                                        'check_all'     => true,
-                                        'id'            => list_parms['name'] + '_info_tables_check_all',
-                                        'class_handle'  => list_parms['name'] + '_info_tables',
-                                      }
-                                   }
-                                }
+                                  {'checkbox_header'=>
+                                       {'items' =>
+                                            {
+                                                'check_all'     => true,
+                                                'id'            => list_parms['name'] + '_info_tables_check_all',
+                                                'class_handle'  => list_parms['name'] + '_info_tables',
+                                            }
+                                       }
+                                  }
                              })
       return list_parms
     end
@@ -2416,20 +2753,20 @@ module WidgetList
 
     def self.build_drill_down(*params)
       required_params = {
-        :list_id                  => true,              # -- your widget_list name (used for JS)
-        :drill_down_name          => true,              # -- an identifier that is pass for the "column" or "type of drill down" which is passed as $_REQUEST['drill_down'] when the user clicks and returned from get_filter_and_drilldown based on session or request
-        :data_to_pass_from_view   => true,              # -- Any SQL function or column name/value in the resultset in which would be the value passed when the user clicks the drill down
-        :column_to_show           => true,              # -- The visible column or SQL functions to display to user for the link
+          :list_id                  => true,              # -- your widget_list name (used for JS)
+          :drill_down_name          => true,              # -- an identifier that is pass for the "column" or "type of drill down" which is passed as $_REQUEST['drill_down'] when the user clicks and returned from get_filter_and_drilldown based on session or request
+          :data_to_pass_from_view   => true,              # -- Any SQL function or column name/value in the resultset in which would be the value passed when the user clicks the drill down
+          :column_to_show           => true,              # -- The visible column or SQL functions to display to user for the link
       }
 
       optional_params = {
-        :column_alias             => '',                # -- AS XXXX
-        :extra_function           => '',                # -- Onclick of link, call another JS function after the drill down function is called
-        :js_function_name         => 'ListDrillDown',   # -- name of JS Function
-        :column_class             => '',                # -- custom class on the <a> tag
-        :link_color               => 'blue',            # -- whatever color you want the link to be
-        :extra_js_func_params     => '',                # -- Add extra params to ListDrillDown outside of the default
-        :primary_database         => true,              # -- Since this function builds a column before widget_list is instantiated, tell which connection you are using
+          :column_alias             => '',                # -- AS XXXX
+          :extra_function           => '',                # -- Onclick of link, call another JS function after the drill down function is called
+          :js_function_name         => 'ListDrillDown',   # -- name of JS Function
+          :column_class             => '',                # -- custom class on the <a> tag
+          :link_color               => 'blue',            # -- whatever color you want the link to be
+          :extra_js_func_params     => '',                # -- Add extra params to ListDrillDown outside of the default
+          :primary_database         => true,              # -- Since this function builds a column before widget_list is instantiated, tell which connection you are using
       }
 
       valid = WidgetList::Widgets::validate_items(params[0],required_params)
@@ -2516,6 +2853,13 @@ module WidgetList
 
         page = buttonAttribs['page'].dup
         if buttonAttribs.key?('tags')
+          if buttonAttribs['tags'].first[0] == 'all'
+            buttonAttribs['tags'] = {}
+            @results.keys.each { |tags|
+              buttonAttribs['tags'][tags.downcase] = tags.downcase
+            }
+          end
+
           buttonAttribs['tags'].each { | tagName , tag |
             if @results.key?(tag.upcase) && @results[tag.upcase][j]
               #
@@ -2561,8 +2905,9 @@ module WidgetList
 
         if (renderButton)
           strCnt += (buttonAttribs['text'].length * 15)
-          attributes = buttonAttribs.dup.deep_merge!({'page' => page})
-          attributes['innerClass'] = @items['defaultButtonClass']
+          attributes = buttonAttribs.dup
+          attributes['page'] = page
+          attributes['innerClass'] = @items['defaultButtonClass'] if !attributes.key?('innerClass')
           btnOut << WidgetList::Widgets::widget_button(buttonAttribs['text'], attributes , true)
         end
       }
@@ -3030,7 +3375,7 @@ module WidgetList
         when 'oracle'
 
           pieces['<!--LIMIT-->'] =
-            '
+              '
             WHERE
             (
                  rn >' + (@sequence > 1 ? '' : '=') + ' :LOW
