@@ -102,21 +102,68 @@
 
   function ReplaceColumnsToLinked(obj) {
     found = false;
+    var className = obj.className;
     jQuery(obj).css('background-color','white');
     jQuery('.fields_keys, .fields_hidden_keys, .fields_function_keys').each(
       function(key, value) {
-        if(jQuery(value).val() == jQuery(obj).val().trim() && jQuery(value).val().search(/_linked/i) == -1) {
+        if(jQuery(value).val() == jQuery(obj).val().trim() && jQuery(obj).val().search(/_linked/i) == -1) {
           found = true;
+          var id_original = jQuery(obj).val().trim();
           jQuery(value).val(jQuery(obj).val().trim() + '_linked');
           jQuery(obj).val(jQuery(obj).val().trim() + '_linked');
-          jQuery('#showHidden').attr('checked',true);
-          ShowHiddenOptions();
+          jQuery(obj).attr('value',jQuery(this).val().trim());
+          if (className == 'drill_downs_data_to_pass_from_view') {
+            jQuery('.drill_downs_column_to_show[value="col_name"]').each(
+              function(key1, value1) {
+                jQuery(value1).val(jQuery(obj).val().trim());
+                jQuery(value1).attr('value',jQuery(value1).val().trim());
+                return false;
+              }
+            )
+          } else {
+            jQuery('.drill_downs_data_to_pass_from_view[value="col_name"]').each(
+              function(key1, value1) {
+                jQuery(value1).val(jQuery(obj).val().trim());
+                jQuery(value1).attr('value',jQuery(value1).val().trim());
+                return false;
+              }
+            )
+          }
 
+          jQuery('.drill_downs_drill_down_name[value="filter_col_name"]').each(
+              function(key1, value1) {
+                jQuery(value1).val('filter_by_' + id_original);
+                jQuery(value1).attr('value','filter_by_' + id_original);
+                return false;
+              }
+          )
+
+
+          jQuery('#showHidden').attr('checked',true);
           jQuery('.fields_hidden_keys[value=""]').each(
-            function(key1, value1) {
-              jQuery(value1).val();
-            }
+              function(key1, value1) {
+                jQuery(value1).val(id_original);
+                jQuery(value1).attr('value',id_original);
+                return false;
+              }
           );
+        }
+      }
+    );
+
+    if (!found && jQuery(obj).val().search(/_linked/i) == -1) {
+      alert('Invalid Field Name defined.  Please change the value');
+      jQuery(obj).css('background-color','red');
+    }
+  }
+
+  function InvalidField(obj) {
+    found = false;
+    jQuery(obj).css('background-color','white');
+    jQuery('.fields_keys, .fields_hidden_keys, .fields_function_keys').each(
+      function(key, value) {
+        if(jQuery(value).val() == jQuery(obj).val().trim()) {
+          found = true;
         }
       }
     );
@@ -195,7 +242,7 @@
   }
   function ShowDrillDownOptions() {
     if (jQuery('#drillDownsOn').is(':checked')) {
-      if (jQuery('.buttons_drill_down_name').length == 0) {
+      if (jQuery('.drill_downs_data_to_pass_from_view').length == 0) {
         AddDrillDown();
       }
       jQuery('.drill_down_dependent').show();

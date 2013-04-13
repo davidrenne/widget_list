@@ -83,6 +83,7 @@ module WidgetList
       @fieldFill['<!--SUBJECT-->']              = 'fields'
       @fieldFill['<!--FIELD-->']                = 'Field'
       @fieldFill['<!--DESC-->']                 = 'Desc'
+      @fieldFill['<!--DISABLED-->']             = ''
       @fill['<!--FIELD_TEMPLATE-->']            = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       @fill['<!--ADD_FIELD_BUTTON-->']          = WidgetList::Widgets::widget_button('Add Field',  {'onclick' => "AddField();", 'innerClass' => "success" } )
       @fill['<!--ALL_FIELDS-->']                = (!@isEditing) ? '' : page_json['fields']
@@ -96,6 +97,7 @@ module WidgetList
       @fieldFill['<!--SUBJECT-->']              = 'fields_hidden'
       @fieldFill['<!--FIELD-->']                = 'Field'
       @fieldFill['<!--DESC-->']                 = 'Desc'
+      @fieldFill['<!--DISABLED-->']             = 'disabled'
       @fill['<!--HIDDEN_FIELD_TEMPLATE-->']     = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       @fill['<!--ADD_HIDDEN_FIELD_BUTTON-->']   = WidgetList::Widgets::widget_button('Add Hidden Field',  {'onclick' => "AddHiddenField();", 'innerClass' => "success" } )
       @fill['<!--ALL_HIDDEN_FIELDS-->']         = (!@isEditing) ? '' : page_json['fields_hidden']
@@ -109,6 +111,7 @@ module WidgetList
       @fieldFill['<!--SUBJECT-->']              = 'fields_function'
       @fieldFill['<!--FIELD-->']                = 'Field'
       @fieldFill['<!--DESC-->']                 = 'Database Function'
+      @fieldFill['<!--DISABLED-->']             = ''
       @fill['<!--FIELD_FUNCTION_TEMPLATE-->']   = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       @fill['<!--ADD_FIELD_FUNCTION_BUTTON-->'] = WidgetList::Widgets::widget_button('Add Function',  {'onclick' => "AddFieldFunction();", 'innerClass' => "success" } )
       @fill['<!--ALL_FIELD_FUNCTIONS-->']       = (!@isEditing) ? '' : page_json['fields_function']
@@ -189,6 +192,8 @@ module WidgetList
       @fieldFill['<!--SUBJECT-->']              = 'group_by'
       @fieldFill['<!--FIELD-->']                = 'Field'
       @fieldFill['<!--DESC-->']                 = 'Desc'
+      @fieldFill['<!--DISABLED-->']             = ''
+      @fieldFill['<!--ONBLUR1-->']              = 'InvalidField(this)'
       @fill['<!--DEFAULT_GROUPING-->']          = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       @fill['<!--ADD_GROUP_BY_BUTTON-->']       = WidgetList::Widgets::widget_button('Add New Group By',  {'onclick' => "AddGroupBy();", 'innerClass' => "success" } )
       @fill['<!--GROUPING_ITEMS-->']            = (!@isEditing) ? '' : page_json['group_by']
@@ -301,6 +306,7 @@ module WidgetList
       buttons            = {}
       footer_buttons     = {}
       group_by           = {}
+      drill_downs        = {}
 
       if @isEditing
         model         = page_config['view'].constantize.new
@@ -315,8 +321,8 @@ module WidgetList
         end
 
         if page_config.key?('fields_hidden')
-          page_config['fields_hidden']['key'].each_with_index { |v,k|
-            fields_hidden[v] = page_config['fields_hidden']['description'][k.to_i]
+          page_config['fields_hidden']['key'].each { |v|
+            fields_hidden[v] = v
           }
         end
 
@@ -345,6 +351,14 @@ module WidgetList
             footer_buttons[v] = {}
             footer_buttons[v]['url']   = page_config['footer_buttons']['url'][k.to_i]
             footer_buttons[v]['class'] = page_config['footer_buttons']['class'][k.to_i]
+          }
+        end
+
+        if page_config.key?('drill_downs')
+          page_config['drill_downs']['drill_down_name'].each_with_index { |v,k|
+            drill_downs[v] = {}
+            drill_downs[v]['data_to_pass_from_view']   = page_config['drill_downs']['data_to_pass_from_view'][k.to_i]
+            drill_downs[v]['column_to_show']           = page_config['drill_downs']['column_to_show'][k.to_i]
           }
         end
       else
@@ -380,6 +394,7 @@ module WidgetList
       @response['buttons']         = ''
       @response['group_by']        = ''
       @response['footer_buttons']  = ''
+      @response['drill_downs']     = ''
 
       fields.each { |field,description|
         @fieldFill = {}
@@ -389,17 +404,19 @@ module WidgetList
         @fieldFill['<!--REMOVE_FIELD_BUTTON-->'] = remove_field_button()
         @fieldFill['<!--FIELD-->']               = 'Field'
         @fieldFill['<!--DESC-->']                = 'Desc'
+        @fieldFill['<!--DISABLED-->']            = ''
         @response['fields'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
-      fields_hidden.each { |field,description|
+      fields_hidden.each { |field|
         @fieldFill = {}
         @fieldFill['<!--SUBJECT-->']             = 'fields_hidden'
-        @fieldFill['<!--FIELD_VALUE-->']         = field
-        @fieldFill['<!--FIELD_DESC-->']          = description
+        @fieldFill['<!--FIELD_VALUE-->']         = field[1]
+        @fieldFill['<!--FIELD_DESC-->']          = ''
         @fieldFill['<!--REMOVE_FIELD_BUTTON-->'] = remove_field_button()
         @fieldFill['<!--DESC-->']                = 'Desc'
         @fieldFill['<!--FIELD-->']               = 'Field'
+        @fieldFill['<!--DISABLED-->']            = 'disabled'
         @response['fields_hidden'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
@@ -412,6 +429,7 @@ module WidgetList
         @fieldFill['<!--SUBJECT-->']              = 'group_by'
         @fieldFill['<!--FIELD-->']                = 'Field'
         @fieldFill['<!--DESC-->']                 = 'Desc'
+        @fieldFill['<!--DISABLED-->']             = ''
         @response['group_by'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
@@ -423,7 +441,7 @@ module WidgetList
         @fieldFill['<!--REMOVE_FIELD_BUTTON-->'] = remove_field_button()
         @fieldFill['<!--DESC-->']                = 'Database Function'
         @fieldFill['<!--FIELD-->']               = 'Field'
-
+        @fieldFill['<!--DISABLED-->']             = ''
         @response['fields_function'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
@@ -450,6 +468,31 @@ module WidgetList
         @fieldFill['<!--SUBJECT-->']              = 'buttons'
 
         @response['buttons']             +=  WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
+      }
+
+      drill_downs.each { |field|
+        @fieldFill = {}
+        @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
+        @fieldFill['<!--BUTTON_TEXT-->']          = field[0]
+        @fieldFill['<!--BUTTON_URL-->']           = field[1]['data_to_pass_from_view']
+        @fieldFill['<!--BUTTON_CLASS-->']         = field[1]['column_to_show']
+        @fieldFill['<!--ONBLUR2-->']              = 'ReplaceColumnsToLinked(this)'
+        @fieldFill['<!--ONBLUR3-->']              = 'ReplaceColumnsToLinked(this)'
+
+        @fieldFill['<!--TEXT_DESC-->']            = 'Internal Filter Name (:drill_down_name)<br/>'
+        @fieldFill['<!--TEXT_KEY-->']             = 'drill_down_name'
+        @fieldFill['<!--TEXT_HELP-->']            = ':drill_down_name is a parameter of build_drill_down that is what is passed and returned from get_filter_and_drilldown when you handle the request after clicked'
+
+        @fieldFill['<!--URL_DESC-->']             = 'Data To Pass From View (:data_to_pass_from_view)<br/>'
+        @fieldFill['<!--URL_KEY-->']              = 'data_to_pass_from_view'
+        @fieldFill['<!--URL_HELP->']              = ':data_to_pass_from_view is the internal/hidden value that is inserted into a hidden <script> id block and passed when clicked'
+
+        @fieldFill['<!--COLOR_DESC-->']           = 'Column to Show (:column_to_show)<br/>'
+        @fieldFill['<!--COLOR_KEY-->']            = 'column_to_show'
+        @fieldFill['<!--COLOR_HELP-->']           = ':column_to_show should either be the column or possibly a formatted column like CONCAT or COUNT'
+        @fieldFill['<!--SUBJECT-->']              = 'drill_downs'
+
+        @response['drill_downs']                     +=  WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
       }
 
       footer_buttons.each { |field|
