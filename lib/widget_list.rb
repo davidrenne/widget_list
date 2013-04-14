@@ -78,6 +78,7 @@ module WidgetList
       @fill['<!--VIEW_OPTIONS-->']              = model_options
       @fill['<!--TITLE_VALUE-->']               = (!@isEditing) ? '' : page_config['title']
       @fill['<!--DESC_VALUE-->']                = (!@isEditing) ? '' : page_config['listDescription']
+      @fill['<!--PRIMARY_CHECKED-->']           = (!@isEditing) ? 'checked' : page_config['primaryDatabase']
 
       #
       # FIELD LEVEL
@@ -274,13 +275,22 @@ module WidgetList
       return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output') )
     end
 
+    def add_pointer(key,subtract=0)
+      whitespace = 31 - subtract
+      "['#{key}'] " + "".ljust(whitespace - key.length) + " = "
+    end
+
+    def add_conditional(key,conditional)
+      whitespace = 19
+      "'#{key}' " + "".ljust(whitespace - key.length) + " #{conditional}"
+    end
+
     def translate_config_to_code()
       config_id, page_config = get_configuration()
       fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs = normalize_configs(page_config)
       drill_down_code  = ''
       case_statements  = ''
       case_statements2 = ''
-      drill_down_links = ''
       view_code        = ''
       export_code      = ''
       visible_field_code       = ''
@@ -296,20 +306,21 @@ module WidgetList
         #@todo - (groupByFilter == 'none') ? 'a.name' : 'MAX(a.name)'
 
         drill_downs.each { |field|
-          drill_down_links+= "
-        list_parms['fieldFunction']['#{field[1]['column_to_show']}']    = WidgetList::List::build_drill_down(
-          :list_id => list_parms['name'],
-          :drill_down_name => '#{field[0]}',
-          :data_to_pass_from_view => '#{field[1]['column_to_show'].gsub(/_linked/,'')}',
-          :column_to_show => '#{field[1]['column_to_show'].gsub(/_linked/,'')}',
-          :column_alias => '#{field[1]['column_to_show']}'
-        )"
+          field_function_code += "
+      list_parms['fieldFunction']#{add_pointer(field[1]['column_to_show'],7)} WidgetList::List::build_drill_down(
+        :list_id => list_parms['name'],
+        :drill_down_name => '#{field[0]}',
+        :data_to_pass_from_view => '#{field[1]['column_to_show'].gsub(/_linked/,'')}',
+        :column_to_show => '#{field[1]['column_to_show'].gsub(/_linked/,'')}',
+        :column_alias => '#{field[1]['column_to_show']}',
+        :primary_database => #{page_config['primaryDatabase'] == '1' ? 'true' : 'false'}
+      )"
           case_statements += <<-EOD
 
         when '#{field[0]}'
-          list_parms['filter']   << " #{field[1]['column_to_show'].gsub(/_linked/,'')} = ? "
-          list_parms['bindVars'] << #{page_config['view']}.sanitize(filterValue)
-          list_parms['listDescription']  = ' Filtered by #{field[1]['column_to_show'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
+          list_parms['filter']          << " #{field[1]['column_to_show'].gsub(/_linked/,'')} = ? "
+          list_parms['bindVars']        << #{page_config['view']}.sanitize(filterValue)
+          list_parms['listDescription']  = drillDownBackLink + ' Filtered by #{field[1]['column_to_show'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
           EOD
         }
 
@@ -321,6 +332,7 @@ module WidgetList
 
       drillDown, filterValue  = WidgetList::List::get_filter_and_drilldown(list_parms['name'])
 
+      drillDownBackLink       = WidgetList::List::drill_down_back(list_parms['name'])
       case drillDown#{case_statements}
         else
           list_parms['listDescription']  = '#{page_config['listDescription']}'
@@ -329,22 +341,22 @@ module WidgetList
 
       else
         drill_down_code = "
-      list_parms['listDescription']  = '#{page_config['listDescription']}'
+      list_parms['listDescription']   = '#{page_config['listDescription']}'
         "
       end
 
 
       if page_config['rowButtonsOn'] == '1'
         variable_code += "
-      button_column_name          = '#{page_config['rowButtonsName']}'"
+      button_column_name              = '#{page_config['rowButtonsName']}'"
       end
 
       #------------ VIEW ------------
 
       if page_config['useRansack'] == '1' && page_config['showSearch'] == '1'
         view_code = "
-      list_parms['ransackSearch']  = #{page_config['view']}.search($_REQUEST[:q])
-      list_parms['view']           = list_parms['ransackSearch'].result
+      list_parms#{add_pointer('ransackSearch',-10)} #{page_config['view']}.search(#{($_REQUEST.key?('iframe')) ? '$_REQUEST' : 'params'}[:q])
+      list_parms#{add_pointer('view',-10)} list_parms['ransackSearch'].result
         "
         if page_config['ransackAdvancedForm'] == '1'
           view_code += "
@@ -370,7 +382,7 @@ module WidgetList
 
       else
         view_code = "
-      list_parms['view']           = #{page_config['view']}
+      list_parms#{add_pointer('view',-10)} #{page_config['view']}
         "
       end
 
@@ -383,7 +395,7 @@ module WidgetList
 
       if page_config['showSearch'] == '1'
         export_code += "
-      list_parms['searchTitle']        = '#{page_config['searchTitle']}'"
+      list_parms['searchTitle']       = '#{page_config['searchTitle']}'"
       end
 
 
@@ -393,59 +405,20 @@ module WidgetList
       list_parms = WidgetList::List.checkbox_helper(list_parms,'#{page_config['checkboxField']}')
         "
         visible_field_code += "
-      list_parms['fields']['checkbox']           = 'checkbox_header'"
+      list_parms['fields']#{add_pointer('checkbox')} 'checkbox_header'"
       end
 
       fields.each { |field,description|
         conditional = ''
         if page_config['useGrouping'] == '1' && page_config['showSearch'] == '1' && !group_by.empty?
           conditional = ' if groupByFilter == \'none\''
-          if group_by.key?(field)
-            conditional = " if groupByFilter == 'none' || groupByFilter == 'group_#{group_by[field].gsub(/ /,'_').downcase}'"
+          if group_by.key?(field) || group_by.key?(field.gsub(/_linked/,''))
+            conditional = " if groupByFilter == 'none' || groupByFilter == 'group_#{group_by[field.gsub(/_linked/,'')].gsub(/ /,'_').downcase}'"
           end
         end
         visible_field_code += "
-      list_parms['fields']['#{field}']           = '#{description}' #{conditional}"
+      list_parms['fields']#{add_pointer(field)} #{add_conditional(description,conditional)}"
       }
-
-      #------------ BUTTONS ------------
-
-      if page_config['rowButtonsOn'] == '1'
-        visible_field_code += "
-      list_parms['fields'][button_column_name.downcase] = button_column_name.capitalize"
-
-        button_code += "
-      mini_buttons = {}
-      "
-
-        buttons.each { |field|
-          button_code += "
-      mini_buttons['button_#{field[0].downcase}'] = {'page'       => '#{field[1]['url']}',
-                                                     'text'       => '#{field[0]}',
-                                                     'function'   => 'Redirect',
-                                                     'innerClass' => '#{field[1]['class']}',
-                                                     'tags'       => {'all'=>'all'}
-                                                    }
-      "
-        }
-
-        button_code += "
-      list_parms['buttons']       = {button_column_name.downcase => mini_buttons}
-      "
-      end
-
-
-
-      #------------ FOOTER ------------
-      if page_config['footerOn'] == '1' && !footer_buttons.empty?
-        btns = []
-        footer_buttons.each {|field|
-          btns << " WidgetList::Widgets::widget_button('#{field[0]}', {'page'       => '#{field[1]['url']}','innerClass' => '#{field[1]['class']}'})"
-        }
-
-        button_code += "
-      list_parms['customFooter'] = " + btns.join(' + ')
-      end
 
 
 
@@ -454,13 +427,21 @@ module WidgetList
 
       if page_config['useGrouping'] == '1' && page_config['showSearch'] == '1' && !group_by.empty?
         variable_code += "
-      groupByDesc          = ''     # Initialize a variable you can use in listDescription to show what the current grouping selection is
-      groupByFilter        = 'none' # This variable should be used to control business logic based on the grouping and is a short hand key rather than using what is returned from get_group_by_selection
+      groupByDesc                     = ''     # Initialize a variable you can use in listDescription to show what the current grouping selection is
+      groupByFilter                   = 'none' # This variable should be used to control business logic based on the grouping and is a short hand key rather than using what is returned from get_group_by_selection
         "
 
         visible_field_code += "
-      list_parms['fields']['cnt']                         = 'Count'  if groupByFilter != 'none'
-      list_parms['fieldFunction']['cnt']                  = 'TO_CHAR(COUNT(1))' if groupByFilter != 'none'"
+      list_parms['fields']#{add_pointer('cnt')} #{add_conditional('Count'," if groupByFilter != 'none'")}
+        "
+        if WidgetList::List.get_db_type(page_config['primaryDatabase'] == '1' ? true : false) == 'oracle'
+          count = 'TO_CHAR(COUNT(1))'
+        else
+          count = 'COUNT(1)'
+        end
+
+        field_function_code += "
+      list_parms['fieldFunction']#{add_pointer('cnt',7)} #{add_conditional(count," if groupByFilter != 'none'")}"
         descriptions = []
         group_by.each { |field,description|
           descriptions << "'" + description + "'"
@@ -495,7 +476,50 @@ module WidgetList
         EOD
 
         grouping_code += "
-        list_parms['groupByItems'] = " + '[' + descriptions.join(', ') + ']' + ""
+      list_parms['groupByItems'] = " + '[' + descriptions.join(', ') + ']' + ""
+      end
+
+
+      #------------ BUTTONS ------------
+
+      if page_config['rowButtonsOn'] == '1'
+        visible_field_code += "
+      list_parms['fields'][button_column_name.downcase]        =  button_column_name.capitalize"
+
+        button_code += "
+      #
+      # Buttons
+      #
+      mini_buttons = {}
+      "
+
+        buttons.each { |field|
+          button_code += "
+      mini_buttons['button_#{field[0].downcase}'] = {'page'       => '#{field[1]['url']}',
+                                                     'text'       => '#{field[0]}',
+                                                     'function'   => 'Redirect',
+                                                     'innerClass' => '#{field[1]['class']}',
+                                                     'tags'       => {'all'=>'all'}
+                                                    }
+      "
+        }
+
+        button_code += "
+      list_parms['buttons']       = {button_column_name.downcase => mini_buttons}
+      "
+      end
+
+
+
+      #------------ FOOTER ------------
+      if page_config['footerOn'] == '1' && !footer_buttons.empty?
+        btns = []
+        footer_buttons.each {|field|
+          btns << " WidgetList::Widgets::widget_button('#{field[0]}', {'page'       => '#{field[1]['url']}','innerClass' => '#{field[1]['class']}'})"
+        }
+
+        button_code += "
+      list_parms['customFooter'] = " + btns.join(' + ')
       end
 
 
@@ -505,7 +529,7 @@ module WidgetList
       if page_config['fieldFunctionOn'] == '1' && !fields_function.empty?
         fields_function.each { |field,command|
           field_function_code += "
-      list_parms['fieldFunction']['#{field}']           = '#{command}'"
+      list_parms['fieldFunction']#{add_pointer(field,7)} '#{command}'"
         }
       end
 
@@ -524,36 +548,43 @@ module WidgetList
 
       if page_config['checkboxEnabled'] == '1'
         field_function_code += "
-      list_parms['fieldFunction']['checkbox'] = \"''\""
+      list_parms['fieldFunction']#{add_pointer('checkbox',7)} \"''\""
       end
 
       <<-EOD
     begin
 
       #{variable_code}
-      list_parms                    = WidgetList::List::init_config()
-      list_parms['name']            = '#{page_config['name']}'
-      list_parms['noDataMessage']   = '#{page_config['noDataMessage']}'
-      list_parms['rowLimit']        = '#{page_config['rowLimit']}'
-      list_parms['title']           = '#{page_config['title']}'
-      list_parms['listDescription'] = '#{page_config['listDescription']}'
-      list_parms['useSort']         =  #{page_config['useSort'] == '1' ? 'true' : 'false'}
+      list_parms                      = WidgetList::List::init_config()
+      list_parms['name']              = '#{page_config['name']}'
+      list_parms['noDataMessage']     = '#{page_config['noDataMessage']}'
+      list_parms['rowLimit']          = '#{page_config['rowLimit']}'
+      list_parms['title']             = '#{page_config['title']}'
+      list_parms['useSort']           = #{page_config['useSort'] == '1' ? 'true' : 'false'}
+      list_parms['database']          = '#{page_config['primaryDatabase'] == '1' ? 'primary' : 'secondary'}'
       #{export_code}
 
       #{drill_down_code}
-      #{drill_down_links}
       #{grouping_code}
 
+      #
+      # Fields
+      #
       #{visible_field_code}
       #{hidden_field_code}
       #{field_function_code}
 
+      #
+      # Model
+      #
       #{view_code}
 
       #{checkbox_code}
       #{button_code}
 
-
+      #
+      # Render List
+      #
       output_type, output  = WidgetList::List.build_list(list_parms)
 
       case output_type
@@ -568,6 +599,9 @@ module WidgetList
 
     rescue Exception => e
 
+      #
+      # Rescue Errors
+      #
       Rails.logger.info e.to_s + "\\n\\n" + $!.backtrace.join("\\n\\n")
 
       if Rails.env == 'development'
@@ -2432,12 +2466,11 @@ module WidgetList
         end
 
         #Add in radius
-        if ii == @items['fields'].length - 1
+        if ii == @items['fields'].length - 1 && @items['listDescription'] == ''
           colWidthStyle += '-moz-border-radius-topright:' + get_radius_value() + ';-webkit-border-top-right-radius:' + get_radius_value() + ';border-top-right-radius:' + get_radius_value() + ';'
-
         end
 
-        if ii == 0
+        if ii == 0 && @items['listDescription'] == ''
           colWidthStyle += '-moz-border-radius-topleft:' + get_radius_value() + ';-webkit-border-top-left-radius:' + get_radius_value() + ';border-top-left-radius:' + get_radius_value() + ';'
         end
 
@@ -2870,14 +2903,17 @@ module WidgetList
 
         page = buttonAttribs['page'].dup
         if buttonAttribs.key?('tags')
+          tags = buttonAttribs['tags'].dup
+          all_wildcard = false
           if buttonAttribs['tags'].first[0] == 'all'
-            buttonAttribs['tags'] = {}
-            @results.keys.each { |tags|
-              buttonAttribs['tags'][tags.downcase] = tags.downcase
+            all_wildcard = true
+            tags = {}
+            @results.keys.each { |tag|
+              tags[tag.downcase] = tag.downcase
             }
           end
 
-          buttonAttribs['tags'].each { | tagName , tag |
+          tags.each { | tagName , tag |
             if @results.key?(tag.upcase) && @results[tag.upcase][j]
               #
               # Data exists, lets check to see if page has any lowercase tags for restful URLs
@@ -2889,7 +2925,7 @@ module WidgetList
                 #
                 # Will build ?tagname=XXXX based on your hash passed to your page
                 #
-                buttonAttribs.deep_merge!({ 'args' => { tagName => @results[tag.upcase][j] } })
+                buttonAttribs.deep_merge!({ 'args' => { tagName => @results[tag.upcase][j] } }) unless all_wildcard
               end
             else
 
