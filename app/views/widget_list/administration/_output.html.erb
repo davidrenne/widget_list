@@ -331,6 +331,7 @@
     if(jQuery(obj).val() != '') {
       jQuery.post(jQuery('#widget_list_administration').attr('action'), 'ajax=1&model=' + jQuery(obj).val(), function(response)
       {
+        jQuery('#name').val(jQuery(obj).val().toLowerCase() + '_listing');
         jQuery('#field_table').html(response['fields']);
         jQuery('#hidden_field_table').html(response['fields_hidden']);
         jQuery('#checkboxField').html(response['checked_fields']);
@@ -346,14 +347,16 @@
         jQuery('#title').val(jQuery(obj).val() + 's');
         jQuery('#listDescription').val('Showing All ' + jQuery(obj).val() + 's');
 
-        if (jQuery(obj).val() != '' && jQuery('#noDataMessage').val() == '') {
+        if (jQuery(obj).val() != '') {
           jQuery('#noDataMessage').val('No ' + jQuery(obj).val() + 's Found Within Your Criteria');
         }
 
         if (jQuery(obj).val() != '' && jQuery('#showExport').is(':checked')) {
           jQuery('#exportButtonTitle').val('Export All ' + jQuery(obj).val() + 's');
         }
-      }, "json");
+      }, "json").error(function(response) {
+                alert('An error occurred instantiating this model.  Check the response for errors.');
+              });
     }
   }
 
@@ -392,7 +395,7 @@
           <h3>Internal Name:</h3>
         </td>
         <td>
-          <input type="text" name="name" value="<!--NAME_VALUE-->"/>
+          <input type="text" name="name" id="name" value="<!--NAME_VALUE-->"/>
         </td>
         <td>
           &#160;
