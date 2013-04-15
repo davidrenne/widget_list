@@ -103,7 +103,11 @@ Next you will see this interface which will build some starter code for you:
 
 ![](http://davidrenne.com/github/widget_list/admin4.jpg)
 
+###As you can see below, there is a preview iframe of what you are configuring:
+
 ![](http://davidrenne.com/github/widget_list/admin5.png)
+
+###And finally, the code is output to get you started
 
 ![](http://davidrenne.com/github/widget_list/admin6.png)
 
