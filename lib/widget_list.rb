@@ -558,7 +558,7 @@ module WidgetList
       list_parms                      = WidgetList::List::init_config()
       list_parms['name']              = '#{page_config['name']}'
       list_parms['noDataMessage']     = '#{page_config['noDataMessage']}'
-      list_parms['rowLimit']          = '#{page_config['rowLimit']}'
+      list_parms['rowLimit']          = #{page_config['rowLimit']}
       list_parms['title']             = '#{page_config['title']}'
       list_parms['useSort']           = #{page_config['useSort'] == '1' ? 'true' : 'false'}
       list_parms['database']          = '#{page_config['primaryDatabase'] == '1' ? 'primary' : 'secondary'}'
@@ -1024,7 +1024,7 @@ module WidgetList
                              {'select'=>
                                 {'view' =>
                                    '
-                                   SELECT <!--FIELDS--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
+                                   SELECT <!--FIELDS_PLAIN--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
                                   '
                                 }
                              }
@@ -2038,12 +2038,13 @@ module WidgetList
                 'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
               }
 
-              @headerPieces['searchBar']            = WidgetList::Widgets::widget_input(list_search)
-              @templateFill['<!--FILTER_HEADER-->'] = @headerPieces['searchBar']
-
+              fillRansack = {}
               if @items['ransackSearch'] != false
-                @templateFill['<!--RANSACK-->'] = ActionController::Base.new.render_to_string(:partial => 'widget_list/ransack_fields', :locals => { 'search_object' => @items['ransackSearch'], 'url' => '--JUMP_URL--'})
+                fillRansack['<!--RANSACK-->'] = ActionController::Base.new.render_to_string(:partial => 'widget_list/ransack_fields', :locals => { 'search_object' => @items['ransackSearch'], 'url' => '--JUMP_URL--'})
               end
+
+              @headerPieces['searchBar']            = WidgetList::Utils::fill(fillRansack,WidgetList::Widgets::widget_input(list_search))
+              @templateFill['<!--FILTER_HEADER-->'] = @headerPieces['searchBar']
 
             end
 
@@ -3479,8 +3480,14 @@ module WidgetList
 
       if ! sql.empty?
         if @items['showPagination']
-          if get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy'], @active_record_model) > 0
-            rows = get_database.final_results['TOTAL'][0].to_i
+          cnt = get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy'], @active_record_model)
+          if cnt > 0
+            if cnt > get_database.final_results['TOTAL'][0].to_i
+              #sometimes databases and queries run do not count(1) and group properly and instead
+              rows = cnt
+            else
+              rows = get_database.final_results['TOTAL'][0].to_i
+            end
           else
             rows = 0
           end
