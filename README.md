@@ -20,6 +20,7 @@ I feel like there are not very good lists in ruby/rails and/or dont care to find
 In rails you have will_paginate and other ones like it using the ActiveRecord approach, but widget_list adds some awesome treats to standard boring pagers:
 
 * A sleek ajaxified list
+* Full Blown configuration administration tool
 * Supports *ALL Databases (Haven't tested everything yet though, I am sure there are tweaks for each DB). mysql, postgres, oracle and sqllite tested (basic example)
 * Full sorting ASC/DESC and paging/limits of list via ajax
 * Easily add row level buttons for each row
@@ -71,6 +72,40 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 
 ![](http://davidrenne.com/github/widget_list/theme_blue_sky_basin.png)
 
+****
+
+## Administration Tool
+
+****
+
+In order to use this tool please paste your @output into your view
+
+```ruby
+   <div style="margin:50px;">
+      <%=raw @output%>
+    </div>
+```  
+
+And then add this to a clean controller.  If you have code below, please return below the ajax 
+
+```ruby
+	@output = WidgetList.go!()
+	return render :inline => @output if params.key?('ajax')
+```
+
+Next you will see this interface which will build some starter code for you:
+
+![](http://davidrenne.com/github/widget_list/admin1.jpg)
+
+![](http://davidrenne.com/github/widget_list/admin2.jpg)
+
+![](http://davidrenne.com/github/widget_list/admin3.jpg)
+
+![](http://davidrenne.com/github/widget_list/admin4.jpg)
+
+![](http://davidrenne.com/github/widget_list/admin5.png)
+
+![](http://davidrenne.com/github/widget_list/admin6.png)
 
 ****
 
