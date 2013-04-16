@@ -325,7 +325,11 @@ module WidgetList
 
     def add_conditional(key,conditional)
       whitespace = 19
-      "'#{key}' " + "".ljust(whitespace - key.length) + " #{conditional}"
+      "'#{escape_code key}' " + "".ljust(whitespace - key.length) + " #{conditional}"
+    end
+
+    def escape_code(code)
+      code.gsub(/'/,"\\\\\\\\'")
     end
 
     def translate_config_to_code()
@@ -361,17 +365,17 @@ module WidgetList
           column_to_show = "'#{field[1]['column_to_show'].gsub(/_linked/,'')}'"
           if using_grouping
             if database_type == 'oracle'
-              column_to_show = "groupByFilter == 'none' ? '#{field[1]['column_to_show'].gsub(/_linked/,'')}' : 'MAX(#{field[1]['column_to_show'].gsub(/_linked/,'')})'"
+              column_to_show = "groupByFilter == 'none' ? '#{escape_code field[1]['column_to_show'].gsub(/_linked/,'')}' : 'MAX(#{escape_code field[1]['column_to_show'].gsub(/_linked/,'')})'"
             end
           end
 
           field_function_code += "
       list_parms['fieldFunction']#{add_pointer(field[1]['column_to_show'],7)} WidgetList::List::build_drill_down(
         :list_id => list_parms['name'],
-        :drill_down_name => '#{field[0]}',
+        :drill_down_name => '#{escape_code field[0]}',
         :data_to_pass_from_view => #{column_to_show},
         :column_to_show => #{column_to_show},
-        :column_alias => '#{field[1]['column_to_show']}',
+        :column_alias => '#{escape_code field[1]['column_to_show']}',
         :primary_database => #{page_config['primaryDatabase'] == '1' ? 'true' : 'false'}
       )"
           case_statements += <<-EOD
@@ -379,7 +383,7 @@ module WidgetList
         when '#{field[0]}'
           list_parms['filter']          << " #{field[1]['column_to_show'].gsub(/_linked/,'')} = ? "
           list_parms['bindVars']        << #{page_config['view']}.sanitize(filterValue)
-          list_parms['listDescription']  = drillDownBackLink + ' Filtered by #{field[1]['column_to_show'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
+          list_parms['listDescription']  = drillDownBackLink + ' Filtered by #{escape_code field[1]['column_to_show'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
           EOD
         }
 
@@ -394,20 +398,20 @@ module WidgetList
       drillDownBackLink       = WidgetList::List::drill_down_back(list_parms['name'])
       case drillDown#{case_statements}
         else
-          list_parms['listDescription']  = '#{page_config['listDescription']}'
+          list_parms['listDescription']  = '#{escape_code page_config['listDescription']}'
       end
         EOD
 
       else
         drill_down_code = "
-      list_parms['listDescription']   = '#{page_config['listDescription']}'
+      list_parms['listDescription']   = '#{escape_code page_config['listDescription']}'
         "
       end
 
 
       if page_config['rowButtonsOn'] == '1'
         variable_code += "
-      button_column_name              = '#{page_config['rowButtonsName']}'"
+      button_column_name              = '#{escape_code page_config['rowButtonsName']}'"
       end
 
       #------------ VIEW ------------
@@ -449,12 +453,12 @@ module WidgetList
 
       if page_config['showExport'] == '1' && page_config['showSearch'] == '1'
         export_code += "list_parms['showExport']        = #{page_config['showExport'] == '1' ? 'true' : 'false'}
-      list_parms['exportButtonTitle'] = '#{page_config['exportButtonTitle']}'"
+      list_parms['exportButtonTitle'] = '#{escape_code page_config['exportButtonTitle']}'"
       end
 
       if page_config['showSearch'] == '1'
         export_code += "
-      list_parms['searchTitle']       = '#{page_config['searchTitle']}'"
+      list_parms['searchTitle']       = '#{escape_code page_config['searchTitle']}'"
       end
 
 
@@ -508,7 +512,7 @@ module WidgetList
       list_parms['fieldFunction']#{add_pointer('cnt',7)} #{add_conditional(count," if groupByFilter != 'none'")}"
         descriptions = []
         group_by.each { |field,description|
-          descriptions << "'" + description + "'"
+          descriptions << "'" + escape_code(description) + "'"
           desc = ''
           filter = ''
           unless field.empty?
@@ -521,8 +525,8 @@ module WidgetList
 
         when '#{description}'
           list_parms['groupBy']  = '#{field}'
-          groupByFilter          = '#{filter}'
-          groupByDesc            = '#{desc}'
+          groupByFilter          = '#{escape_code filter}'
+          groupByDesc            = '#{escape_code desc}'
           EOD
         }
         grouping_code = <<-EOD
@@ -569,10 +573,10 @@ module WidgetList
 
         buttons.each { |field|
           button_code += "
-      mini_buttons['button_#{field[0].downcase}'] = {'page'       => '#{field[1]['url']}',
-                                                     'text'       => '#{field[0]}',
+      mini_buttons['button_#{field[0].downcase}'] = {'page'       => '#{escape_code field[1]['url']}',
+                                                     'text'       => '#{escape_code field[0]}',
                                                      'function'   => 'Redirect',
-                                                     'innerClass' => '#{field[1]['class']}',
+                                                     'innerClass' => '#{escape_code field[1]['class']}',
                                                      'tags'       => {'all'=>'all'}
                                                     }
       "
@@ -589,7 +593,7 @@ module WidgetList
       if page_config['footerOn'] == '1' && !footer_buttons.empty?
         btns = []
         footer_buttons.each {|field|
-          btns << " WidgetList::Widgets::widget_button('#{field[0]}', {'page'       => '#{field[1]['url']}','innerClass' => '#{field[1]['class']}'})"
+          btns << " WidgetList::Widgets::widget_button('#{escape_code field[0]}', {'page'       => '#{escape_code field[1]['url']}','innerClass' => '#{escape_code field[1]['class']}'})"
         }
 
         button_code += "
@@ -603,14 +607,14 @@ module WidgetList
       if page_config['fieldFunctionOn'] == '1' && !fields_function.empty?
         fields_function.each { |field,command|
           field_function_code += "
-      list_parms['fieldFunction']#{add_pointer(field,7)} '#{command}'"
+      list_parms['fieldFunction']#{add_pointer(field,7)} '#{escape_code command}'"
         }
       end
 
       if page_config['showHidden'] == '1'
         fields_hidden.each { |field|
           hidden_field_code += "
-      list_parms['fieldsHidden'] << '#{field[1]}'"
+      list_parms['fieldsHidden'] << '#{escape_code field[1]}'"
         }
       end
 
@@ -630,10 +634,10 @@ module WidgetList
 
       #{variable_code}
       list_parms                      = WidgetList::List::init_config()
-      list_parms['name']              = '#{page_config['name']}'
-      list_parms['noDataMessage']     = '#{page_config['noDataMessage']}'
+      list_parms['name']              = '#{escape_code page_config['name']}'
+      list_parms['noDataMessage']     = '#{escape_code page_config['noDataMessage']}'
       list_parms['rowLimit']          = #{page_config['rowLimit']}
-      list_parms['title']             = '#{page_config['title']}'
+      list_parms['title']             = '#{escape_code page_config['title']}'
       list_parms['useSort']           = #{page_config['useSort'] == '1' ? 'true' : 'false'}
       list_parms['database']          = '#{page_config['primaryDatabase'] == '1' ? 'primary' : 'secondary'}'
       #{export_code}
@@ -1039,7 +1043,7 @@ module WidgetList
       unless $_REQUEST.key?('ajax')
         @fill['<!--CODE-->'] = translate_config_to_code()
       end
-      return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output_save') )  unless $_REQUEST.key?('ajax')
+      return WidgetList::Utils::fill(@fill ,ac.render_to_string(:partial => 'widget_list/administration/output_save') )  unless $_REQUEST.key?('ajax')
       return @fill.to_json
     end
   end
