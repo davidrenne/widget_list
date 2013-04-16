@@ -241,6 +241,7 @@ function ListJumpResponse(response)
   {
     jQuery('.' + response['list_id'] + '-search').replaceWith(response['search_bar']);
     InitInfoFields(jQuery('#list_search_id_' + response['list_id']));
+    RansackEventHandler();
   }
 
   if(typeof response['export_button'] === 'string')
@@ -558,6 +559,7 @@ function BuildUrl(getVars)
   jQuery(document).ready(
       function()
       {
+        RansackEventHandler();
         InitInfoFields();
       });
 })(jQuery);
@@ -777,21 +779,17 @@ jQuery(document).ready(function($) {
   });
 });
 
-(function() {
-
-  jQuery(function() {
-    jQuery('.advanced-search-container-inline li form').on('click', '.remove_fields', function(event) {
-      jQuery(this).closest('.field').remove();
-      return event.preventDefault();
-    });
-    return jQuery('.advanced-search-container-inline li form').on('click', '.add_fields', function(event) {
-      var regexp, time;
-      time = new Date().getTime();
-      regexp = new RegExp(jQuery(this).data('id'), 'g');
-      jQuery(this).before(jQuery(this).data('fields').replace(regexp, time));
-      return event.preventDefault();
-    });
+function RansackEventHandler() {
+  jQuery('.advanced-search-container-inline li form').on('click', '.remove_fields', function(event) {
+    jQuery(this).closest('.field').remove();
+    return event.preventDefault();
   });
-
-}).call(this);
+  jQuery('.advanced-search-container-inline li form').on('click', '.add_fields', function(event) {
+    var regexp, time;
+    time = new Date().getTime();
+    regexp = new RegExp(jQuery(this).data('id'), 'g');
+    jQuery(this).before(jQuery(this).data('fields').replace(regexp, time));
+    return event.preventDefault();
+  });
+}
 
