@@ -12,7 +12,7 @@ require 'uri'
 require 'extensions/action_controller_base'
 
 module WidgetList
-
+  
   #
   # WidgetList Administration/Setup
   #
@@ -1061,6 +1061,7 @@ module WidgetList
     class Engine < ::Rails::Engine
       require 'widget_list/engine'
     end
+  
   end
 
   class List
@@ -3687,6 +3688,9 @@ module WidgetList
     def self.load_widget_list_yml
       if $widget_list_conf.nil?
         $widget_list_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
+        if Rails.root.join("app/helpers", "widget_list_helper.rb").file?
+          require Rails.root.join("app/helpers", "widget_list_helper.rb") 
+        end
       end
     end
 
