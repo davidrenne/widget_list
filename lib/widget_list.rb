@@ -29,9 +29,12 @@ module WidgetList
   class Administration
     def show_interface()
       config_file = Rails.root.join("config", "widget-list-administration.json")
+      config_file_all = Rails.root.join("config", "widget-list-administration-all.json")
       if config_file.file? && !$_REQUEST.key?('ajax') && !$_REQUEST.key?('name')
         File.delete(Rails.root.join("config", "widget-list-administration.json"))
       end
+
+
       ac = ActionController::Base.new()
       default_config = WidgetList::List::get_defaults()
       config_id, page_config = get_configuration()
@@ -59,6 +62,41 @@ module WidgetList
       #
 
       #
+      # INIT PROMPT
+      #
+
+      if config_file_all.file? && !$_REQUEST.key?('restore')
+        @fill['<!--BUTTON_CSS-->']       = 'style="display:none"'
+        @fill['<!--START_CSS-->']        = 'style="display:none"'
+        options = ''
+        json = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration-all.json")).read)
+        json.keys.each { |val|
+          void, controller_action = val.split('|')
+          controller, action = controller_action.split('-')
+          options += '<option value="' + val + '">' + (json[val].key?('savedOn') ? "(on #{json[val]['savedOn']}) - " : '') + controller + '/' + action + ' => Model used is "' + json[val]['view'] + '"</option>'
+        }
+        @fill['<!--EDIT_OR_ADD_NEW-->']  = WidgetList::Utils::fill({
+                                                                       '<!--NEW-->'   => WidgetList::Widgets::widget_button('New',   { 'onclick' => "ClickTab('.start','ShowStart',true);jQuery('#sections').fadeIn('slow');"  , 'innerClass'  => "primary"  } ),
+                                                                       '<!--EDIT-->'  => WidgetList::Widgets::widget_button('Edit',   { 'onclick' => "isSubmitting = true; document.location = document.location + '?restore=' + escape(jQuery('#edit_widget_list').val());"  , 'innerClass'  => "primary"  } ),
+                                                                       '<!--ITEMS-->' => '<select name="edit_widget_list" id="edit_widget_list">' + options + '</select>',
+                                                                   } ,'
+                                                                      <tr class="init">
+                                                                        <td>
+                                                                          <h3>Start a New Widget List <!--NEW--></h3>
+                                                                        </td>
+                                                                        <td>
+                                                                          <h3>Edit Existing: <!--ITEMS--> <!--EDIT--></h3>
+                                                                        </td>
+                                                                        <td>
+                                                                          &#160;
+                                                                        </td>
+                                                                      </tr>')
+      else
+        @fill['<!--BUTTON_CSS-->'] = ''
+        @fill['<!--START_CSS-->']  = ''
+      end
+
+      #
       # BASE
       #
       @fill['<!--POST_URL-->']                  = $_SERVER['PATH_INFO']
@@ -74,11 +112,13 @@ module WidgetList
       # START
       #
       @fill['<!--TITLE-->']                     = 'Stub Out A New WidgetList Implementation'
+      @fill['<!--CONTROLLER_VALUE-->']          = (!@isEditing) ? $_REQUEST['controller'] : page_config['desiredController']
+      @fill['<!--ACTION_VALUE-->']              = (!@isEditing) ? $_REQUEST['action'] : page_config['desiredAction']
       @fill['<!--NAME_VALUE-->']                = (!@isEditing) ? config_id : page_config['name']
       @fill['<!--VIEW_OPTIONS-->']              = model_options
       @fill['<!--TITLE_VALUE-->']               = (!@isEditing) ? '' : page_config['title']
       @fill['<!--DESC_VALUE-->']                = (!@isEditing) ? '' : page_config['listDescription']
-      @fill['<!--PRIMARY_CHECKED-->']           = (!@isEditing) ? 'checked' : page_config['primaryDatabase']
+      @fill['<!--PRIMARY_CHECKED-->']           = (!@isEditing) ? 'checked' : (page_config['primaryDatabase'] == "1") ? 'checked' : ''
 
       #
       # FIELD LEVEL
@@ -139,7 +179,7 @@ module WidgetList
       @fieldFill = {}
       @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
       @fieldFill['<!--BUTTON_TEXT-->']          = 'Button Text'
-      @fieldFill['<!--BUTTON_URL-->']           = '/'
+      @fieldFill['<!--BUTTON_URL-->']           = (!@isEditing) ? '/' : '/' + page_config['desiredController'] + '/'
       @fieldFill['<!--BUTTON_CLASS-->']         = 'info'
       @fieldFill['<!--ONBLUR3-->']              = 'GoodClass(this)'
 
@@ -218,7 +258,7 @@ module WidgetList
       @fieldFill = {}
       @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
       @fieldFill['<!--BUTTON_TEXT-->']          = 'Button Text'
-      @fieldFill['<!--BUTTON_URL-->']           = '/'
+      @fieldFill['<!--BUTTON_URL-->']           = (!@isEditing) ? '/' : '/' + page_config['desiredController'] + '/your_action'
       @fieldFill['<!--BUTTON_CLASS-->']         = 'info'
 
       @fieldFill['<!--TEXT_DESC-->']            = 'Text'
@@ -260,7 +300,10 @@ module WidgetList
       @help['<!--SEARCH_TITLE_BUTTON-->']       = "This is the grey description of the wild card search"
       @help['<!--HIDDEN_HELP_BUTTON-->']        = "Hidden fields are not shown, but you can use the record values inside of important tags passed from buttons and drill downs"
       @help['<!--CHECK_HELP_BUTTON-->']         = "This value is supposed to be the primary key to identify the row"
+      @help['<!--ACTION_HELP_BUTTON-->']        = "Internal use only reserved for future use.  Not really important as of yet"
+      @help['<!--NAME_HELP_BUTTON-->']          = "The name of the controller drives most session level storage and javascript pointers and IDs of a list"
       @help['<!--ROW_HELP_BUTTON-->']           = "10,20,50,100,500,1000 are supported"
+      @help['<!--CONTROLLER_HELP_BUTTON-->']    = "Controller is used to generate button URLs internally in this utility and as a way to restore configurations for future editing and code re-generation"
       @help['<!--DRILL_DOWN_HELP_BUTTON-->']    = "Link drill downs allow you to build a link around a field value, in which allows you to select which column value to pass to a drill down.  It allows you to CONCAT or run a query for the display of the column and it then handles the filtering of the data"
       @help['<!--FUNC_HELP_BUTTON-->']          = "A fieldFunction is a wrapper to call functions around columns that exist or possibly adding new fields that dont exist.  It is good for formatting data after the where clause."
       @help['<!--GROUP_BY_HELP_BUTTON-->']      = "Enter a field name to group by and a description to show to the user.  If you leave the field name blank it will NOT group by the field, but will show all records"
@@ -658,14 +701,14 @@ module WidgetList
 
     def get_configuration()
 
-      request = $_REQUEST.dup
-      config_id =  ''
-      config_id += request['controller'] if request.key?('controller')
-      config_id += request['action'] if request.key?('action')
+      config_id =  config_id()
+
       config_file = Rails.root.join("config", "widget-list-administration.json")
 
       if config_file.file? && ($_REQUEST.key?('iframe') || $_REQUEST.key?('name'))
         configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration.json")).read)
+      elsif $_REQUEST.key?('restore')
+        configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration-all.json")).read)
       else
         configuration = {}
       end
@@ -775,6 +818,8 @@ module WidgetList
 
         fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs = normalize_configs(page_config)
       else
+        controller = ($_REQUEST.key?('desiredController') ? $_REQUEST['desiredController'] :  $_REQUEST['controller'] )
+
         if $_REQUEST.key?('ajax')
           model         = model_name.constantize.new
           model.attributes.keys.each { |field|
@@ -783,21 +828,21 @@ module WidgetList
             fields_function[field] = 'CNT(' + field + ') or NVL(' + field + ') or TO_DATE(' + field + ') etc...'
           }
           footer_buttons['Add New ' + model_name]            = {}
-          footer_buttons['Add New ' + model_name]['url']     = '/' + $_REQUEST['controller'] + '/add/'
+          footer_buttons['Add New ' + model_name]['url']     = '/' + controller + '/add/'
           footer_buttons['Add New ' + model_name]['class']   = 'info'
         end
         buttons['Edit']              = {}
         buttons['Delete']            = {}
 
         buttons['Delete']['class']   = 'danger'
-        buttons['Delete']['url']     = '/' + $_REQUEST['controller'] + '/delete/id/'
-        buttons['Edit']['url']       = '/' + $_REQUEST['controller'] + '/edit/id/'
+        buttons['Delete']['url']     = '/' + controller + '/delete/id/'
+        buttons['Edit']['url']       = '/' + controller + '/edit/id/'
         buttons['Edit']['class']     = 'info'
         if $_REQUEST.key?('ajax')
           group_by['']               = 'All ' + model_name + 's'
           group_by['field_name']     = 'This will group by field_name and show Count'
-          buttons['Delete']['url']   = '/' + $_REQUEST['controller'] + '/delete/' + fields.keys.first + '/'
-          buttons['Edit']['url']     = '/' + $_REQUEST['controller'] + '/edit/' + fields.keys.first + '/'
+          buttons['Delete']['url']   = '/' + controller + '/delete/' + fields.keys.first + '/'
+          buttons['Edit']['url']     = '/' + controller + '/edit/' + fields.keys.first + '/'
         end
       end
 
@@ -945,12 +990,23 @@ module WidgetList
       WidgetList::Widgets::widget_button('Remove',  {'onclick' => "RemoveField(this)", 'innerClass' => "danger" }, true )
     end
 
+    def config_id()
+      config_id =  ''
+      if $_REQUEST.key?('restore')
+        config_id = $_REQUEST['restore']
+      else
+        config_id += $_REQUEST['controller'] if $_REQUEST.key?('controller')
+        config_id += $_REQUEST['action'] if $_REQUEST.key?('action')
+        config_id += '|' + $_REQUEST['desiredController'] if $_REQUEST.key?('desiredController')
+        config_id += '-' + $_REQUEST['desiredAction'] if $_REQUEST.key?('desiredAction')
+      end
+      return config_id
+    end
+
     def save_and_show_code()
       ac = ActionController::Base.new()
-      request = $_REQUEST.dup
-      config_id =  ''
-      config_id += request['controller'] if request.key?('controller')
-      config_id += request['action'] if request.key?('action')
+
+      config_id =  config_id()
 
       config_file = Rails.root.join("config", "widget-list-administration.json")
       if config_file.file?
@@ -958,22 +1014,32 @@ module WidgetList
       else
         configuration = {}
       end
-      configuration[config_id] = request
+      configuration[config_id] = $_REQUEST
+      time = Time.new
+      configuration[config_id]['savedOn'] = time.year.to_s + '-' + time.month.to_s.rjust(2, "0") + '-' + time.day.to_s.rjust(2, "0")
+
+      config_file_all = Rails.root.join("config", "widget-list-administration-all.json")
+      if config_file_all.file?
+        configuration_all = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration-all.json")).read)
+      else
+        configuration_all = {}
+      end
+      configuration_all[config_id] = $_REQUEST
 
       File.open(Rails.root.join("config", "widget-list-administration.json"), "w") do |file|
         file.puts configuration.to_json
       end
 
       File.open(Rails.root.join("config", "widget-list-administration-all.json"), "w") do |file|
-        file.puts configuration.to_json
+        file.puts configuration_all.to_json
       end
 
 
       @fill = {}
-      unless request.key?('ajax')
+      unless $_REQUEST.key?('ajax')
         @fill['<!--CODE-->'] = translate_config_to_code()
       end
-      return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output_save') )  unless request.key?('ajax')
+      return WidgetList::Utils::fill(@fill , ac.render_to_string(:partial => 'widget_list/administration/output_save') )  unless $_REQUEST.key?('ajax')
       return @fill.to_json
     end
   end
