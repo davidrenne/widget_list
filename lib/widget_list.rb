@@ -329,7 +329,12 @@ module WidgetList
     end
 
     def escape_code(code)
-      code.gsub(/'/,"\\\\\\\\'")
+      if $_REQUEST.key?('iframe')
+        #It is so weird, during output return, you need an extra slash to populate the code properly, but during rendering this is needed
+        code.gsub(/'/,"\\\\'")
+      else
+        code.gsub(/'/,"\\\\\\\\'")
+      end
     end
 
     def translate_config_to_code()
@@ -481,7 +486,7 @@ module WidgetList
         if using_grouping
           conditional = ' if groupByFilter == \'none\''
           if group_by.key?(field) || group_by.key?(field.gsub(/_linked/,''))
-            conditional = " if groupByFilter == 'none' || groupByFilter == 'group_#{group_by[field.gsub(/_linked/,'')].gsub(/ /,'_').downcase}'"
+            conditional = " if groupByFilter == 'none' || groupByFilter == 'group_#{escape_code group_by[field.gsub(/_linked/,'')].gsub(/ /,'_').downcase}'"
           end
         end
         visible_field_code += "
@@ -516,15 +521,15 @@ module WidgetList
           desc = ''
           filter = ''
           unless field.empty?
-            desc = " (Grouped By #{field.camelize})"
+            desc = " (Grouped By #{escape_code field.camelize})"
             filter = "group_#{description.gsub(/ /,'_').downcase}"
           else
             filter = 'none'
           end
           case_statements2 += <<-EOD
 
-        when '#{description}'
-          list_parms['groupBy']  = '#{field}'
+        when '#{escape_code description}'
+          list_parms['groupBy']  = '#{escape_code field}'
           groupByFilter          = '#{escape_code filter}'
           groupByDesc            = '#{escape_code desc}'
           EOD
@@ -573,7 +578,7 @@ module WidgetList
 
         buttons.each { |field|
           button_code += "
-      mini_buttons['button_#{field[0].downcase}'] = {'page'       => '#{escape_code field[1]['url']}',
+      mini_buttons['button_#{escape_code field[0].downcase}'] = {'page'       => '#{escape_code field[1]['url']}',
                                                      'text'       => '#{escape_code field[0]}',
                                                      'function'   => 'Redirect',
                                                      'innerClass' => '#{escape_code field[1]['class']}',
