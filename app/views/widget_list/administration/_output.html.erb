@@ -27,7 +27,7 @@
 </style>
 
 <script type="text/javascript">
-  var all = '.start,.fields,.rows,.search,.footer,.misc_submit';
+  var all = '.init,.start,.fields,.rows,.search,.footer,.misc_submit';
   var all_btns = '#start,#fields,#rows,#search,#footer,#misc_submit';
   jQuery(document).ready(function () {
     if (jQuery('#view').val() != '') {
@@ -37,6 +37,20 @@
       jQuery('#preview').hide();
     } else {
       jQuery('#preview').show();
+    }
+
+    window.onbeforeunload = function (evt) {
+      var message = 'Are you sure you want to abandon this widget_list implementation?  Doing so will lose all your work?';
+      if (typeof evt == 'undefined') {
+        evt = window.event;
+      }
+
+      if (evt) {
+        evt.returnValue = message;
+      }
+      if (!isSubmitting) {
+        return message;
+      }
     }
 
   });
@@ -54,8 +68,11 @@
     return ok;
   }
 
-  function ClickTab(which_class,func_name) {
-    if (VerifyOK(func_name)) {
+  function ClickTab(which_class,func_name,by_pass) {
+    if (typeof by_pass == 'undefined') {
+      var by_pass = false;
+    }
+    if (by_pass || VerifyOK(func_name)) {
       jQuery('.search_dependent').hide(0,function() {
         jQuery(all).hide(0,function() {
           jQuery(which_class).fadeIn(0,function() {
@@ -83,7 +100,11 @@
           });
         });
       });
-      SaveChanges();
+
+      if (!by_pass) {
+        SaveChanges();
+      }
+
     }
   }
 
@@ -304,6 +325,7 @@
 
   function AddButton() {
     jQuery('#button_table').html(jQuery('#button_table').html() + jQuery('#default_button_template').html());
+    jQuery('.buttons_url').last().val('/' + jQuery('#desiredController').val());
   }
 
   function AddDrillDown() {
@@ -312,6 +334,7 @@
 
   function AddFooterButton() {
     jQuery('#footer_table').html(jQuery('#footer_table').html() + jQuery('#default_footer_template').html());
+    jQuery('.footer_buttons_url').last().val('/' + jQuery('#desiredController').val());
   }
 
   function AddHiddenField() {
@@ -366,31 +389,56 @@
     {
       jQuery(all_btns).removeClass('disabled');
       jQuery('#preview').show();
-      jQuery('#preview').attr('src',jQuery('#widget_list_administration').attr('action') + '?iframe=1');
+      jQuery('#preview').attr('src',jQuery('#widget_list_administration').attr('action') + '?iframe=1&desiredController=' + jQuery('#desiredController').val() + '&desiredAction=' + jQuery('#desiredAction').val() );
       jQuery('#preview').css('width','100%');
       jQuery('#preview').css('height','500px');
     }, "json");
   }
 
+  var isSubmitting = false;
   function Submit() {
     if (VerifyOK('')) {
+      isSubmitting = true;
       jQuery('#widget_list_administration').submit();
     }
   }
+
+  function ChangeController(obj) {
+    jQuery('.footer_buttons_url').each(function (key,value) {
+      if (jQuery(value).val() == '/' + jQuery('#desiredControllerOriginal').val() + '/add/') {
+        jQuery(value).val('/' + jQuery(obj).val() + '/add/');
+        jQuery(value).attr('value','/' + jQuery(obj).val() + '/add/');
+      }
+    });
+    jQuery('.buttons_url').each(function (key,value) {
+      if (jQuery(value).val() == '/' + jQuery('#desiredControllerOriginal').val() + '/edit/id/') {
+        jQuery(value).val('/' + jQuery(obj).val() + '/edit/id/');
+        jQuery(value).attr('value','/' + jQuery(obj).val() + '/edit/id/');
+      }
+      if (jQuery(value).val() == '/' + jQuery('#desiredControllerOriginal').val() + '/delete/id/') {
+        jQuery(value).val('/' + jQuery(obj).val() + '/delete/id/');
+        jQuery(value).attr('value','/' + jQuery(obj).val() + '/delete/id/');
+      }
+    });
+  }
+
 </script>
 <form action="<!--POST_URL-->" method="post" id="widget_list_administration">
   <h1 style="font-size:24;"><!--TITLE--></h1><div class="horizontal_rule"></div>
   <h3>Get started quickly by selecting the features you need for this list</h3>
   <table>
     <!--BUTTON SECTION-->
-      <tr id="sections">
+      <tr id="sections" <!--BUTTON_CSS-->>
         <td colspan="3">
           <h3><!--BUTTONS--></h3>
         </td>
       </tr>
 
     <!--START SECTION-->
-      <tr class="start">
+
+      <!--EDIT_OR_ADD_NEW-->
+
+      <tr class="start" <!--START_CSS-->>
         <td>
           <h3>Primary Connection?:</h3>
         </td>
@@ -401,7 +449,33 @@
           &#160;
         </td>
       </tr>
-      <tr class="start">
+
+      <tr class="start" <!--START_CSS-->>
+        <td>
+          <h3>Desired Controller Location:</h3>
+        </td>
+        <td>
+          <input type="text" onblur="ChangeController(this);" name="desiredController" id="desiredController" value="<!--CONTROLLER_VALUE-->"/>
+          <input type="hidden" name="desiredControllerOriginal" id="desiredControllerOriginal" value="<!--CONTROLLER_VALUE-->"/>
+        </td>
+        <td>
+          <!--CONTROLLER_HELP_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="start" <!--START_CSS-->>
+        <td>
+          <h3>Desired Action:</h3>
+        </td>
+        <td>
+          <input type="text" name="desiredAction" id="desiredAction" value="<!--ACTION_VALUE-->"/>
+        </td>
+        <td>
+          <!--ACTION_HELP_BUTTON-->
+        </td>
+      </tr>
+
+      <tr class="start" <!--START_CSS-->>
         <td>
           <h3>Internal Name:</h3>
         </td>
@@ -409,10 +483,11 @@
           <input type="text" name="name" id="name" value="<!--NAME_VALUE-->"/>
         </td>
         <td>
-          &#160;
+          <!--NAME_HELP_BUTTON-->
         </td>
       </tr>
-      <tr class="start">
+
+      <tr class="start" <!--START_CSS-->>
         <td>
           <h3>Model:</h3>
         </td>
@@ -425,7 +500,7 @@
           &#160;
         </td>
       </tr>
-      <tr class="start">
+      <tr class="start" <!--START_CSS-->>
         <td>
           <h3>Title:</h3>
         </td>
@@ -437,7 +512,7 @@
         </td>
       </tr>
 
-      <tr class="start">
+      <tr class="start" <!--START_CSS-->>
         <td>
           <h3>Initial Description:</h3>
         </td>
