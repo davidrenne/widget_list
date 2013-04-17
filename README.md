@@ -320,6 +320,28 @@ Style a row based on the value of the column.
 
 `storeSessionChecks` - See http://stackoverflow.com/questions/1928204/marshal-data-too-short for configuring larger session storage which checkboxes would eat up if you had this set to true `default=false`
 
+`totalRow` - Add in your numeric or dollar amount fields you want to sum or average for the bottom record list_parms['totalRow']['my_field'] = true `default={}`
+
+`totalRowFirstCol` -  A string to display what the row is showing `default='<strong>Total:</strong>'`
+
+`totalRowMethod` - Allows you to pass 'average' to define which columns should average the sum  list_parms['totalRowPrefix']['my_field'] = 'average'.  There is only support for average right now `default={}`
+
+`totalRowPrefix` - The prefix will be automatically generated based off the value such as $ for a dollar amount would be injected without this configuration.  But this allows you to pass whatever you want displayed for the bottom summary row list_parms['totalRowPrefix']['my_field'] = true `default={}`
+
+`totalRowSuffix` - The suffix will be automatically generated based off the value at the end of the last row.  But this allows you to pass whatever you want displayed for the bottom summary row list_parms['totalRowSuffix']['my_field'] = true `default={}`
+
+`totalRowSeparator` -  Your decimal for the formatted number (if any is shown) `default='.'`
+
+`totalRowDelimiter` -  Your "comma" for the formatted number (if any is shown) `default=','`
+
+`totalRowDefault` -  For any columns such as strings which cannot be summed or added into a summary this value will be the place holder for that TD. `default='N/A'`
+
+
++          'totalRowSeparator'   => '.',
++          'totalRowDelimiter'   => ',',
++          'totalRowDefault'     => 'N/A',
+
+
 `columnHooks` - Todo `default={}`
 
 `rowHooks` - Todo `default={}`

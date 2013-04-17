@@ -1070,7 +1070,8 @@ module WidgetList
 
     attr_accessor :isAdministrating
 
-    include ActionView
+    include ActionView::Helpers::SanitizeHelper
+    include ActionView::Helpers::NumberHelper
 
     # @param [Hash] list
     def initialize(list={})
@@ -1721,10 +1722,13 @@ module WidgetList
           # Summary Row
           #
           'totalRow'            => {},
-          'totalRowFirstCol'    => '<b>Total:</b>',
+          'totalRowFirstCol'    => '<strong>Total:</strong>',
           'totalRowMethod'      => {},
-          'totalRowSeparator'   => ',',
-          'totalRowDelimiter'   => '.',
+          'totalRowPrefix'      => {},
+          'totalRowSuffix'      => {},
+          'totalRowSeparator'   => '.',
+          'totalRowDelimiter'   => ',',
+          'totalRowDefault'     => 'N/A',
 
           #
           # Hooks
@@ -3444,9 +3448,9 @@ module WidgetList
             else
               if (@items['totalRow'].include?(column) || @items['totalRow'].key?(column) && @results.key?(column.upcase))
 
-                preg_max_precision = Regexp.new('\\' + @items['totalRowDelimiter'] + '([0-9]+)')   #/\.([0-9]+)/
-                preg_number_value  = Regexp.new('[0-9|\\' + @items['totalRowDelimiter'] + '0-9]+') #/[0-9|\.0-9]+/
-                preg_strip_commas  = Regexp.new('\\' + @items['totalRowSeparator'])
+                preg_max_precision = Regexp.new('\\' + @items['totalRowSeparator'] + '([0-9]+)')   #/\.([0-9]+)/
+                preg_number_value  = Regexp.new('[0-9|\\' + @items['totalRowSeparator'] + '0-9]+') #/[0-9|\.0-9]+/
+                preg_strip_commas  = Regexp.new('\\' + @items['totalRowDelimiter'])
 
                 content       = 0
                 max_precision = [0]
@@ -3457,7 +3461,7 @@ module WidgetList
                 @results[column.upcase].each { |val|
 
                   if val.include?("<script class='val-db'")
-                    val = val[0..val.index("<script class='val-db'")]
+                    val = val[0..val.index("<script class='val-db'")-1]
                   end
 
                   cleanData      = strip_tags(val.to_s)
@@ -3467,9 +3471,19 @@ module WidgetList
                   raw_value      = cleanData.gsub(preg_strip_commas,'').match(preg_number_value)[0].to_f  unless cleanData.gsub(preg_strip_commas,'').match(preg_number_value).nil?
 
                   prefix, suffix = cleanData.gsub(preg_strip_commas,'').split(preg_number_value)
-
+                  prefix = '' if prefix.nil?
+                  suffix = '' if suffix.nil?
                   content = content + raw_value
                 }
+
+
+                if @items['totalRowPrefix'].key?(column)
+                  prefix = @items['totalRowPrefix'][column]
+                end
+
+                if @items['totalRowSuffix'].key?(column)
+                  suffix = @items['totalRowSuffix'][column]
+                end
 
                 precision = max_precision.max
 
@@ -3483,12 +3497,11 @@ module WidgetList
                 end
 
                 @rawTotals[column] = content
-                                                                                                   #content = ActionView::Helpers::NumberHelper.number_to_currency(content, :unit => prefix, :precision => precision, :separator => @items['totalRowSeparator'], :delimiter => @items['totalRowDelimiter'])
-                content = content.to_s
+                content = number_to_currency(content, :unit => prefix, :precision => precision, :separator => @items['totalRowSeparator'], :delimiter => @items['totalRowDelimiter']) + suffix
 
               else
-                @rawTotals[column] = ''
-                content = ''
+                @rawTotals[column] = @items['totalRowDefault']
+                content = @items['totalRowDefault']
               end
 
 
