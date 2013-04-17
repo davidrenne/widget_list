@@ -12,7 +12,7 @@ require 'uri'
 require 'extensions/action_controller_base'
 
 module WidgetList
-  
+
   #
   # WidgetList Administration/Setup
   #
@@ -1061,7 +1061,7 @@ module WidgetList
     class Engine < ::Rails::Engine
       require 'widget_list/engine'
     end
-  
+
   end
 
   class List
@@ -1070,7 +1070,7 @@ module WidgetList
 
     attr_accessor :isAdministrating
 
-    include ActionView::Helpers::SanitizeHelper
+    include ActionView
 
     # @param [Hash] list
     def initialize(list={})
@@ -1718,6 +1718,15 @@ module WidgetList
           'storeSessionChecks'  => false,
 
           #
+          # Summary Row
+          #
+          'totalRow'            => {},
+          'totalRowFirstCol'    => '<b>Total:</b>',
+          'totalRowMethod'      => {},
+          'totalRowSeparator'   => ',',
+          'totalRowDelimiter'   => '.',
+
+          #
           # Hooks
           #
           'columnHooks'         => {},
@@ -2026,6 +2035,8 @@ module WidgetList
         end
 
         build_rows()
+
+        build_summary_row()
 
         build_headers()
 
@@ -3402,6 +3413,175 @@ module WidgetList
 
     end
 
+    def build_summary_row()
+      if @totalResultCount > 0 && !@items['totalRow'].empty?
+
+        if @totalRowCount > 0
+
+          columns        = []
+          first_col      = true
+          @rawTotals     = {}
+          row_values     = []
+
+
+          @items['fields'].each { |column , fieldTitle|
+            column = strip_aliases(column)
+
+            colPieces        = {}
+            colClasses       = []
+            theStyle         = ''
+            colData          = ''
+            colClass         = ''
+            onClick          = ''
+            colWidthStyle    = ''
+            content          = ''
+            contentTitle     = ''
+
+            if first_col
+              first_col          = false
+              content            = @items['totalRowFirstCol']
+              @rawTotals[column] = strip_tags(content)
+            else
+              if (@items['totalRow'].include?(column) || @items['totalRow'].key?(column) && @results.key?(column.upcase))
+
+                preg_max_precision = Regexp.new('\\' + @items['totalRowDelimiter'] + '([0-9]+)')   #/\.([0-9]+)/
+                preg_number_value  = Regexp.new('[0-9|\\' + @items['totalRowDelimiter'] + '0-9]+') #/[0-9|\.0-9]+/
+                preg_strip_commas  = Regexp.new('\\' + @items['totalRowSeparator'])
+
+                content       = 0
+                max_precision = [0]
+                raw_value     = 0.0
+                prefix        = ''
+                suffix        = ''
+
+                @results[column.upcase].each { |val|
+
+                  if val.include?("<script class='val-db'")
+                    val = val[0..val.index("<script class='val-db'")]
+                  end
+
+                  cleanData      = strip_tags(val.to_s)
+
+                  max_precision  << cleanData.match(preg_max_precision)[1].length unless cleanData.match(preg_max_precision).nil?
+
+                  raw_value      = cleanData.gsub(preg_strip_commas,'').match(preg_number_value)[0].to_f  unless cleanData.gsub(preg_strip_commas,'').match(preg_number_value).nil?
+
+                  prefix, suffix = cleanData.gsub(preg_strip_commas,'').split(preg_number_value)
+
+                  content = content + raw_value
+                }
+
+                precision = max_precision.max
+
+                if @items['totalRowMethod'].key?(column)
+
+                  case @items['totalRowMethod'][column]
+                    when 'average'
+                      content =  (content/@totalRowCount).round(precision)
+                  end
+
+                end
+
+                @rawTotals[column] = content
+                                                                                                   #content = ActionView::Helpers::NumberHelper.number_to_currency(content, :unit => prefix, :precision => precision, :separator => @items['totalRowSeparator'], :delimiter => @items['totalRowDelimiter'])
+                content = content.to_s
+
+              else
+                @rawTotals[column] = ''
+                content = ''
+              end
+
+
+              row_values << content
+            end
+
+            content = get_database._bind(content, @items['bindVarsLegacy'])
+
+            # Column color
+            #
+            if ! @items['columnStyle'].empty?
+              if @items['columnStyle'].key?(column.downcase)
+                colHeader  = @items['columnStyle'][column.downcase]
+
+                if @results.key?(colHeader.upcase)
+                  theStyle = @results[colHeader.upcase][j]
+                else
+                  theStyle = colHeader
+                end
+
+              end
+            end
+
+            # Column width
+            #
+            if ! @items['columnWidth'].empty?
+              if @items['columnWidth'].key?(column.downcase)
+                colWidthStyle = "width:" + @items['columnWidth'][column.downcase] + ";"
+              end
+            end
+
+            # Column Class
+            #
+            if !@items['columnClass'].empty?
+              if @items['columnClass'].key?(column.downcase)
+                colClasses << @items['columnClass'][column.downcase]
+              end
+            end
+
+            #
+            # Setup any column classes
+            #
+            colClasses << @items['collClass']
+            colClass = colClasses.join(' ')
+
+            #
+            # Set up Column Pieces
+            #
+            colPieces['<!--CLASS-->']   = colClass
+            colPieces['<!--ALIGN-->']   = @items['collAlign']
+            colPieces['<!--STYLE-->']   = theStyle  + colWidthStyle
+
+            if @items['borderedColumns']
+              colPieces['<!--STYLE-->'] += 'border-right: ' + @items['borderColumnStyle'] + ';'
+            end
+
+            if @items['borderedRows']
+              colPieces['<!--STYLE-->'] += 'border-top: ' + @items['borderRowStyle'] + ';'
+            end
+
+            colPieces['<!--ONCLICK-->'] = onClick
+            colPieces['<!--TITLE-->']   = contentTitle #todo htmlentities needed ?
+            colPieces['<!--CONTENT-->'] = content
+
+            #
+            # Assemble the Column
+            #
+            columns << WidgetList::Utils::fill(colPieces, @items['col'])
+          }
+
+
+          if $_REQUEST.key?('export_widget_list')
+            @csv << row_values
+          end
+
+          #
+          # Draw the row
+          #
+          pieces = {'<!--CONTENT-->' => columns.join('') }
+
+          pieces['<!--BGCOLOR-->']   = @items['rowOffsets'][@totalRowCount % 2]
+          pieces['<!--ROWSTYLE-->']  = ''
+          pieces['<!--ROWCLASS-->']  = @items['rowClass']
+          pieces['<!--ROWSTYLE-->']    += 'font-size:' + @items['dataFontSize'] + ';'
+
+          @templateFill['<!--DATA-->'] +=  WidgetList::Utils::fill(pieces, @items['row'])
+
+        end
+
+      end
+
+    end
+
     def generate_error_output(ex='')
       sqlDebug = ""
 
@@ -3689,7 +3869,7 @@ module WidgetList
       if $widget_list_conf.nil?
         $widget_list_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
         if Rails.root.join("app/helpers", "widget_list_helper.rb").file?
-          require Rails.root.join("app/helpers", "widget_list_helper.rb") 
+          require Rails.root.join("app/helpers", "widget_list_helper.rb")
         end
       end
     end
