@@ -336,12 +336,6 @@ Style a row based on the value of the column.
 
 `totalRowDefault` -  For any columns such as strings which cannot be summed or added into a summary this value will be the place holder for that TD. `default='N/A'`
 
-
-+          'totalRowSeparator'   => '.',
-+          'totalRowDelimiter'   => ',',
-+          'totalRowDefault'     => 'N/A',
-
-
 `columnHooks` - Todo `default={}`
 
 `rowHooks` - Todo `default={}`
