@@ -164,9 +164,9 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `data` - A "sequel" formatted resultset like would be returned from _select() method.  Instead of running a SQL query, you can pass an array to populate the list `default={}`
 
-`collClass` - Your custom td class for all td's `default=''`
+`colClass` - Your custom td class for all td's `default=''`
 
-`align` - td align attribute for all td's `default=''`
+`colAlign` - td align attribute for all td's `default=''`
 
 `fields` - The visible fields shown in the current list.  KEY=column name VALUE= displayed column header `default={}`
 

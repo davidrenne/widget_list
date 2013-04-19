@@ -330,7 +330,6 @@ div#noListResults
 
 .listContainerPassive table.widget_list td
 {
-   text-align:center;
    padding:10px;
 }
 
@@ -713,7 +712,7 @@ div.inputOuter .inputInner input.search-ahead-advanced {width: 90% !important;}
 /**
 * Widgetlist checkboxes
 */
-.widgetlist-checkbox {text-align:left !important;width:20px;}
+.widgetlist-checkbox {width:20px;}
 .widgetlist-checkbox-header span input {text-align:left !important;width:inherit;}
 
 /**
