@@ -8,6 +8,7 @@
     top:0;
     width:600px;
   }
+
   select {
     font-size:25px;
     height:50px;
@@ -15,6 +16,14 @@
     line-height:33px;
     top:0;
     width:600px;
+  }
+
+  .misc_keys, .misc_descriptions, .misc_links {
+    font-size:14px !important;
+    height:15px !important;
+    left:0 !important;
+    line-height:14px !important;
+    width:200px !important;
   }
 
   .buttons_drill_down_name_button {
@@ -346,7 +355,117 @@
   }
 
   function RemoveField(obj) {
+    var isHiddenRemoval = false;
+    if (jQuery(obj).parent().parent().find('input.fields_hidden_keys').length > 0) {
+      isHiddenRemoval = true;
+    }
+    var isFunctionRemoval = false;
+    if (jQuery(obj).parent().parent().find('input.fields_function_keys').length > 0) {
+      isFunctionRemoval = true;
+    }
+
+    /*var tr1 = jQuery(obj).closest('tr');
+    var tr2 = tr1.next();
+    var tr3 = tr2.next();*/
+
     jQuery(obj).closest('tr').remove();
+    if (isHiddenRemoval && jQuery('.fields_hidden_keys').length == 0) {
+      if (jQuery('#showHidden').is(':checked')) {
+        jQuery('#showHidden').attr('checked',false);
+      }
+      jQuery('.hidden_fields_dependent').hide();
+    }
+    if (isFunctionRemoval && jQuery('.fields_function_keys').length == 0) {
+      if (jQuery('#fieldFunctionOn').is(':checked')) {
+        jQuery('#fieldFunctionOn').attr('checked',false);
+      }
+      jQuery('.function_dependent').hide();
+    }
+  }
+
+  function MoveField(obj) {
+
+    var field_name = jQuery(obj).parent().parent().find('input.fields_keys').val();
+    RemoveField(obj);
+    if (jQuery('#showHidden').not(':checked')) {
+      jQuery('#showHidden').attr('checked',true);
+    }
+    AddHiddenField();
+    jQuery('.hidden_fields_dependent').show();
+    jQuery('.fields_hidden_keys[value=""]').each(
+        function(key1, value1) {
+          jQuery(value1).val(field_name);
+          jQuery(value1).attr('value',field_name);
+          return false;
+        }
+    );
+  }
+
+  function ShowOptions(obj) {
+    var tr = jQuery(obj).closest('tr').next();
+    tr.toggle();
+    tr.next().toggle();
+  }
+
+  function AddFunction(obj) {
+
+    var field_name = jQuery(obj).parent().parent().find('input.fields_keys').val();
+
+    if (jQuery('#fieldFunctionOn').not(':checked')) {
+      jQuery('#fieldFunctionOn').attr('checked',true);
+    }
+    var objExists = '.fields_function_keys[value="' + field_name + '"]';
+    if (jQuery(objExists).length > 0) {
+      alert('Field Function for ' + field_name + ' already exists, please modify');
+      jQuery(objExists).css('background-color','pink');
+    } else {
+      AddFieldFunction();
+      jQuery('.function_dependent').show();
+      jQuery('.fields_function_keys[value=""]').each(
+          function(key1, value1) {
+            jQuery(value1).val(field_name);
+            jQuery(value1).attr('value',field_name);
+            return false;
+          }
+      );
+      jQuery('.fields_function_descriptions[value=""]').each(
+          function(key1, value1) {
+            var out = 'DB_FUNC(' + field_name + ')';
+            jQuery(value1).val(out);
+            jQuery(value1).attr('value',out);
+            return false;
+          }
+      );
+    }
+  }
+
+  function ShowField(obj) {
+
+    var field_name = jQuery(obj).parent().parent().find('input.fields_hidden_keys').val();
+    RemoveField(obj);
+    AddField();
+    jQuery('.fields_keys[value=""]').each(
+        function(key1, value1) {
+          jQuery(value1).val(field_name);
+          jQuery(value1).attr('value',field_name);
+          return false;
+        }
+    );
+    jQuery('.fields_descriptions[value=""]').each(
+        function(key1, value1) {
+          jQuery(value1).val(field_name);
+          jQuery(value1).attr('value',field_name);
+          return false;
+        }
+    );
+
+
+    if (jQuery('#showHidden').is(':checked') && jQuery('.fields_hidden_keys').length == 0) {
+      jQuery('#showHidden').attr('checked',false);
+    }
+    if (jQuery('.fields_hidden_keys').length == 0) {
+      jQuery('.hidden_fields_dependent').hide();
+    }
   }
 
   function ChangeViewModel(obj) {
@@ -887,6 +1006,18 @@
             </td>
           </tr>
         </table>
+      </td>
+    </tr>
+
+    <tr class="footer" style="display:none;">
+      <td style="width:300px;">
+        <h3>Show Pagination?:</h3>
+      </td>
+      <td>
+        <input type="checkbox" name="showPagination" id="showPagination" value="1" <!--PAGINATION_CHECKED-->/>
+      </td>
+      <td>
+
       </td>
     </tr>
 

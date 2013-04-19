@@ -127,14 +127,50 @@ module WidgetList
       @fill['<!--NO_DATA_VALUE-->']             = (!@isEditing) ? ''        : page_config['noDataMessage']
       @fill['<!--SORTING_CHECKED-->']           = (!@isEditing) ? 'checked' : (page_config['useSort'] == "1") ? 'checked' : ''
 
-      @fieldFill = {}
-      @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
+      @fieldFill     = {}
+      @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button() + WidgetList::Widgets::widget_button('Hide',  {'onclick' => "MoveField(this)", 'innerClass' => "danger" }, true ) + WidgetList::Widgets::widget_button('Function',  {'onclick' => "AddFunction(this)", 'innerClass' => "success" }, true ) + WidgetList::Widgets::widget_button('Options',  {'onclick' => "ShowOptions(this)", 'innerClass' => "info" }, true )
       @fieldFill['<!--FIELD_VALUE-->']          = ''
       @fieldFill['<!--FIELD_DESC-->']           = ''
       @fieldFill['<!--SUBJECT-->']              = 'fields'
       @fieldFill['<!--FIELD-->']                = 'Field'
       @fieldFill['<!--DESC-->']                 = 'Desc'
       @fieldFill['<!--DISABLED-->']             = ''
+      @fieldFill['<!--TR_STYLE-->']             = ''
+
+      @fieldFillRow2 = {}
+      @fieldFillRow2['<!--REMOVE_FIELD_BUTTON-->']  = 'Link To:&#160;<br/><br/><input type="text" style="width:350px" class="misc_links" onblur="jQuery(this).attr(\'value\',jQuery(this).val().trim());" name="misc[link][]" id="misc[link][]" value=""/>' + WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('Please use /my_page/field_name/field_name/ and it will be linked and replaced with the column value.')", 'innerClass' => "default" }, true )
+      @fieldFillRow2['<!--FIELD_VALUE-->']          = ''
+      @fieldFillRow2['<!--FIELD_DESC-->']           = ''
+      @fieldFillRow2['<!--SUBJECT-->']              = 'misc'
+      @fieldFillRow2['<!--FIELD-->']                = 'Column Width<br/><br/>'
+      @fieldFillRow2['<!--DESC-->']                 = 'Header Title Popup<br/><br/>'
+      @fieldFillRow2['<!--DISABLED-->']             = ''
+      @fieldFillRow2['<!--TR_STYLE-->']             = 'display:none'
+      @fieldFillRow2['<!--TR1_STYLE-->']            = 'padding-left:100px'
+
+      @fieldFill['<!--EXTRA-->']                = WidgetList::Utils::fill(@fieldFillRow2 , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+
+
+      @fieldFillRow3 = {}
+
+      @fieldFillRow3['<!--1_DESC-->']               = 'Searchable?<br/><br/>'
+      @fieldFillRow3['<!--1_KEY-->']                = 'searchable'
+      @fieldFillRow3['<!--1_VALUE-->']              = 'checked'
+
+      @fieldFillRow3['<!--2_DESC-->']               = 'Summarize Totals?<br/><br/>'
+      @fieldFillRow3['<!--2_KEY-->']                = 'summarize'
+      @fieldFillRow3['<!--2_HELP-->']               = 'If this is a numeric column, the widget_list will add a record at the bottom of all your results adding up every value'
+      @fieldFillRow3['<!--2_VALUE-->']              = ''
+
+      @fieldFillRow3['<!--3_DESC-->']               = 'Sortable?'
+      @fieldFillRow3['<!--3_KEY-->']                = 'sortable'
+      @fieldFillRow3['<!--3_VALUE-->']              = 'checked'
+
+      @fieldFillRow3['<!--SUBJECT-->']              = 'flags'
+
+      @fieldFill['<!--EXTRA-->']                   += WidgetList::Utils::fill(@fieldFillRow3 , ac.render_to_string(:partial => 'widget_list/administration/checkbox_row') )
+
+      #Fill all three rows now for default template
       @fill['<!--FIELD_TEMPLATE-->']            = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       @fill['<!--ADD_FIELD_BUTTON-->']          = WidgetList::Widgets::widget_button('Add Field',  {'onclick' => "AddField();", 'innerClass' => "success" } )
       @fill['<!--ALL_FIELDS-->']                = (!@isEditing) ? '' : page_json['fields']
@@ -142,13 +178,14 @@ module WidgetList
 
       @fill['<!--SHOW_HIDDEN_CHECKED-->']       = (!@isEditing) ? '' : (page_config['showHidden'] == "1")  ? 'checked' : ''
       @fieldFill = {}
-      @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
+      @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button() + WidgetList::Widgets::widget_button('Show',  {'onclick' => "ShowField(this)", 'innerClass' => "success" }, true )
       @fieldFill['<!--FIELD_VALUE-->']          = ''
       @fieldFill['<!--FIELD_DESC-->']           = ''
       @fieldFill['<!--SUBJECT-->']              = 'fields_hidden'
       @fieldFill['<!--FIELD-->']                = 'Field'
       @fieldFill['<!--DESC-->']                 = 'Desc'
       @fieldFill['<!--DISABLED-->']             = 'disabled'
+      @fieldFill['<!--TR_STYLE-->']             = ''
       @fill['<!--HIDDEN_FIELD_TEMPLATE-->']     = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       @fill['<!--ADD_HIDDEN_FIELD_BUTTON-->']   = WidgetList::Widgets::widget_button('Add Hidden Field',  {'onclick' => "AddHiddenField();", 'innerClass' => "success" } )
       @fill['<!--ALL_HIDDEN_FIELDS-->']         = (!@isEditing) ? '' : page_json['fields_hidden']
@@ -163,6 +200,7 @@ module WidgetList
       @fieldFill['<!--FIELD-->']                = 'Field'
       @fieldFill['<!--DESC-->']                 = 'Database Function'
       @fieldFill['<!--DISABLED-->']             = ''
+      @fieldFill['<!--TR_STYLE-->']             = ''
       @fill['<!--FIELD_FUNCTION_TEMPLATE-->']   = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       @fill['<!--ADD_FIELD_FUNCTION_BUTTON-->'] = WidgetList::Widgets::widget_button('Add Function',  {'onclick' => "AddFieldFunction();", 'innerClass' => "success" } )
       @fill['<!--ALL_FIELD_FUNCTIONS-->']       = (!@isEditing) ? '' : page_json['fields_function']
@@ -245,6 +283,7 @@ module WidgetList
       @fieldFill['<!--DESC-->']                 = 'Desc'
       @fieldFill['<!--DISABLED-->']             = ''
       @fieldFill['<!--ONBLUR1-->']              = 'InvalidField(this)'
+      @fieldFill['<!--TR_STYLE-->']             = ''
       @fill['<!--DEFAULT_GROUPING-->']          = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       @fill['<!--ADD_GROUP_BY_BUTTON-->']       = WidgetList::Widgets::widget_button('Add New Group By',  {'onclick' => "AddGroupBy();", 'innerClass' => "success" } )
       @fill['<!--GROUPING_ITEMS-->']            = (!@isEditing) ? '' : page_json['group_by']
@@ -279,6 +318,7 @@ module WidgetList
       @fill['<!--ADD_THE_FOOTER_BUTTON-->']     = WidgetList::Widgets::widget_button('Add Footer Button',  {'onclick' => "AddFooterButton();", 'innerClass' => "success" } )
       @fill['<!--ALL_FOOTER_BUTTONS-->']        = page_json['footer_buttons']
       @fill['<!--FOOTER_CHECKED-->']            = (!@isEditing) ? '' : (page_config['footerOn'] == "1")  ? 'checked' : ''
+      @fill['<!--PAGINATION_CHECKED-->']        = (!@isEditing) ? 'checked' : (page_config['showPagination'] == "1")  ? 'checked' : ''
 
 
 
@@ -644,6 +684,7 @@ module WidgetList
       list_parms['rowLimit']          = #{page_config['rowLimit']}
       list_parms['title']             = '#{escape_code page_config['title']}'
       list_parms['useSort']           = #{page_config['useSort'] == '1' ? 'true' : 'false'}
+      list_parms['showPagination']    = #{page_config['showPagination'] == '1' ? 'true' : 'false'}
       list_parms['database']          = '#{page_config['primaryDatabase'] == '1' ? 'primary' : 'secondary'}'
       #{export_code}
 
@@ -868,10 +909,11 @@ module WidgetList
         @fieldFill['<!--SUBJECT-->']             = 'fields'
         @fieldFill['<!--FIELD_VALUE-->']         = field
         @fieldFill['<!--FIELD_DESC-->']          = description
-        @fieldFill['<!--REMOVE_FIELD_BUTTON-->'] = remove_field_button()
+        @fieldFill['<!--REMOVE_FIELD_BUTTON-->'] = remove_field_button() + WidgetList::Widgets::widget_button('Hide',  {'onclick' => "MoveField(this)", 'innerClass' => "danger" }, true ) + WidgetList::Widgets::widget_button('Function',  {'onclick' => "AddFunction(this)", 'innerClass' => "success" }, true )  + WidgetList::Widgets::widget_button('Options',  {'onclick' => "ShowOptions(this)", 'innerClass' => "info" }, true )
         @fieldFill['<!--FIELD-->']               = 'Field'
         @fieldFill['<!--DESC-->']                = 'Desc'
         @fieldFill['<!--DISABLED-->']            = ''
+        @fieldFill['<!--TR_STYLE-->']            = ''
         @response['fields'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
@@ -880,10 +922,11 @@ module WidgetList
         @fieldFill['<!--SUBJECT-->']             = 'fields_hidden'
         @fieldFill['<!--FIELD_VALUE-->']         = field[1]
         @fieldFill['<!--FIELD_DESC-->']          = ''
-        @fieldFill['<!--REMOVE_FIELD_BUTTON-->'] = remove_field_button()
+        @fieldFill['<!--REMOVE_FIELD_BUTTON-->'] = remove_field_button()+ WidgetList::Widgets::widget_button('Show',  {'onclick' => "ShowField(this)", 'innerClass' => "success" }, true )
         @fieldFill['<!--DESC-->']                = 'Desc'
         @fieldFill['<!--FIELD-->']               = 'Field'
         @fieldFill['<!--DISABLED-->']            = 'disabled'
+        @fieldFill['<!--TR_STYLE-->']            = ''
         @response['fields_hidden'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
@@ -898,6 +941,7 @@ module WidgetList
         @fieldFill['<!--DESC-->']                 = 'Desc'
         @fieldFill['<!--DISABLED-->']             = ''
         @fieldFill['<!--ONBLUR1-->']              = 'InvalidField(this)'
+        @fieldFill['<!--TR_STYLE-->']            = ''
         @response['group_by'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
@@ -909,7 +953,8 @@ module WidgetList
         @fieldFill['<!--REMOVE_FIELD_BUTTON-->'] = remove_field_button()
         @fieldFill['<!--DESC-->']                = 'Database Function'
         @fieldFill['<!--FIELD-->']               = 'Field'
-        @fieldFill['<!--DISABLED-->']             = ''
+        @fieldFill['<!--DISABLED-->']            = ''
+        @fieldFill['<!--TR_STYLE-->']            = ''
         @response['fields_function'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
@@ -1129,24 +1174,22 @@ module WidgetList
       @items.deep_merge!({ 'template_pagination_jump_active'       => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_jump_active') })
       @items.deep_merge!({ 'template_pagination_jump_unactive'     => ac.render_to_string(:partial => 'widget_list/list_partials/pagination_jump_unactive') })
 
+      if list['view'].class.name == 'ActiveRecord::Relation'
+        tag_fields = '<!--FIELDS_PLAIN-->'
+      else
+        #In a case where someone passes a SQL query raw with Sequel, we need to support fieldFunction's like action buttons which wouldnt be in your query, so use FIELDS to build entire query
+        tag_fields = '<!--FIELDS-->'
+      end
 
       @items.deep_merge!({ 'statement' =>
                                {'select'=>
-                                    {'view' =>
-                                         '
-                                   SELECT <!--FIELDS_PLAIN--> FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->
-                                  '
-                                    }
+                                    {'view' =>'SELECT ' + tag_fields + ' FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->'}
                                }
                          })
 
       @items.deep_merge!({ 'statement' =>
                                {'count'=>
-                                    {'view' =>
-                                         '
-                                   SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->
-                                  '
-                                    }
+                                    {'view' => 'SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->'}
                                }
                          })
       #inject site wide configs before list specific configs if a helper exists
@@ -1556,10 +1599,6 @@ module WidgetList
           'pageId'              => $_SERVER['PATH_INFO'],
           'view'                => '',
           'data'                => {},
-          'collClass'           => '',
-          'collAlign'           => '',
-          'fields'              => {},
-          'fieldsHidden'        => [],
           'bindVars'            => [],
           'bindVarsLegacy'      => {},
           'links'               => {},
@@ -1571,10 +1610,7 @@ module WidgetList
           'rowLimit'            => 10,
           'orderBy'             => '',
           'allowHTML'           => true,
-          'searchClear'         => false,
-          'searchClearAll'      => false,
           'showPagination'      => true,
-          'searchSession'       => true,
 
           #
           # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
@@ -1602,6 +1638,9 @@ module WidgetList
           'searchIdCol'         => 'id',
           'searchTitle'         => 'Search by Id or CSV of Ids and more',
           'searchFieldsIn'      => {},
+          'searchClear'         => false,
+          'searchClearAll'      => false,
+          'searchSession'       => true,
           'searchFieldsOut'     => {'id'=>true},
           'templateFilter'      => '',
 
@@ -1630,6 +1669,10 @@ module WidgetList
           #
           # Column Specific
           #
+          'colClass'            => '',
+          'colAlign'            => 'center',
+          'fields'              => {},
+          'fieldsHidden'        => [],
           'columnStyle'         => {},
           'columnClass'         => {},
           'columnPopupTitle'    => {},
@@ -2677,6 +2720,7 @@ module WidgetList
                           '<!--COL_HEADER_ID-->'    => strip_tags(field).gsub(/\s/,'_'),
                           '<!--INLINE_STYLE-->'     => colWidthStyle,
                           '<!--TITLE_POPUP-->'      => popupTitle,
+                          '<!--ALIGN-->'            => @items['colAlign'],
                           '<!--COL_HEADER_CLASS-->' => colClass,
                           '<!--TITLE-->'            => fieldTitle,
                           '<!--FUNCTION-->'         => @items['ajaxFunction'],
@@ -2686,6 +2730,7 @@ module WidgetList
         else
           pieces = {      '<!--TITLE-->'            => fieldTitle,
                           '<!--INLINE_STYLE-->'     => colWidthStyle,
+                          '<!--ALIGN-->'            => @items['colAlign'],
                           '<!--TITLE_POPUP-->'      => popupTitle,
                           '<!--COL_HEADER_CLASS-->' => colClass,
                           '<!--COL_HEADER_ID-->'    => strip_tags(field).gsub(/\s/,'_')
@@ -3129,46 +3174,77 @@ module WidgetList
       #
       colWidth = ((strCnt + (btnOut.count * 35)) / 2) + 10
 
-      return '<div style="border:0px solid black;text-align:center;white-space:nowrap;margin:auto;width:' + colWidth.to_s + 'px"><div style="margin:auto;display:inline-block">' + btnOut.join('') + '</div></div>'
+      width = ''
+      center = ''
+
+      if @items['colAlign'] == 'center'
+        center = 'text-align:center;'
+        width = 'width:' + colWidth.to_s + 'px'
+      end
+
+      return '<div style="border:0px solid black;white-space:nowrap;margin:auto;' + center + width + '"><div style="margin:auto;display:inline-block">' + btnOut.join('') + '</div></div>'
     end
 
     # @param [String] column
     def build_column_link(column,j)
 
-      links      = @items['links'][column]
+      links      = @items['links'][column].dup
+      if links.key?('page')
+        page      = links['page'].dup
+      end
       url        = {'PAGE_ID' => @items['pageId']}
       function   = @items['linkFunction']
-      parameters = ''
+      parameters = []
 
-      #todo unit test this and all of column links
       if links.key?('tags')
-        links['tags'].each { | tagName, tag |
-          if @results[tag][j]
-            url[tagName] = @results[tag][j]
+        tags = links['tags'].dup
+        all_wildcard = false
+        if links['tags'].first[0] == 'all'
+          all_wildcard = true
+          tags = {}
+          @results.keys.each { |tag|
+            tags[tag.downcase] = tag.downcase
+          }
+        end
+
+        tags.each { | tagName, tag |
+
+          if links.key?('page') && links['page'].include?(tag.downcase) && @results.key?(tag.upcase)
+            page.gsub!(tag.downcase,@results[tag.upcase][j])
           else
-            url[tagName] = tag
+            if @results[tag.upcase][j]
+              url[tagName] = @results[tag.upcase][j]
+            else
+              url[tagName] = tag
+            end
           end
         }
       end
 
-      if links.key?('onclick') && links['onclick'].class.name == 'Hash'
-        if links['onclick'].key?('function') && !links['onclick']['function'].empty?
-          function = links['onclick']['function']
-        end
+      if links.key?('onclick')
+        function = links['onclick']
 
-        if links['onclick'].key?('tags') && !links['onclick']['tags'].empty?
-          links['onclick']['tags'].each { | tagName , tag|
+        if links.key?('tags')
+          tags.each { | tagName, tag |
             if @results.key?(tag.upcase)
-              parameters = ", '" + @results[tag.upcase][j] + "'"
+              parameters << "'" + @results[tag.upcase][j].gsub(/'/,"\\\\'") + "'"
             end
           }
         end
       end
 
-      url['SQL_HASH']      = @sqlHash
-      linkUrl = WidgetList::Utils::build_url(@items['pageId'], url, (!$_REQUEST.key?('BUTTON_VALUE')))
-
-      "#{function}('#{linkUrl}'#{parameters})"
+      if links.key?('page')
+        linkUrl = page
+        return "#{function}('#{linkUrl}')"
+      else
+        url['SQL_HASH']      = @sqlHash
+        linkUrl = WidgetList::Utils::build_url(@items['pageId'], url, (!$_REQUEST.key?('BUTTON_VALUE')))
+        if !parameters.empty?
+          return "#{function}(#{parameters.join(',')})"
+        else
+          return "#{function}('#{linkUrl}')"
+        end
+      end
     end
 
     def build_rows()
@@ -3240,7 +3316,7 @@ module WidgetList
                 #
               elsif @items['inputs'].key?(column) && @items['inputs'][column].class.name == 'Hash'
                 colClasses << @items['checkedClass']
-                content = build_column_input(column, j)
+                content     = build_column_input(column, j)
 
 
                 #
@@ -3306,7 +3382,7 @@ module WidgetList
               #
               # Setup any column classes
               #
-              colClasses << @items['collClass']
+              colClasses << @items['colClass']
               colClass = colClasses.join(' ')
 
               #
@@ -3338,8 +3414,8 @@ module WidgetList
               # Set up Column Pieces
               #
               colPieces['<!--CLASS-->']   = colClass
-              colPieces['<!--ALIGN-->']   = @items['collAlign']
-              colPieces['<!--STYLE-->']   = theStyle  + colWidthStyle
+              colPieces['<!--ALIGN-->']   = @items['colAlign']
+              colPieces['<!--STYLE-->']   = colWidthStyle
 
               if @items['borderedColumns']
                 colPieces['<!--STYLE-->'] += 'border-right: ' + @items['borderColumnStyle'] + ';'
@@ -3350,6 +3426,13 @@ module WidgetList
               end
 
               colPieces['<!--ONCLICK-->'] = onClick
+
+              if !onClick.empty?
+                colPieces['<!--SPAN_STYLE-->'] = 'cursor:pointer;' + theStyle
+              else
+                colPieces['<!--SPAN_STYLE-->'] = '' + theStyle
+              end
+
               colPieces['<!--TITLE-->']   = contentTitle #todo htmlentities needed ?
               colPieces['<!--CONTENT-->'] = content
 
@@ -3544,14 +3627,14 @@ module WidgetList
             #
             # Setup any column classes
             #
-            colClasses << @items['collClass']
+            colClasses << @items['colClass']
             colClass = colClasses.join(' ')
 
             #
             # Set up Column Pieces
             #
             colPieces['<!--CLASS-->']   = colClass
-            colPieces['<!--ALIGN-->']   = @items['collAlign']
+            colPieces['<!--ALIGN-->']   = @items['colAlign']
             colPieces['<!--STYLE-->']   = theStyle  + colWidthStyle
 
             if @items['borderedColumns']
@@ -3562,9 +3645,10 @@ module WidgetList
               colPieces['<!--STYLE-->'] += 'border-top: ' + @items['borderRowStyle'] + ';'
             end
 
-            colPieces['<!--ONCLICK-->'] = onClick
-            colPieces['<!--TITLE-->']   = contentTitle #todo htmlentities needed ?
-            colPieces['<!--CONTENT-->'] = content
+            colPieces['<!--ONCLICK-->']    = onClick
+            colPieces['<!--TITLE-->']      = contentTitle #todo htmlentities needed ?
+            colPieces['<!--CONTENT-->']    = content
+            colPieces['<!--SPAN_STYLE-->'] = ''
 
             #
             # Assemble the Column
