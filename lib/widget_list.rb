@@ -167,6 +167,7 @@ module WidgetList
       @fieldFillRow3['<!--3_VALUE-->']              = 'checked'
 
       @fieldFillRow3['<!--SUBJECT-->']              = 'flags'
+      @fieldFillRow3['<!--CHECKBOX_STYLE-->']       = 'display:none;'
 
       @fieldFill['<!--EXTRA-->']                   += WidgetList::Utils::fill(@fieldFillRow3 , ac.render_to_string(:partial => 'widget_list/administration/checkbox_row') )
 
@@ -379,7 +380,7 @@ module WidgetList
 
     def translate_config_to_code()
       config_id, page_config = get_configuration()
-      fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs = normalize_configs(page_config)
+      fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs,flags,misc = normalize_configs(page_config)
       drill_down_code  = ''
       case_statements  = ''
       case_statements2 = ''
@@ -753,7 +754,9 @@ module WidgetList
 
       config_id =  config_id()
 
+      @isEditing  = false
       config_file = Rails.root.join("config", "widget-list-administration.json")
+      config_file_all = Rails.root.join("config", "widget-list-administration-all.json")
 
       if config_file.file? && ($_REQUEST.key?('iframe') || $_REQUEST.key?('name'))
         configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration.json")).read)
@@ -764,7 +767,12 @@ module WidgetList
       end
 
       if configuration.key?(config_id)
-        @isEditing  = true
+        if config_file_all.file?
+          configuration_all = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration-all.json")).read)
+          if configuration_all.key?(config_id)
+            @isEditing  = true
+          end
+        end
         page_config = configuration[config_id]
 
         ['useSort','showHidden','fieldFunctionOn','rowButtonsOn','drillDownsOn','showSearch','showExport','useRansack','ransackAdvancedForm','useGrouping','footerOn','checkboxEnabled'].each { |item|
@@ -773,7 +781,6 @@ module WidgetList
           end
         }
       else
-        @isEditing  = false
         page_config = {}
       end
       return [config_id,page_config]
@@ -789,6 +796,14 @@ module WidgetList
 
     def normalize_configs(page_config)
       fields             = {}
+      misc               = {}
+      misc['width']      = {}
+      misc['title']      = {}
+      misc['link']       = {}
+      flags              = {}
+      flags['searchable']= {}
+      flags['summarize'] = {}
+      flags['sortable']  = {}
       fields_hidden      = {}
       fields_function    = {}
       buttons            = {}
@@ -799,6 +814,30 @@ module WidgetList
       if page_config.key?('fields')
         page_config['fields']['key'].each_with_index { |v,k|
           fields[v] = page_config['fields']['description'][k.to_i]
+
+          if page_config.key?('misc') &&  page_config['misc'].key?('key')
+            misc['width'][v] = page_config['misc']['key'][k.to_i]
+          end
+
+          if page_config.key?('misc') &&  page_config['misc'].key?('description')
+            misc['title'][v] = page_config['misc']['description'][k.to_i]
+          end
+
+          if page_config.key?('misc') &&  page_config['misc'].key?('link')
+            misc['link'][v] = page_config['misc']['link'][k.to_i]
+          end
+
+          if page_config.key?('flags') &&  page_config['flags'].key?('searchable')
+            flags['searchable'][v] = page_config['flags']['searchable'][k.to_i]
+          end
+
+          if page_config.key?('flags') &&  page_config['flags'].key?('summarize')
+            flags['summarize'][v] = page_config['flags']['summarize'][k.to_i]
+          end
+
+          if page_config.key?('flags') &&  page_config['flags'].key?('sortable')
+            flags['sortable'][v] = page_config['flags']['sortable'][k.to_i]
+          end
         }
       end
 
@@ -844,7 +883,7 @@ module WidgetList
         }
       end
 
-      return [fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs]
+      return [fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs,flags,misc]
     end
 
     def ajax_get_field_json(model_name)
@@ -852,6 +891,8 @@ module WidgetList
       ac = ActionController::Base.new()
       @response          = {}
       fields             = {}
+      flags              = {}
+      misc               = {}
       fields_hidden      = {}
       all_fields         = {}
       fields_function    = {}
@@ -866,7 +907,7 @@ module WidgetList
           all_fields[field] = field.gsub(/_/,' _').camelize
         }
 
-        fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs = normalize_configs(page_config)
+        fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs,flags,misc = normalize_configs(page_config)
       else
         controller = ($_REQUEST.key?('desiredController') ? $_REQUEST['desiredController'] :  $_REQUEST['controller'] )
 
@@ -914,6 +955,78 @@ module WidgetList
         @fieldFill['<!--DESC-->']                = 'Desc'
         @fieldFill['<!--DISABLED-->']            = ''
         @fieldFill['<!--TR_STYLE-->']            = ''
+
+
+        if misc.key?('width') && misc['width'].key?(field) && !misc['width'][field].nil?
+          width = misc['width'][field]
+        else
+          width = ''
+        end
+
+        if misc.key?('link') && misc['link'].key?(field) && !misc['link'][field].nil?
+          link = misc['link'][field]
+        else
+          link = ''
+        end
+
+        if misc.key?('title') && misc['title'].key?(field) && !misc['title'][field].nil?
+          title = misc['title'][field]
+        else
+          title = ''
+        end
+
+        @fieldFillRow2 = {}
+        @fieldFillRow2['<!--REMOVE_FIELD_BUTTON-->']  = 'Link To:&#160;<br/><br/><input type="text" style="width:350px" class="misc_links" onblur="jQuery(this).attr(\'value\',jQuery(this).val().trim());" name="misc[link][]" id="misc[link][]" value="' + link + '"/>' + WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('Please use /my_page/field_name/field_name/ and it will be linked and replaced with the column value.')", 'innerClass' => "default" }, true )
+        @fieldFillRow2['<!--FIELD_VALUE-->']          = width
+        @fieldFillRow2['<!--FIELD_DESC-->']           = title
+        @fieldFillRow2['<!--SUBJECT-->']              = 'misc'
+        @fieldFillRow2['<!--FIELD-->']                = 'Column Width<br/><br/>'
+        @fieldFillRow2['<!--DESC-->']                 = 'Header Title Popup<br/><br/>'
+        @fieldFillRow2['<!--DISABLED-->']             = ''
+        @fieldFillRow2['<!--TR_STYLE-->']             = (link.empty? && title.empty? && width.empty?) ? 'display:none' : ''
+        @fieldFillRow2['<!--TR1_STYLE-->']            = 'padding-left:100px'
+
+        @fieldFill['<!--EXTRA-->']                    = WidgetList::Utils::fill(@fieldFillRow2 , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+
+
+        if flags.key?('searchable') && flags['searchable'].key?(field) && !flags['searchable'][field].nil?
+          searchable = flags['searchable'][field]
+        else
+          searchable = (!@isEditing) ? 'checked' : ''
+        end
+
+        if flags.key?('summarize') && flags['summarize'].key?(field) && !flags['summarize'][field].nil?
+          summarize = flags['summarize'][field]
+        else
+          summarize = ''
+        end
+
+        if flags.key?('sortable') && flags['sortable'].key?(field) && !flags['sortable'][field].nil?
+          sortable = flags['sortable'][field]
+        else
+          sortable = (!@isEditing) ? 'checked' : ''
+        end
+
+        @fieldFillRow3 = {}
+
+        @fieldFillRow3['<!--1_DESC-->']               = 'Searchable?<br/><br/>'
+        @fieldFillRow3['<!--1_KEY-->']                = 'searchable'
+        @fieldFillRow3['<!--1_VALUE-->']              = searchable
+
+        @fieldFillRow3['<!--2_DESC-->']               = 'Summarize Totals?<br/><br/>'
+        @fieldFillRow3['<!--2_KEY-->']                = 'summarize'
+        @fieldFillRow3['<!--2_HELP-->']               = 'If this is a numeric column, the widget_list will add a record at the bottom of all your results adding up every value'
+        @fieldFillRow3['<!--2_VALUE-->']              = summarize
+
+        @fieldFillRow3['<!--3_DESC-->']               = 'Sortable?'
+        @fieldFillRow3['<!--3_KEY-->']                = 'sortable'
+        @fieldFillRow3['<!--3_VALUE-->']              = sortable
+
+        @fieldFillRow3['<!--SUBJECT-->']              = 'flags'
+        @fieldFillRow3['<!--CHECKBOX_STYLE-->']       = ((@isEditing && searchable == 'checked' && summarize.empty? && sortable  == 'checked') || !@isEditing) ? 'display:none' : ''
+
+        @fieldFill['<!--EXTRA-->']                   += WidgetList::Utils::fill(@fieldFillRow3 , ac.render_to_string(:partial => 'widget_list/administration/checkbox_row') )
+
         @response['fields'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
       }
 
@@ -1072,20 +1185,23 @@ module WidgetList
       time = Time.new
       configuration[config_id]['savedOn'] = time.year.to_s + '-' + time.month.to_s.rjust(2, "0") + '-' + time.day.to_s.rjust(2, "0")
 
-      config_file_all = Rails.root.join("config", "widget-list-administration-all.json")
-      if config_file_all.file?
-        configuration_all = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration-all.json")).read)
-      else
-        configuration_all = {}
-      end
-      configuration_all[config_id] = $_REQUEST
-
       File.open(Rails.root.join("config", "widget-list-administration.json"), "w") do |file|
         file.puts configuration.to_json
       end
 
-      File.open(Rails.root.join("config", "widget-list-administration-all.json"), "w") do |file|
-        file.puts configuration_all.to_json
+      if !$_REQUEST.key?('iframe') && !$_REQUEST.key?('ajax')
+        config_file_all = Rails.root.join("config", "widget-list-administration-all.json")
+        if config_file_all.file?
+          configuration_all = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration-all.json")).read)
+        else
+          configuration_all = {}
+        end
+        configuration_all[config_id] = $_REQUEST
+        configuration_all[config_id]['savedOn'] = time.year.to_s + '-' + time.month.to_s.rjust(2, "0") + '-' + time.day.to_s.rjust(2, "0")
+
+        File.open(Rails.root.join("config", "widget-list-administration-all.json"), "w") do |file|
+          file.puts configuration_all.to_json
+        end
       end
 
 
