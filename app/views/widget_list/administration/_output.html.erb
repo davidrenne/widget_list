@@ -369,12 +369,19 @@
     }
 
     var tr1 = jQuery(obj).closest('tr');
+
+
+
     var tr2 = tr1.next();
     var tr3 = tr2.next();
 
     tr1.remove();
-    tr2.remove();
-    tr3.remove();
+
+    if (tr1.find('.fields_keys').length == 1) {
+      // Remove options TR's
+      tr2.remove();
+      tr3.remove();
+    }
 
     if (isHiddenRemoval && jQuery('.fields_hidden_keys').length == 0) {
       if (jQuery('#showHidden').is(':checked')) {
