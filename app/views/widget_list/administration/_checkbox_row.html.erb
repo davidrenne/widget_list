@@ -1,11 +1,18 @@
-<tr style="display:none;">
+<tr style="<!--CHECKBOX_STYLE-->">
   <td style="padding-left:100px">
-    <!--1_DESC-->:&#160;<input type="checkbox" class="<!--SUBJECT-->_<!--1_KEY-->"  onblur="jQuery(this).attr('checked',jQuery(this).is(':checked'));<!--ONBLUR1-->" name="<!--SUBJECT-->[<!--1_KEY-->][]" id="<!--SUBJECT-->[<!--1_KEY-->][]"  <!--1_VALUE-->/>
+    <!--1_DESC-->:&#160;
+    <input type="hidden" name="<!--SUBJECT-->[<!--1_KEY-->][]" id="<!--SUBJECT-->[<!--1_KEY-->][]"  value="<!--1_VALUE-->"/>
+    <input type="checkbox" class="<!--SUBJECT-->_<!--1_KEY-->"   onchange="FakeCheck(this);" name="<!--SUBJECT-->_fake[<!--1_KEY-->][]" id="<!--SUBJECT-->_fake[<!--1_KEY-->][]"  <!--1_VALUE-->/>
+
   </td>
   <td>
-    <!--2_DESC-->:&#160;<input type="checkbox" class="<!--SUBJECT-->_<!--2_KEY-->"  onblur="jQuery(this).attr('checked',jQuery(this).is(':checked'));<!--ONBLUR2-->" name="<!--SUBJECT-->[<!--2_KEY-->][]" id="<!--SUBJECT-->[<!--2_KEY-->][]"  <!--2_VALUE-->/><%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('<!--2_HELP-->')", 'innerClass' => "default" }, true ) %>
+    <!--2_DESC-->:&#160;<input type="hidden" name="<!--SUBJECT-->[<!--2_KEY-->][]" id="<!--SUBJECT-->[<!--2_KEY-->][]"  value="<!--2_VALUE-->"/>
+    <input type="checkbox" class="<!--SUBJECT-->_<!--2_KEY-->" onchange="FakeCheck(this);" name="<!--SUBJECT-->_fake[<!--2_KEY-->][]" id="<!--SUBJECT-->_fake[<!--2_KEY-->][]"  <!--2_VALUE-->/>
+    <%= raw WidgetList::Widgets::widget_button('?',  {'onclick' => "alert('<!--2_HELP-->')", 'innerClass' => "default" }, true ) %>
   </td>
   <td>
-    <!--3_DESC-->:&#160;<input type="checkbox" class="<!--SUBJECT-->_<!--3_KEY-->" onblur="jQuery(this).attr('checked',jQuery(this).is(':checked'));<!--ONBLUR3-->" name="<!--SUBJECT-->[<!--3_KEY-->][]" id="<!--SUBJECT-->[<!--3_KEY-->][]"  <!--3_VALUE-->/>
+    <!--3_DESC-->:&#160;
+    <input type="hidden" name="<!--SUBJECT-->[<!--3_KEY-->][]" id="<!--SUBJECT-->[<!--3_KEY-->][]"  value="<!--3_VALUE-->"/>
+    <input type="checkbox" class="<!--SUBJECT-->_<!--3_KEY-->" onchange="FakeCheck(this);" name="<!--SUBJECT-->_fake[<!--3_KEY-->][]" id="<!--SUBJECT-->_fake[<!--3_KEY-->][]"  <!--3_VALUE-->/>
   </td>
 </tr>

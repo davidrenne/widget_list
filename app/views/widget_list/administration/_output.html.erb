@@ -354,6 +354,10 @@
     jQuery('#field_function_table').html(jQuery('#field_function_table').html() + jQuery('#default_field_function_template').html());
   }
 
+  function FakeCheck(obj) {
+    jQuery(obj).siblings('input[type="hidden"]').val(jQuery(obj).is(':checked') ? 'checked' : '')
+  }
+
   function RemoveField(obj) {
     var isHiddenRemoval = false;
     if (jQuery(obj).parent().parent().find('input.fields_hidden_keys').length > 0) {
@@ -364,11 +368,14 @@
       isFunctionRemoval = true;
     }
 
-    /*var tr1 = jQuery(obj).closest('tr');
+    var tr1 = jQuery(obj).closest('tr');
     var tr2 = tr1.next();
-    var tr3 = tr2.next();*/
+    var tr3 = tr2.next();
 
-    jQuery(obj).closest('tr').remove();
+    tr1.remove();
+    tr2.remove();
+    tr3.remove();
+
     if (isHiddenRemoval && jQuery('.fields_hidden_keys').length == 0) {
       if (jQuery('#showHidden').is(':checked')) {
         jQuery('#showHidden').attr('checked',false);
@@ -402,9 +409,20 @@
   }
 
   function ShowOptions(obj) {
-    var tr = jQuery(obj).closest('tr').next();
-    tr.toggle();
-    tr.next().toggle();
+    var tr  = jQuery(obj).closest('tr').next();
+    var tr2 = tr.next();
+    if (tr2.not(':visible') && tr.is(':visible')) {
+      tr2.show();
+      tr.show();
+    }
+    if (tr.not(':visible') && tr2.is(':visible')) {
+      tr.show();
+      tr2.show();
+    }
+    if (tr.not(':visible') && tr2.not(':visible')) {
+      tr.toggle();
+      tr2.toggle();
+    }
   }
 
   function AddFunction(obj) {
@@ -674,10 +692,10 @@
           <script type="text/plain" id="default_field_template">
             <!--FIELD_TEMPLATE-->
           </script>
-          <table style="margin-left:150px;" id="field_table">
+          <table style="margin-left:75px;" id="field_table">
             <!--ALL_FIELDS-->
           </table>
-          <table style="margin-left:150px;">
+          <table style="margin-left:75px;">
             <tr>
               <td colspan="3">
                  <!--ADD_FIELD_BUTTON-->
