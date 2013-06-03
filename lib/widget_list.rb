@@ -3129,6 +3129,7 @@ module WidgetList
 
       list = WidgetList::List.new(list_parms)
 
+      ret = {}
       #
       # If AJAX, send back JSON
       #
@@ -3137,8 +3138,6 @@ module WidgetList
         if $_REQUEST.key?('export_widget_list')
           return ['export',list.render()]
         end
-
-        ret = {}
 
         if $_REQUEST['list_action'] != 'ajax_widgetlist_checks'
           ret['list']           = list.render()
@@ -3157,7 +3156,12 @@ module WidgetList
         if list.isAdministrating
           return list.render()
         else
-          return ['html', list.render() ]
+          if $widget_list_conf.key?(:api_mode) && $widget_list_conf[:api_mode]
+            ret['list']           = list.render()
+            return ['json',WidgetList::Utils::json_encode(ret)]
+          else
+            return ['html', list.render() ]
+          end
         end
       end
 
