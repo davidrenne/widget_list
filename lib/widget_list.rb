@@ -3275,7 +3275,29 @@ module WidgetList
 
         return values
       else
-        return value_original
+
+        if value_original.class.name == 'Hash'
+          the_value = value_original[value_original.keys.first]
+        else
+          the_value = value_original
+        end
+
+        if the_value.include?(',')
+          values = []
+          the_value.split_it(',').each { |val|
+            values << val.strip
+          }
+          if value_original.class.name == 'Hash'
+            final_value = {value_original.keys.first => values}
+          else
+            final_value = values
+          end
+
+        else
+          final_value = value_original
+        end
+
+        return final_value
       end
     end
 
