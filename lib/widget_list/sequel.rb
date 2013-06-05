@@ -165,7 +165,7 @@ module Sequel
                     end
 
                   else
-                    match_final = { field => WidgetList::List.parse_inputs_for_mongo_predicates(active_record_model, field, predicate, value_original) }
+                    match_final = { field => WidgetList::List.parse_inputs_for_mongo_predicates(active_record_model, field, predicate, match[field]) }
                   end
                   params << {
                       '$match' =>  match_final
@@ -191,12 +191,8 @@ module Sequel
           else
 
             if $is_mongo
-              if !tmp.nil?
-                results = tmp
-              else
-                results = active_record_model.all.to_a if active_record_model.respond_to?('all')
-                results = active_record_model.to_a if active_record_model.respond_to?('to_a') && !group_match.nil?
-              end
+              results = active_record_model.all.to_a if active_record_model.respond_to?('all')
+              results = active_record_model.to_a if active_record_model.respond_to?('to_a') && !group_match.nil?
             else
               results = active_record_model.find_by_sql(sql)
             end
@@ -204,20 +200,16 @@ module Sequel
             (results||[]).each { |row|
               cnt += 1
               row.attributes.keys.each { |fieldName|
-                if first == 1
-                  @final_results[fieldName.to_s.upcase] = []
-                end
+                @final_results[fieldName.to_s.upcase] = [] unless @final_results.key?(fieldName.to_s.upcase)
                 @final_results[fieldName.to_s.upcase] << ((row.send(fieldName).nil? && row.attributes[fieldName].nil?) ? '' : _get_row_value(row,fieldName))
               } if group_match.nil?
 
               row.each { |key,value|
-                if first == 1
-                  @final_results['CNT'] = []
-                  if key == '_id'
-                    value.each { |k,v|
-                      @final_results[k.to_s.upcase] = []
-                    }
-                  end
+                @final_results['CNT'] = [] unless @final_results.key?('CNT')
+                if key == '_id' && !value.empty?
+                  value.each { |k,v|
+                    @final_results[k.to_s.upcase] = [] unless @final_results.key?(k.to_s.upcase)
+                  }
                 end
                 if key == 'cnt'
                   @final_results['CNT'] << value
@@ -228,8 +220,6 @@ module Sequel
                 end
 
               } if !group_match.nil?
-
-              first = 0
             }
             @last_sql = sql_or_obj
           end
