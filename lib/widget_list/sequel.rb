@@ -105,7 +105,7 @@ module Sequel
     # @param [Hash]             replace_in_query
     #                           will be a traditional php bind hash {'BIND'=>'value'}.  which will replace :BIND in the query.  thanks mwild
 
-    def _select(sql_or_obj, bind=[], replace_in_query={}, active_record_model=false)
+    def _select(sql_or_obj, bind=[], replace_in_query={}, active_record_model=false, group_match=false)
       # supporting either
       # if get_database._select('select * from items where name = ? AND price > ?', ['abc', 37]) > 0
       # or
@@ -135,6 +135,7 @@ module Sequel
       #
       first   = 1
       cnt     = 0
+      tmp     = nil
       @final_results = {}
       if Rails.env == 'development'
         Rails.logger.info(sql)
@@ -142,18 +143,96 @@ module Sequel
 
       if self.class.name == 'WidgetListActiveRecord'
         begin
-          results = active_record_model.find_by_sql(sql)
-          (results||[]).each { |row|
-            cnt += 1
-            row.attributes.keys.each { |fieldName|
-              if first == 1
-                @final_results[fieldName.to_s.upcase] = []
+
+          if $is_mongo
+            if !group_match.nil?
+              params = []
+
+              if group_match.key?('match') && !group_match['match'].empty?
+                group_match['match'].each { |match|
+                  field = match.keys.first
+                  if active_record_model.respond_to?(:serializers) &&  active_record_model.serializers[field].type.to_s == 'Integer'
+                    if match[match.keys.first].class.name == 'Hash'
+                      predicate      = match[field].keys.first
+                      value_original = match[field][predicate]
+                      match_final = {
+                          field => { predicate =>
+                                         WidgetList::List.parse_inputs_for_mongo_predicates(active_record_model, field, predicate, value_original)
+                          }
+                      }
+                    else
+                      match_final = { field => WidgetList::List.parse_inputs_for_mongo_predicates(active_record_model, field, predicate, value_original) }
+                    end
+
+                  else
+                    match_final = { field => WidgetList::List.parse_inputs_for_mongo_predicates(active_record_model, field, predicate, value_original) }
+                  end
+                  params << {
+                      '$match' =>  match_final
+                  }
+                }
               end
-              @final_results[fieldName.to_s.upcase] << ((row.send(fieldName).nil? && row.attributes[fieldName].nil?) ? '' : _get_row_value(row,fieldName))
+
+              params << group_match['group'] if group_match.key?('group')
+              params << group_match['sort']  if group_match.key?('sort')
+              params << group_match['skip']  if group_match.key?('skip')
+              params << group_match['limit'] if group_match.key?('limit')
+
+              active_record_model = active_record_model.collection.aggregate(params)
+            end
+          end
+
+          if $is_mongo && sql == 'count'
+
+            cnt = active_record_model.count
+            @final_results['TOTAL'] = []
+            @final_results['TOTAL'][0] = cnt
+
+          else
+
+            if $is_mongo
+              if !tmp.nil?
+                results = tmp
+              else
+                results = active_record_model.all.to_a if active_record_model.respond_to?('all')
+                results = active_record_model.to_a if active_record_model.respond_to?('to_a') && !group_match.nil?
+              end
+            else
+              results = active_record_model.find_by_sql(sql)
+            end
+
+            (results||[]).each { |row|
+              cnt += 1
+              row.attributes.keys.each { |fieldName|
+                if first == 1
+                  @final_results[fieldName.to_s.upcase] = []
+                end
+                @final_results[fieldName.to_s.upcase] << ((row.send(fieldName).nil? && row.attributes[fieldName].nil?) ? '' : _get_row_value(row,fieldName))
+              } if group_match.nil?
+
+              row.each { |key,value|
+                if first == 1
+                  @final_results['CNT'] = []
+                  if key == '_id'
+                    value.each { |k,v|
+                      @final_results[k.to_s.upcase] = []
+                    }
+                  end
+                end
+                if key == 'cnt'
+                  @final_results['CNT'] << value
+                elsif key == '_id'
+                  value.each { |k,v|
+                    @final_results[k.to_s.upcase] << v
+                  }
+                end
+
+              } if !group_match.nil?
+
+              first = 0
             }
-            first = 0
-          }
-          @last_sql = sql_or_obj
+            @last_sql = sql_or_obj
+          end
 
         rescue Exception => e
           cnt         = 0
