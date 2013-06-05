@@ -592,7 +592,7 @@ module WidgetList
 
       #------------ VIEW ------------
 
-      if page_config['useRansack'] == '1' && page_config['showSearch'] == '1'
+      if page_config['useRansack'] == '1' && page_config['showSearch'] == '1' && $is_mongo == false
         view_code = "
       list_parms#{add_pointer('ransackSearch',-10)} #{page_config['view']}.search(#{($_REQUEST.key?('iframe')) ? '$_REQUEST' : 'params'}[:q])
       list_parms#{add_pointer('view',-10)} list_parms['ransackSearch'].result
@@ -1043,7 +1043,7 @@ module WidgetList
 
         if $_REQUEST.key?('ajax')
           model         = model_name.constantize.new
-          model.attributes.keys.each { |field|
+          model.fields.keys.each { |field|
             fields[field] = field.gsub(/_/,' _').camelize
             all_fields[field] = field.gsub(/_/,' _').camelize
             fields_function[field] = 'CNT(' + field + ') or NVL(' + field + ') or TO_DATE(' + field + ') etc...'
@@ -1763,7 +1763,20 @@ module WidgetList
                       @items['predicate']<<  '='
                       @items['bindVars'] <<  searchCriteria
                     end
-                    @active_record_model = @active_record_model.where('$or' => [{fieldName=>searchCriteria}]) if @items['groupBy'].empty?
+
+                    if @items['groupBy'].empty? && (@active_record_model.respond_to?(:serializers) &&  ['DateTime','Time','Date'].include?(@active_record_model.serializers[fieldName].type.to_s)) == false
+                      if searchCriteria.include?(',')
+                        criteriaTmp = searchCriteria.split_it(',')
+                        criteriaTmp.each_with_index { |value, key|
+                          if !value.empty?
+                            @active_record_model = @active_record_model.where('$or' => [{fieldName=>value.strip_or_self()}])
+                          end
+                        }
+                      else
+                        @active_record_model = @active_record_model.where('$or' => [{fieldName=>searchCriteria}])
+                      end
+                    end
+
                   end
                 }
 
@@ -4487,12 +4500,15 @@ module WidgetList
     end
 
     def get_view
-      @active_record_model = false if @active_record_model.nil?
+      initializing = false
+      if @active_record_model.nil?
+        initializing = true
+        @active_record_model = false
+      end
       if (@is_primary_sequel && @items['database'] == 'primary') ||  (@is_secondary_sequel && @items['database'] == 'secondary')
         return @items['view']
       elsif $is_mongo || (@items['view'].respond_to?('scoped') && @items['view'].scoped.respond_to?('to_sql'))
-        @active_record_model = @items['view'].name.constantize if @active_record_model == false
-
+        @active_record_model = @items['view'].name.constantize if initializing
         new_columns = []
 
         @items['fields'].each { |column, fieldTitle|
