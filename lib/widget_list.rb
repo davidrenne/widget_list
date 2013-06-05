@@ -76,9 +76,9 @@ module WidgetList
           options += '<option value="' + val + '">' + (json[val].key?('savedOn') ? "(on #{json[val]['savedOn']}) - " : '') + controller + '/' + action + ' => Model used is "' + json[val]['view'] + '"</option>'
         }
         @fill['<!--EDIT_OR_ADD_NEW-->']  = WidgetList::Utils::fill({
-                                                                     '<!--NEW-->'   => WidgetList::Widgets::widget_button('New',   { 'onclick' => "ClickTab('.start','ShowStart',true);jQuery('#sections').fadeIn('slow');"  , 'innerClass'  => "primary"  } ),
-                                                                     '<!--EDIT-->'  => WidgetList::Widgets::widget_button('Edit',   { 'onclick' => "isSubmitting = true; document.location = document.location + '?restore=' + escape(jQuery('#edit_widget_list').val());"  , 'innerClass'  => "primary"  } ),
-                                                                     '<!--ITEMS-->' => '<select name="edit_widget_list" id="edit_widget_list">' + options + '</select>',
+                                                                       '<!--NEW-->'   => WidgetList::Widgets::widget_button('New',   { 'onclick' => "ClickTab('.start','ShowStart',true);jQuery('#sections').fadeIn('slow');"  , 'innerClass'  => "primary"  } ),
+                                                                       '<!--EDIT-->'  => WidgetList::Widgets::widget_button('Edit',   { 'onclick' => "isSubmitting = true; document.location = document.location + '?restore=' + escape(jQuery('#edit_widget_list').val());"  , 'innerClass'  => "primary"  } ),
+                                                                       '<!--ITEMS-->' => '<select name="edit_widget_list" id="edit_widget_list">' + options + '</select>',
                                                                    } ,'
                                                                       <tr class="init">
                                                                         <td>
@@ -101,11 +101,11 @@ module WidgetList
       #
       @fill['<!--POST_URL-->']                  = $_SERVER['PATH_INFO']
       @fill['<!--BUTTONS-->']                   = WidgetList::Widgets::widget_button('Step One - Start ->',           {'id' => 'start'      , 'onclick' => "ShowStart();"    , 'innerClass' => "primary"  } ) +
-        WidgetList::Widgets::widget_button('Step Two - Fields ->',          {'id' => 'fields'     , 'onclick' => "ShowFields();"  , 'innerClass' => "primary disabled"  } ) +
-        WidgetList::Widgets::widget_button('Step Three - Rows ->',          {'id' => 'rows'       , 'onclick' => "ShowRows();"    , 'innerClass' => "primary disabled"  } ) +
-        WidgetList::Widgets::widget_button('Step Four - Search ->',         {'id' => 'search'     , 'onclick' => "ShowSearch();"  , 'innerClass' => "primary disabled"  } ) +
-        WidgetList::Widgets::widget_button('Step Four - Footer Actions ->', {'id' => 'footer'     , 'onclick' => "ShowFooter();"  , 'innerClass' => "primary disabled"  } ) +
-        WidgetList::Widgets::widget_button('Step Five - Misc & Submit ->',  {'id' => 'misc_submit', 'onclick' => "ShowSubmit();"  , 'innerClass' => "success disabled"  } )
+          WidgetList::Widgets::widget_button('Step Two - Fields ->',          {'id' => 'fields'     , 'onclick' => "ShowFields();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Three - Rows ->',          {'id' => 'rows'       , 'onclick' => "ShowRows();"    , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Four - Search ->',         {'id' => 'search'     , 'onclick' => "ShowSearch();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Four - Footer Actions ->', {'id' => 'footer'     , 'onclick' => "ShowFooter();"  , 'innerClass' => "primary disabled"  } ) +
+          WidgetList::Widgets::widget_button('Step Five - Misc & Submit ->',  {'id' => 'misc_submit', 'onclick' => "ShowSubmit();"  , 'innerClass' => "success disabled"  } )
 
 
       #
@@ -270,7 +270,7 @@ module WidgetList
       @fill['<!--SHOW_SEARCH_CHECKED-->']       = (!@isEditing) ? 'checked' : (page_config['showSearch'] == "1")  ? 'checked' : ''
       @fill['<!--SHOW_EXPORT_CHECKED-->']       = (!@isEditing) ? 'checked' : (page_config['showExport'] == "1")  ? 'checked' : ''
       @fill['<!--EXPORT_VALUE-->']              = (!@isEditing) ? default_config['exportButtonTitle'] : page_config['exportButtonTitle']
-      @fill['<!--USE_RANSACK-->']               = (!@isEditing) ? 'checked' : (page_config['useRansack'] == "1")  ? 'checked' : ''
+      @fill['<!--USE_RANSACK-->']               = (!@isEditing) ? ($is_mongo) ? '' : 'checked' : (page_config['useRansack'] == "1")  ? 'checked' : ''
       @fill['<!--USE_RANSACK_ADV-->']           = (!@isEditing) ? ''        : (page_config['ransackAdvancedForm'] == "1")  ? 'checked' : ''
       @fill['<!--USE_GROUPING-->']              = (!@isEditing) ? ''        : (page_config['useGrouping'] == "1") ? 'checked' : ''
       @fill['<!--SEARCH_TITLE-->']              = (!@isEditing) ? default_config['searchTitle'] : page_config['searchTitle']
@@ -429,11 +429,16 @@ module WidgetList
         :column_alias => '#{escape_code field[1]['column_to_show']}',
         :primary_database => #{page_config['primaryDatabase'] == '1' ? 'true' : 'false'}
       )"
+          if $is_mongo
+            code = "filterValue"
+          else
+            code = "#{page_config['view']}.sanitize(filterValue)"
+          end
           case_statements += <<-EOD
 
         when '#{field[0]}'
           list_parms['filter']          << " #{field[1]['column_to_show'].gsub(/_linked/,'')} = ? "
-          list_parms['bindVars']        << #{page_config['view']}.sanitize(filterValue)
+          list_parms['bindVars']        << #{code}
           list_parms['listDescription']  = drillDownBackLink + ' Filtered by #{escape_code field[1]['column_to_show'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
           EOD
         }
@@ -1423,15 +1428,15 @@ module WidgetList
       end
 
       @items.deep_merge!({ 'statement' =>
-                             {'select'=>
-                                {'view' =>'SELECT ' + tag_fields + ' FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->'}
-                             }
+                               {'select'=>
+                                    {'view' =>'SELECT ' + tag_fields + ' FROM <!--SOURCE--> <!--WHERE--> <!--GROUPBY--> <!--ORDERBY--> <!--LIMIT-->'}
+                               }
                          })
 
       @items.deep_merge!({ 'statement' =>
-                             {'count'=>
-                                {'view' => 'SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->'}
-                             }
+                               {'count'=>
+                                    {'view' => 'SELECT count(1) total FROM <!--VIEW--> <!--WHERE--> <!--GROUPBY-->'}
+                               }
                          })
       #inject site wide configs before list specific configs if a helper exists
 
@@ -1455,8 +1460,8 @@ module WidgetList
           # if no one passed a listSearchForm inject a default one to show the ransack form
           #
           fill = {
-            '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items), 'innerClass' => @items['defaultButtonClass'] }),
-            '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)"
+              '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', {'onclick' => WidgetList::List::build_search_button_click(@items), 'innerClass' => @items['defaultButtonClass'] }),
+              '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)"
           }
           @items['listSearchForm'] = WidgetList::Utils::fill( fill , ac.render_to_string(:partial => 'widget_list/ransack_widget_list_advanced_search') )
 
@@ -1475,19 +1480,19 @@ module WidgetList
       if get_database.db_type == 'oracle'
 
         @items.deep_merge!({'statement' =>
-                              {'count'=>
-                                 {'view' =>
-                                    '
+                                {'count'=>
+                                     {'view' =>
+                                          '
                                    SELECT count(1) total FROM <!--VIEW--> ' + ((@items['groupBy'].empty? && !@active_record_model) ? '<!--WHERE-->  <!--GROUPBY-->' : '' )
-                                 }
-                              }
+                                     }
+                                }
                            })
         @items.deep_merge!({'statement' =>
-                              {'select'=>
-                                 {'view' =>
-                                    'SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a ' + ((@items['groupBy'].empty?) ? '<!--WHERE-->' : '') + ' <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '')
-                                 }
-                              }
+                                {'select'=>
+                                     {'view' =>
+                                          'SELECT <!--FIELDS_PLAIN--> FROM ( SELECT a.*, DENSE_RANK() over (<!--ORDERBY-->) rn FROM ( SELECT ' + ( (!get_view().include?('(')) ? '<!--SOURCE-->' : get_view().strip.split(" ").last ) + '.* FROM <!--SOURCE--> ) a ' + ((@items['groupBy'].empty?) ? '<!--WHERE-->' : '') + ' <!--ORDERBY--> ) <!--LIMIT--> ' + ((!@active_record_model) ? '<!--GROUPBY-->' : '')
+                                     }
+                                }
                            })
 
       end
@@ -1543,84 +1548,142 @@ module WidgetList
 
         @items['groupByClick'] = WidgetList::Utils::fill({'<!--NAME-->' => @items['name']}, @items['groupByClickDefault'] + @items['groupByClick'])
 
-        if @items['searchClear'] || @items['searchClearAll']
-          clear_search_session(@items.key?('searchClearAll'))
-        end
-
-        matchesCurrentList   = $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['BUTTON_VALUE'] == @items['buttonVal']
-        isSearchRequest      = $_REQUEST.key?('search_filter') && $_REQUEST['search_filter'] != 'undefined'
-        templateCustomSearch = !@items['templateFilter'].empty? # if you define templateFilter WidgetList will not attempt to build a where clause with search
-
-        #
-        # Search restore
-        #
-        if !isSearchRequest && $_SESSION.class.name == 'Hash' && !$_SESSION.empty? && $_SESSION.key?('SEARCH_FILTER') && $_SESSION['SEARCH_FILTER'].key?(@items['name']) && @items['searchSession']
-          isSearchRestore = true
-        end
-
-        if (isSearchRequest && matchesCurrentList && !templateCustomSearch && @items['showSearch']) || isSearchRestore
-          if !isSearchRestore
-            $_SESSION.deep_merge!({'SEARCH_FILTER' => { @items['name'] => $_REQUEST['search_filter']} })
-            searchFilter = $_REQUEST['search_filter'].strip_or_self()
-          else
-            searchFilter = $_SESSION['SEARCH_FILTER'][@items['name']]
+        begin
+          if @items['searchClear'] || @items['searchClearAll']
+            clear_search_session(@items.key?('searchClearAll'))
           end
 
-          if ! searchFilter.empty?
-            if ! @items['filter'].empty? && @items['filter'].class.name != 'Array'
-              # convert string to array filter
-              filterString = @items['filter']
-              @items['filter'] = []
-              @items['filter'] << filterString
+          matchesCurrentList   = $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['BUTTON_VALUE'] == @items['buttonVal']
+          isSearchRequest      = $_REQUEST.key?('search_filter') && $_REQUEST['search_filter'] != 'undefined'
+          templateCustomSearch = !@items['templateFilter'].empty? # if you define templateFilter WidgetList will not attempt to build a where clause with search
+
+          #
+          # Search restore
+          #
+          if !isSearchRequest && !$_SESSION.empty? && $_SESSION.key?('SEARCH_FILTER') && $_SESSION['SEARCH_FILTER'].key?(@items['name']) && @items['searchSession']
+            isSearchRestore = true
+          end
+
+          if (isSearchRequest && matchesCurrentList && !templateCustomSearch && @items['showSearch']) || isSearchRestore
+
+
+            get_view() if $is_mongo # call function to fill in @active_record_model
+
+            if !isSearchRestore
+              $_SESSION.deep_merge!({'SEARCH_FILTER' => { @items['name'] => $_REQUEST['search_filter']} })
+              searchFilter = $_REQUEST['search_filter'].strip_or_self()
+            else
+              searchFilter = $_SESSION['SEARCH_FILTER'][@items['name']]
             end
 
-            fieldsToSearch = @items['fields'].dup
+            if ! searchFilter.empty?
+              if ! @items['filter'].empty? && @items['filter'].class.name != 'Array'
+                # convert string to array filter
+                filterString = @items['filter']
+                @items['filter'] = [] unless $is_mongo
+                @items['filter'] << filterString unless $is_mongo
+              end
 
-            if @items['fieldsHidden'].class.name == 'Array'
-              @items['fieldsHidden'].each { |columnPivot|
-                fieldsToSearch[columnPivot] = strip_aliases(columnPivot)
-              }
-            elsif @items['fieldsHidden'].class.name == 'Hash'
-              @items['fieldsHidden'].each { |columnPivot|
-                fieldsToSearch[columnPivot[0]] = strip_aliases(columnPivot[0])
-              }
-            end
-            fieldsToSearch.delete('cnt') if fieldsToSearch.key?('cnt')
-            searchCriteria = searchFilter.strip_or_self()
-            searchSQL      = []
-            numericSearch  = false
+              fieldsToSearch = @items['fields'].dup
 
-            #
-            # Comma delimited search
-            #
-            if searchFilter.include?(',')
-              #It is either a CSV or a comma inside the search string
+              if @items['fieldsHidden'].class.name == 'Array'
+                @items['fieldsHidden'].each { |columnPivot|
+                  fieldsToSearch[columnPivot] = strip_aliases(columnPivot)
+                }
+              elsif @items['fieldsHidden'].class.name == 'Hash'
+                @items['fieldsHidden'].each { |columnPivot|
+                  fieldsToSearch[columnPivot[0]] = strip_aliases(columnPivot[0])
+                }
+              end
+              fieldsToSearch.delete('cnt') if fieldsToSearch.key?('cnt')
+              searchCriteria = searchFilter.strip_or_self()
+              searchSQL      = []
+              numericSearch  = false
+
               #
-              criteriaTmp = searchFilter.split_it(',')
-
-              #Assumed a CSV of numeric ids
+              # Comma delimited search
               #
-              isNumeric = true
-              criteriaTmp.each_with_index { |value, key|
-                if !value.empty?
-                  criteriaTmp[key] = value.strip_or_self()
+              if searchFilter.include?(',')
+                #It is either a CSV or a comma inside the search string
+                #
+                criteriaTmp = searchFilter.split_it(',')
 
-                  if !criteriaTmp[key].nil? &&  ! criteriaTmp[key].empty?
-                    if ! WidgetList::Utils::numeric?(criteriaTmp[key])
-                      isNumeric = false
+                #Assumed a CSV of numeric ids
+                #
+                isNumeric = true
+                criteriaTmp.each_with_index { |value, key|
+                  if !value.empty?
+                    criteriaTmp[key] = value.strip_or_self()
+
+                    if !criteriaTmp[key].nil? &&  ! criteriaTmp[key].empty?
+                      if ! WidgetList::Utils::numeric?(criteriaTmp[key])
+                        isNumeric = false
+                      end
+                    else
+                      criteriaTmp.delete(key)
                     end
-                  else
-                    criteriaTmp.delete(key)
+                  end
+                }
+
+                if isNumeric
+                  numericSearch = true
+                  if @items['searchIdCol'].class.name == 'Array'
+                    @items['searchIdCol'].each { |searchIdCol|
+                      if(fieldsToSearch.key?(searchIdCol))
+                        searchSQL << tick_field() + searchIdCol + tick_field() + " IN(" + searchFilter  + ")"
+
+                        if $is_mongo
+                          criteriaTmp.each_with_index { |value, key|
+
+                            if !@items['groupBy'].empty?
+                              @items['filter']   <<  searchIdCol
+                              @items['predicate']<<  '='
+                              @items['bindVars'] <<  value
+                            end
+                            @active_record_model = @active_record_model.where('$or' => [{searchIdCol=>value}]) if @items['groupBy'].empty?
+                          }
+                        end
+                      end
+                    }
+
+                    if !searchSQL.empty?
+                      #
+                      # Assemble Numeric Filter
+                      #
+                      @items['filter'] << "(" + searchSQL.join(' OR ') + ")" unless $is_mongo
+                    end
+                  elsif @items['fields'].key?(@items['searchIdCol'])
+                    numericSearch = true
+                    @items['filter']  << tick_field() + "#{@items['searchIdCol']}" + tick_field() + " IN(" + criteriaTmp.join(',') + ")" unless $is_mongo
+
+                    if $is_mongo
+                      criteriaTmp.each_with_index { |value, key|
+                        if !@items['groupBy'].empty?
+                          @items['filter']   <<  @items['searchIdCol']
+                          @items['predicate']<<  '='
+                          @items['bindVars'] <<  value
+                        end
+                        @active_record_model = @active_record_model.where('$or' => [{@items['searchIdCol']=>value}]) if @items['groupBy'].empty?
+                      }
+                    end
                   end
                 end
-              }
-
-              if isNumeric
-                numericSearch = true
-                if @items['searchIdCol'].class.name == 'Array'
+              elsif @items['searchIdCol'].class.name == 'Array'
+                if WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.')
+                  numericSearch = true
                   @items['searchIdCol'].each { |searchIdCol|
-                    if(fieldsToSearch.key?(searchIdCol))
-                      searchSQL << tick_field() + searchIdCol + tick_field() + " IN(" + searchFilter  + ")"
+                    if fieldsToSearch.key?(searchIdCol)
+                      searchSQL << tick_field() + "#{searchIdCol}" + tick_field() + " IN(#{searchFilter})"
+
+                      if $is_mongo
+
+                        if !@items['groupBy'].empty?
+                          @items['filter']   <<  searchIdCol
+                          @items['predicate']<<  '='
+                          @items['bindVars'] <<  searchFilter
+                        end
+                        @active_record_model = @active_record_model.where('$or' => [{searchIdCol=>searchFilter}]) if @items['groupBy'].empty?
+                      end
                     end
                   }
 
@@ -1628,87 +1691,94 @@ module WidgetList
                     #
                     # Assemble Numeric Filter
                     #
-                    @items['filter'] << "(" + searchSQL.join(' OR ') + ")"
+                    @items['filter'] << "(" + searchSQL.join(' OR ') + ")" unless $is_mongo
                   end
-                elsif @items['fields'].key?(@items['searchIdCol'])
-                  numericSearch = true
-                  @items['filter']  << tick_field() + "#{@items['searchIdCol']}" + tick_field() + " IN(" + criteriaTmp.join(',') + ")"
+                end
+              elsif WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.') && @items['fields'].key?(@items['searchIdCol'])
+                numericSearch = true
+                @items['filter'] << tick_field() + "#{@items['searchIdCol']}" + tick_field() + " IN(" + searchFilter + ")" unless $is_mongo
+
+                if $is_mongo
+
+                  if !@items['groupBy'].empty?
+                    @items['filter']   <<  @items['searchIdCol']
+                    @items['predicate']<<  '='
+                    @items['bindVars'] <<  searchFilter
+                  end
+                  @active_record_model = @active_record_model.where('$or' => [{@items['searchIdCol']=>searchFilter}]) if @items['groupBy'].empty?
                 end
               end
-            elsif @items['searchIdCol'].class.name == 'Array'
-              if WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.')
-                numericSearch = true
-                @items['searchIdCol'].each { |searchIdCol|
-                  if fieldsToSearch.key?(searchIdCol)
-                    searchSQL << tick_field() + "#{searchIdCol}" + tick_field() + " IN(#{searchFilter})"
+
+              # If it is not an id or a list of ids then it is assumed a string search
+              if !numericSearch
+
+                fieldValues = {}
+
+                fieldsToSearch.each { |fieldName,fieldTitle|
+
+                  fieldName = strip_aliases(fieldName)
+                  # new lodgette. if fieldFunction exists, find all matches and skip them
+
+                  if @items['fieldFunction'].key?(fieldName)
+                    if get_database.db_type == 'oracle'
+                      theField = fieldName
+                    else
+                      theField = @items['fieldFunction'][fieldName]  + cast_col()
+                    end
+                  else
+                    theField = tick_field() + "#{fieldName}" + cast_col() + tick_field()
+                  end
+
+                  skip = false
+                  skip = skip_column(fieldName)
+
+                  #buttons must ALWAYS BE ON THE RIGHT SIDE IN ORDER FOR THIS NOT TO SEARCH A NON-EXISTENT COLUMN  (used to be hard coded to 'features' as a column to remove)
+                  if skip
+                    next
+                  end
+
+                  #Search only specified fields. This can involve a dynamic field list from an advanced search form
+                  #
+                  if ! @items['searchFieldsIn'].empty?
+                    #
+                    # If it exists in either key or value
+                    #
+                    if ! @items['searchFieldsIn'].key?(fieldName) && ! @items['searchFieldsIn'].include?(fieldName)
+                      next
+                    end
+                  elsif ! @items['searchFieldsOut'].empty?
+                    if @items['searchFieldsOut'].key?(fieldName) ||  @items['searchFieldsOut'].include?(fieldName)
+                      next
+                    end
+                  end
+
+                  #todo - escape bind variables using Sequel
+                  searchSQL <<  theField + " LIKE '%" + searchCriteria + "%'"
+                  fieldValues[theField] = searchCriteria
+
+                  if $is_mongo
+
+                    if !@items['groupBy'].empty?
+                      @items['filter']   <<  fieldName
+                      @items['predicate']<<  '='
+                      @items['bindVars'] <<  searchCriteria
+                    end
+                    @active_record_model = @active_record_model.where('$or' => [{fieldName=>searchCriteria}]) if @items['groupBy'].empty?
                   end
                 }
 
-                if !searchSQL.empty?
-                  #
-                  # Assemble Numeric Filter
-                  #
-                  @items['filter'] << "(" + searchSQL.join(' OR ') + ")"
-                end
-              end
-            elsif WidgetList::Utils::numeric?(searchFilter) && ! searchFilter.include?('.') && @items['fields'].key?(@items['searchIdCol'])
-              numericSearch = true
-              @items['filter'] << tick_field() + "#{@items['searchIdCol']}" + tick_field() + " IN(" + searchFilter + ")"
-            end
-
-            # If it is not an id or a list of ids then it is assumed a string search
-            if !numericSearch
-
-              fieldsToSearch.each { |fieldName,fieldTitle|
-
-                fieldName = strip_aliases(fieldName)
-                # new lodgette. if fieldFunction exists, find all matches and skip them
-
-                if @items['fieldFunction'].key?(fieldName)
-                  if get_database.db_type == 'oracle'
-                    theField = fieldName
-                  else
-                    theField = @items['fieldFunction'][fieldName]  + cast_col()
-                  end
-                else
-                  theField = tick_field() + "#{fieldName}" + cast_col() + tick_field()
-                end
-
-                skip = false
-                skip = skip_column(fieldName)
-
-                #buttons must ALWAYS BE ON THE RIGHT SIDE IN ORDER FOR THIS NOT TO SEARCH A NON-EXISTENT COLUMN  (used to be hard coded to 'features' as a column to remove)
-                if skip
-                  next
-                end
-
-                #Search only specified fields. This can involve a dynamic field list from an advanced search form
                 #
-                if ! @items['searchFieldsIn'].empty?
-                  #
-                  # If it exists in either key or value
-                  #
-                  if ! @items['searchFieldsIn'].key?(fieldName) && ! @items['searchFieldsIn'].include?(fieldName)
-                    next
-                  end
-                elsif ! @items['searchFieldsOut'].empty?
-                  if @items['searchFieldsOut'].key?(fieldName) ||  @items['searchFieldsOut'].include?(fieldName)
-                    next
-                  end
+                # Assemble String Filter
+                #
+                if(! searchSQL.empty?)
+                  @items['filter'] << "(" + searchSQL.join(' OR ') + ")" unless $is_mongo
                 end
-
-                #todo - escape bind variables using Sequel
-                searchSQL <<  theField + " LIKE '%" + searchCriteria + "%'"
-              }
-
-              #
-              # Assemble String Filter
-              #
-              if(! searchSQL.empty?)
-                @items['filter'] << "(" + searchSQL.join(' OR ') + ")"
               end
             end
           end
+
+        rescue Exception => e
+          @templateFill['<!--DATA-->']  = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output(e) + @items['noDataMessage'] + '</div></td></tr>'
         end
 
         if !$_REQUEST.key?('BUTTON_VALUE')
@@ -1783,242 +1853,243 @@ module WidgetList
     def get_grouping_functions()
       #http://docs.oracle.com/cd/E11882_01/server.112/e10592/functions003.htm
       [
-        'AVG(',
-        'COLLECT(',
-        'CORR(',
-        'COUNT(',
-        'COVAR_POP(',
-        'COVAR_SAMP(',
-        'CUME_DIST(',
-        'DENSE_RANK(',
-        'FIRST(',
-        'GROUP_ID(',
-        'GROUPING_ID(',
-        'LAST(',
-        'LISTAGG(',
-        'MAX(',
-        'MEDIAN(',
-        'MIN(',
-        'PERCENT_RANK(',
-        'PERCENTILE_CONT(',
-        'PERCENTILE_DISC(',
-        'RANK(',
-        'REGR_SLOPE(',
-        'REGR_INTERCEPT(',
-        'REGR_COUNT(',
-        'REGR_R2(',
-        'REGR_AVGX(',
-        'REGR_AVGY(',
-        'REGR_SXX(',
-        'REGR_SYY(',
-        'REGR_SXY(',
-        'STATS_MINOMIAL_TEST(',
-        'STATS_CROSSTAB(',
-        'STATS_F_TEST(',
-        'STATS_KS_TEST(',
-        'STATS_MODE(',
-        'STATS_MW_TEST(',
-        'STDDEV(',
-        'STDDEV_POP(',
-        'STDDEV_SAMP(',
-        'SUM(',
-        'SYS_XMLAGG(',
-        'VAR_POP(',
-        'VAR_SAMP(',
-        'VARIANCE(',
-        'XMLAGG(',
+          'AVG(',
+          'COLLECT(',
+          'CORR(',
+          'COUNT(',
+          'COVAR_POP(',
+          'COVAR_SAMP(',
+          'CUME_DIST(',
+          'DENSE_RANK(',
+          'FIRST(',
+          'GROUP_ID(',
+          'GROUPING_ID(',
+          'LAST(',
+          'LISTAGG(',
+          'MAX(',
+          'MEDIAN(',
+          'MIN(',
+          'PERCENT_RANK(',
+          'PERCENTILE_CONT(',
+          'PERCENTILE_DISC(',
+          'RANK(',
+          'REGR_SLOPE(',
+          'REGR_INTERCEPT(',
+          'REGR_COUNT(',
+          'REGR_R2(',
+          'REGR_AVGX(',
+          'REGR_AVGY(',
+          'REGR_SXX(',
+          'REGR_SYY(',
+          'REGR_SXY(',
+          'STATS_MINOMIAL_TEST(',
+          'STATS_CROSSTAB(',
+          'STATS_F_TEST(',
+          'STATS_KS_TEST(',
+          'STATS_MODE(',
+          'STATS_MW_TEST(',
+          'STDDEV(',
+          'STDDEV_POP(',
+          'STDDEV_SAMP(',
+          'SUM(',
+          'SYS_XMLAGG(',
+          'VAR_POP(',
+          'VAR_SAMP(',
+          'VARIANCE(',
+          'XMLAGG(',
       ]
     end
 
     def self.get_defaults()
       {
-        'errors'              => [],
-        'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
-        'database'            => 'primary', #
-        'title'               => '',
-        'listDescription'     => '',
-        'pageId'              => $_SERVER['PATH_INFO'],
-        'view'                => '',
-        'data'                => {},
-        'bindVars'            => [],
-        'bindVarsLegacy'      => {},
-        'links'               => {},
-        'buttons'             => {},
-        'inputs'              => {},
-        'filter'              => [],
-        'groupBy'             => '',
-        'rowStart'            => 0,
-        'rowLimit'            => 10,
-        'orderBy'             => '',
-        'allowHTML'           => true,
-        'showPagination'      => true,
+          'errors'              => [],
+          'name'                => ([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join,
+          'database'            => 'primary', #
+          'title'               => '',
+          'listDescription'     => '',
+          'pageId'              => $_SERVER['PATH_INFO'],
+          'view'                => '',
+          'data'                => {},
+          'bindVars'            => [],
+          'bindVarsLegacy'      => {},
+          'links'               => {},
+          'buttons'             => {},
+          'inputs'              => {},
+          'filter'              => [],
+          'predicate'           => [],
+          'groupBy'             => '',
+          'rowStart'            => 0,
+          'rowLimit'            => 10,
+          'orderBy'             => '',
+          'allowHTML'           => true,
+          'showPagination'      => true,
 
-        #
-        # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
-        #
-        'carryOverRequsts'    => ['switch_grouping','group_row_id','q'],
+          #
+          # carryOverRequests will allow you to post custom things from request to all sort/paging URLS for each ajax
+          #
+          'carryOverRequsts'    => ['switch_grouping','group_row_id','q'],
 
-        #
-        # Head/Foot
-        #
+          #
+          # Head/Foot
+          #
 
-        'customFooter'        => '',
-        'customHeader'        => '',
+          'customFooter'        => '',
+          'customHeader'        => '',
 
-        #
-        # Ajax
-        #
-        'ajaxFunctionAll'     => '',
-        'ajaxFunction'        => 'ListJumpMin',
+          #
+          # Ajax
+          #
+          'ajaxFunctionAll'     => '',
+          'ajaxFunction'        => 'ListJumpMin',
 
-        #
-        #  Search
-        #
-        'showSearch'          => true,
-        'searchOnkeyup'       => "SearchWidgetList('<!--URL-->', '<!--TARGET-->', this);",
-        'searchIdCol'         => 'id',
-        'searchTitle'         => 'Search by Id or CSV of Ids and more',
-        'searchFieldsIn'      => {},
-        'searchClear'         => false,
-        'searchClearAll'      => false,
-        'searchSession'       => true,
-        'searchFieldsOut'     => {'id'=>true},
-        'templateFilter'      => '',
+          #
+          #  Search
+          #
+          'showSearch'          => true,
+          'searchOnkeyup'       => "SearchWidgetList('<!--URL-->', '<!--TARGET-->', this);",
+          'searchIdCol'         => ($is_mongo) ? '_id' : 'id',
+          'searchTitle'         => 'Search by Id or CSV of Ids and more',
+          'searchFieldsIn'      => {},
+          'searchClear'         => false,
+          'searchClearAll'      => false,
+          'searchSession'       => true,
+          'searchFieldsOut'     => {($is_mongo) ? '_id' : 'id'=>true},
+          'templateFilter'      => '',
 
-        #
-        #  Export
-        #
-        'showExport'          => true,
-        'exportButtonTitle'   => 'Export CSV',
+          #
+          #  Export
+          #
+          'showExport'          => true,
+          'exportButtonTitle'   => 'Export CSV',
 
-        #
-        # Group By Box
-        #
-        'groupByItems'        => [],
-        'groupBySelected'     => false,
-        'groupByLabel'        => 'Group By',
-        'groupByClick'        => '',
-        'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
+          #
+          # Group By Box
+          #
+          'groupByItems'        => [],
+          'groupBySelected'     => false,
+          'groupByLabel'        => 'Group By',
+          'groupByClick'        => '',
+          'groupByClickDefault' => "ListChangeGrouping('<!--NAME-->', this);",
 
 
-        #
-        # Advanced searching
-        #
-        'listSearchForm'      => '',
-        'ransackSearch'       => false,
+          #
+          # Advanced searching
+          #
+          'listSearchForm'      => '',
+          'ransackSearch'       => false,
 
-        #
-        # Column Specific
-        #
-        'colClass'            => '',
-        'colAlign'            => 'center',
-        'fields'              => {},
-        'fieldsHidden'        => [],
-        'columnStyle'         => {},
-        'columnClass'         => {},
-        'columnPopupTitle'    => {},
-        'columnSort'          => {},
-        'columnWidth'         => {},
-        'columnNoSort'        => {},
+          #
+          # Column Specific
+          #
+          'colClass'            => '',
+          'colAlign'            => 'center',
+          'fields'              => {},
+          'fieldsHidden'        => [],
+          'columnStyle'         => {},
+          'columnClass'         => {},
+          'columnPopupTitle'    => {},
+          'columnSort'          => {},
+          'columnWidth'         => {},
+          'columnNoSort'        => {},
 
-        #
-        # Column Border (on right of each column)
-        #
-        'borderedColumns'     => false,
-        'borderColumnStyle'   => '1px solid #CCCCCC',
+          #
+          # Column Border (on right of each column)
+          #
+          'borderedColumns'     => false,
+          'borderColumnStyle'   => '1px solid #CCCCCC',
 
-        #
-        # Row Border (on top of each row)
-        #
-        'borderedRows'        => true,
-        'borderRowStyle'      => '1px solid #CCCCCC',
+          #
+          # Row Border (on top of each row)
+          #
+          'borderedRows'        => true,
+          'borderRowStyle'      => '1px solid #CCCCCC',
 
-        #
-        # Head/Foot border
-        #
-        'borderHeadFoot'      => false,
-        'headFootBorderStyle' => '1px solid #CCCCCC',
+          #
+          # Head/Foot border
+          #
+          'borderHeadFoot'      => false,
+          'headFootBorderStyle' => '1px solid #CCCCCC',
 
-        'bordersEverywhere?'  => false,
-        'borderEverywhere'    => '1px solid #CCCCCC',
+          'bordersEverywhere?'  => false,
+          'borderEverywhere'    => '1px solid #CCCCCC',
 
-        #
-        # Buttons
-        #
-        'defaultButtonClass'  => 'info',
+          #
+          # Buttons
+          #
+          'defaultButtonClass'  => 'info',
 
-        #
-        # Font
-        #
-        'fontFamily'           => '"Times New Roman", Times, serif',
-        'headerFooterFontSize' => '14px',
-        'dataFontSize'         => '14px',
-        'titleFontSize'        => '24px',
+          #
+          # Font
+          #
+          'fontFamily'           => '"Times New Roman", Times, serif',
+          'headerFooterFontSize' => '14px',
+          'dataFontSize'         => '14px',
+          'titleFontSize'        => '24px',
 
-        #
-        # Table Colors
-        #
-        'footerBGColor'       => '#ECECEC',
-        'headerBGColor'       => '#ECECEC',
-        'footerFontColor'     => '#494949',
-        'headerFontColor'     => '#494949',
-        'tableBorder'         => '1',
-        'cornerRadius'        => 15,
+          #
+          # Table Colors
+          #
+          'footerBGColor'       => '#ECECEC',
+          'headerBGColor'       => '#ECECEC',
+          'footerFontColor'     => '#494949',
+          'headerFontColor'     => '#494949',
+          'tableBorder'         => '1',
+          'cornerRadius'        => 15,
 
-        'useBoxShadow'        => true,
-        'shadowInset'         => 10,
-        'shadowSpread'        => 20,
-        'shadowColor'         => '#888888',
+          'useBoxShadow'        => true,
+          'shadowInset'         => 10,
+          'shadowSpread'        => 20,
+          'shadowColor'         => '#888888',
 
-        #
-        # Row specifics
-        #
-        'rowClass'            => '',
-        'rowFontColor'        => 'black',
-        'rowColorByStatus'    => {},
-        'rowStylesByStatus'   => {},
-        'rowOffsets'          => ['#FFFFFF','#FFFFFF'],
+          #
+          # Row specifics
+          #
+          'rowClass'            => '',
+          'rowFontColor'        => 'black',
+          'rowColorByStatus'    => {},
+          'rowStylesByStatus'   => {},
+          'rowOffsets'          => ['#FFFFFF','#FFFFFF'],
 
-        'class'               => 'listContainerPassive',
-        'tableclass'          => 'tableBlowOutPreventer',
-        'noDataMessage'       => 'Currently no data.',
-        'useSort'             => true,
-        'headerClass'         => {},
-        'fieldFunction'       => {},
-        'buttonVal'           => 'templateListJump',
-        'linkFunction'        => 'ButtonLinkPost',
-        'template'            => '',
-        'LIST_COL_SORT_ORDER' => 'ASC',
-        'LIST_COL_SORT'       => '',
-        'LIST_FILTER_ALL'     => '',
-        'ROW_LIMIT'           => '',
-        'LIST_SEQUENCE'       => 1,
-        'NEW_SEARCH'          => false,
+          'class'               => 'listContainerPassive',
+          'tableclass'          => 'tableBlowOutPreventer',
+          'noDataMessage'       => 'Currently no data.',
+          'useSort'             => true,
+          'headerClass'         => {},
+          'fieldFunction'       => {},
+          'buttonVal'           => 'templateListJump',
+          'linkFunction'        => 'ButtonLinkPost',
+          'template'            => '',
+          'LIST_COL_SORT_ORDER' => 'ASC',
+          'LIST_COL_SORT'       => '',
+          'LIST_FILTER_ALL'     => '',
+          'ROW_LIMIT'           => '',
+          'LIST_SEQUENCE'       => 1,
+          'NEW_SEARCH'          => false,
 
-        #
-        # Checkbox
-        #
-        'checkedClass'        => 'widgetlist-checkbox',
-        'checkedFlag'         => {},
-        'storeSessionChecks'  => false,
+          #
+          # Checkbox
+          #
+          'checkedClass'        => 'widgetlist-checkbox',
+          'checkedFlag'         => {},
+          'storeSessionChecks'  => false,
 
-        #
-        # Summary Row
-        #
-        'totalRow'            => {},
-        'totalRowFirstCol'    => '<strong>Total:</strong>',
-        'totalRowMethod'      => {},
-        'totalRowPrefix'      => {},
-        'totalRowSuffix'      => {},
-        'totalRowSeparator'   => '.',
-        'totalRowDelimiter'   => ',',
-        'totalRowDefault'     => 'N/A',
+          #
+          # Summary Row
+          #
+          'totalRow'            => {},
+          'totalRowFirstCol'    => '<strong>Total:</strong>',
+          'totalRowMethod'      => {},
+          'totalRowPrefix'      => {},
+          'totalRowSuffix'      => {},
+          'totalRowSeparator'   => '.',
+          'totalRowDelimiter'   => ',',
+          'totalRowDefault'     => 'N/A',
 
-        #
-        # Hooks
-        #
-        'columnHooks'         => {},
-        'rowHooks'            => {}
+          #
+          # Hooks
+          #
+          'columnHooks'         => {},
+          'rowHooks'            => {}
       }
     end
 
@@ -2048,7 +2119,7 @@ module WidgetList
 
     def tick_field()
       case get_database.db_type
-        when 'postgres','oracle'
+        when 'postgres','mongo','oracle'
           ''
         else
           '`'
@@ -2439,11 +2510,11 @@ module WidgetList
               list_search['name']        = 'list_search_name_' + @items['name']
               list_search['class']       = 'inputOuter widget-search-outer ' + @items['name'].downcase + '-search'
               list_search['search_ahead']       = {
-                'url'          => searchUrl,
-                'skip_queue'   => false,
-                'target'       => @items['name'],
-                'search_form'  => @items['listSearchForm'],
-                'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
+                  'url'          => searchUrl,
+                  'skip_queue'   => false,
+                  'target'       => @items['name'],
+                  'search_form'  => @items['listSearchForm'],
+                  'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
               }
 
               fillRansack = {}
@@ -2500,8 +2571,8 @@ module WidgetList
               }
 
               list_group['search_ahead']  = {
-                'skip_queue' => false,
-                'search_form'=>  '
+                  'skip_queue' => false,
+                  'search_form'=>  '
                                  <div id="advanced-search-container" style="height:100% !important;">
                                     ' + groupRows.join("\n") + '
                                  </div>'
@@ -2634,11 +2705,11 @@ module WidgetList
       #Assemble navigation buttons
       #
       pieces = {
-        '<!--NEXT_URL-->'     => nextUrl,
-        '<!--LIST_NAME-->'    => @items['name'],
-        '<!--PREVIOUS_URL-->' => prevUrl,
-        '<!--FUNCTION-->'     => @items['ajaxFunction'],
-        '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
+          '<!--NEXT_URL-->'     => nextUrl,
+          '<!--LIST_NAME-->'    => @items['name'],
+          '<!--PREVIOUS_URL-->' => prevUrl,
+          '<!--FUNCTION-->'     => @items['ajaxFunction'],
+          '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
       }
 
       templates['btn_next']     = WidgetList::Utils::fill(pieces,templates['btn_next'])
@@ -2741,23 +2812,23 @@ module WidgetList
         end
 
         jumpSection << WidgetList::Utils::fill({
-                                                 '<!--SEQUENCE-->'     => page,
-                                                 '<!--JUMP_URL-->'     => jumpUrl,
-                                                 '<!--LIST_NAME-->'    => @items['name'],
-                                                 '<!--FUNCTION-->'     => @items['ajaxFunction'],
-                                                 '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
+                                                   '<!--SEQUENCE-->'     => page,
+                                                   '<!--JUMP_URL-->'     => jumpUrl,
+                                                   '<!--LIST_NAME-->'    => @items['name'],
+                                                   '<!--FUNCTION-->'     => @items['ajaxFunction'],
+                                                   '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll'],
                                                }, jumpTemplate)
       end
 
       pieces = {
-        '<!--PREVIOUS_BUTTON-->'         => templates['btn_previous'],
-        '<!--SEQUENCE-->'                => @sequence,
-        '<!--NEXT_BUTTON-->'             => templates['btn_next'],
-        '<!--TOTAL_PAGES-->'             => @totalPages,
-        '<!--TOTAL_ROWS-->'              => @totalRows,
-        '<!--PAGE_SEQUENCE_JUMP_LIST-->' => pageSelect,
-        '<!--JUMP-->'                    => jumpSection.join(''),
-        '<!--LIST_NAME-->'               => @items['name'],
+          '<!--PREVIOUS_BUTTON-->'         => templates['btn_previous'],
+          '<!--SEQUENCE-->'                => @sequence,
+          '<!--NEXT_BUTTON-->'             => templates['btn_next'],
+          '<!--TOTAL_PAGES-->'             => @totalPages,
+          '<!--TOTAL_ROWS-->'              => @totalRows,
+          '<!--PAGE_SEQUENCE_JUMP_LIST-->' => pageSelect,
+          '<!--JUMP-->'                    => jumpSection.join(''),
+          '<!--LIST_NAME-->'               => @items['name'],
       }
 
       paginationOutput = WidgetList::Utils::fill(pieces,@items['template_pagination_wrapper'])
@@ -2908,7 +2979,7 @@ module WidgetList
 
           if (
           ( (@items.key?('LIST_COL_SORT') && !@items['LIST_COL_SORT'].empty?) && @items['LIST_COL_SORT'] == colSort['LIST_COL_SORT']) ||
-            ( $_SESSION.key?('LIST_COL_SORT') && !$_SESSION['LIST_COL_SORT'].nil? && $_SESSION['LIST_COL_SORT'].key?(@sqlHash) && $_SESSION['LIST_COL_SORT'][@sqlHash].key?(field))
+              ( $_SESSION.key?('LIST_COL_SORT') && !$_SESSION['LIST_COL_SORT'].nil? && $_SESSION['LIST_COL_SORT'].key?(@sqlHash) && $_SESSION['LIST_COL_SORT'][@sqlHash].key?(field))
           )
             changedSession = false
             if @items.key?('LIST_COL_SORT') && !@items['LIST_COL_SORT'].empty?
@@ -3167,47 +3238,75 @@ module WidgetList
 
     end
 
+
+    def self.parse_inputs_for_mongo_predicates(active_record_model, field, predicate, value_original)
+      if active_record_model.respond_to?(:serializers) &&  !active_record_model.serializers.key?(field)
+        throw "field #{field} doesnt seem to exist in active record object here are the fields in the model class ==>>>> " + active_record_model.serializers.keys.inspect
+      end
+      is_int = (active_record_model.respond_to?(:serializers) &&  active_record_model.serializers[field].type.to_s == 'Integer')
+      if predicate == '$in'
+        #caste CSV string into proper array
+        values = value_original.to_i if is_int
+        values = value_original unless is_int
+        if value_original.include?(',')
+          #It is either a CSV or a comma inside the search string
+          #
+          values = []
+          value_original.split_it(',').each { |val|
+            values << val.to_i if is_int
+            values << val.strip unless is_int
+          }
+        else
+          values = [values]
+        end
+
+        return values
+      else
+        return value_original
+      end
+    end
+
     # checkbox_helper just builds the proper Hashes to setup a checkbox widget row
     # it assumes you have a fake column called '' AS checkbox to fill in with the widget_check
 
     def self.checkbox_helper(list_parms,primary_key)
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox'=>
-                                   {'type' => 'checkbox'
-                                   }
-                                }
+                                  {'checkbox'=>
+                                       {'type' => 'checkbox'
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox'=>
-                                   {'items' =>
-                                      {
-                                        'name'          => list_parms['name'] + '_visible_checks[]',
-                                        'value'         => primary_key, #the value should be a column name mapping
-                                        'class_handle'  => list_parms['name'] + '_info_tables',
-                                      }
-                                   }
-                                }
+                                  {'checkbox'=>
+                                       {'items' =>
+                                            {
+                                                'name'          => list_parms['name'] + '_visible_checks[]',
+                                                'value'         => primary_key, #the value should be a column name mapping
+                                                'class_handle'  => list_parms['name'] + '_info_tables',
+                                            }
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox_header'=>
-                                   {'type' => 'checkbox'
-                                   }
-                                }
+                                  {'checkbox_header'=>
+                                       {'type' => 'checkbox'
+                                       }
+                                  }
                              })
 
       list_parms.deep_merge!({'inputs' =>
-                                {'checkbox_header'=>
-                                   {'items' =>
-                                      {
-                                        'check_all'     => true,
-                                        'id'            => list_parms['name'] + '_info_tables_check_all',
-                                        'class_handle'  => list_parms['name'] + '_info_tables',
-                                      }
-                                   }
-                                }
+                                  {'checkbox_header'=>
+                                       {'items' =>
+                                            {
+                                                'check_all'     => true,
+                                                'id'            => list_parms['name'] + '_info_tables_check_all',
+                                                'class_handle'  => list_parms['name'] + '_info_tables',
+                                            }
+                                       }
+                                  }
                              })
       return list_parms
     end
@@ -3253,20 +3352,20 @@ module WidgetList
 
     def self.build_drill_down(*params)
       required_params = {
-        :list_id                  => true,              # -- your widget_list name (used for JS)
-        :drill_down_name          => true,              # -- an identifier that is pass for the "column" or "type of drill down" which is passed as $_REQUEST['drill_down'] when the user clicks and returned from get_filter_and_drilldown based on session or request
-        :data_to_pass_from_view   => true,              # -- Any SQL function or column name/value in the resultset in which would be the value passed when the user clicks the drill down
-        :column_to_show           => true,              # -- The visible column or SQL functions to display to user for the link
+          :list_id                  => true,              # -- your widget_list name (used for JS)
+          :drill_down_name          => true,              # -- an identifier that is pass for the "column" or "type of drill down" which is passed as $_REQUEST['drill_down'] when the user clicks and returned from get_filter_and_drilldown based on session or request
+          :data_to_pass_from_view   => true,              # -- Any SQL function or column name/value in the resultset in which would be the value passed when the user clicks the drill down
+          :column_to_show           => true,              # -- The visible column or SQL functions to display to user for the link
       }
 
       optional_params = {
-        :column_alias             => '',                # -- AS XXXX
-        :extra_function           => '',                # -- Onclick of link, call another JS function after the drill down function is called
-        :js_function_name         => 'ListDrillDown',   # -- name of JS Function
-        :column_class             => '',                # -- custom class on the <a> tag
-        :link_color               => 'blue',            # -- whatever color you want the link to be
-        :extra_js_func_params     => '',                # -- Add extra params to ListDrillDown outside of the default
-        :primary_database         => true,              # -- Since this function builds a column before widget_list is instantiated, tell which connection you are using
+          :column_alias             => '',                # -- AS XXXX
+          :extra_function           => '',                # -- Onclick of link, call another JS function after the drill down function is called
+          :js_function_name         => 'ListDrillDown',   # -- name of JS Function
+          :column_class             => '',                # -- custom class on the <a> tag
+          :link_color               => 'blue',            # -- whatever color you want the link to be
+          :extra_js_func_params     => '',                # -- Add extra params to ListDrillDown outside of the default
+          :primary_database         => true,              # -- Since this function builds a column before widget_list is instantiated, tell which connection you are using
       }
 
       valid = WidgetList::Widgets::validate_items(params[0],required_params)
@@ -3341,7 +3440,6 @@ module WidgetList
 
     def build_column_button(column,j)
       buttons     = @items['buttons'][column]
-      columnValue = @results[column.upcase][j]
       btnOut      = []
       strCnt      = 0
       nameId      = ''
@@ -3498,7 +3596,16 @@ module WidgetList
         if @items['data'].empty?
           #Run the actual statement
           #
-          @totalRowCount = get_database._select(sql , @items['bindVars'], @items['bindVarsLegacy'], @active_record_model)
+
+          #code flow forces me to merge the sort array here
+          if !@group_match.nil?
+            @group_match = @group_match.merge({"sort"  =>  { "$sort"  =>  @mongo_sort  } }) if !@mongo_sort.empty?
+            @group_match = @group_match.merge({"skip"  =>  { "$skip"  =>  @mongo_skip  } })
+            @group_match = @group_match.merge({"limit" =>  { "$limit" =>  @mongo_limit } })
+            @group_match = @group_match.merge({"match" =>   @mongo_match })
+          end
+
+          @totalRowCount = get_database._select(sql , @items['bindVars'], @items['bindVarsLegacy'], @active_record_model, @group_match)
         end
 
         if @totalRowCount > 0
@@ -3568,6 +3675,11 @@ module WidgetList
                 # Column is text
                 #
               else
+
+                unless @results.key?(column.upcase)
+                  throw "Are you sure that the column #{column} exists in your fields array?  The resultset does not have this field returned from the database"
+                end
+
                 cleanData = strip_tags(@results[column.upcase][j].to_s)
 
                 row_values << cleanData
@@ -3961,6 +4073,8 @@ module WidgetList
     end
 
     def build_statement()
+
+      @mongo_sort = {}
       statement  = ''
       @fieldList      = []
       @fieldListPlain = []
@@ -4053,11 +4167,13 @@ module WidgetList
         foundColumn = false
         if ! @items['LIST_COL_SORT'].empty?
           foundColumn = true
+          @mongo_sort[(( @items['LIST_COL_SORT'] != 'cnt') ? '_id.' : '') + @items['LIST_COL_SORT']] = (@items['LIST_COL_SORT_ORDER'] == 'ASC') ? 1 : -1 if $is_mongo
           pieces['<!--ORDERBY-->'] += tick_field() + strip_aliases(@items['LIST_COL_SORT']) + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
         else
           $_SESSION['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
             if @items['fields'].key?(order[0])
               foundColumn = true
+              @mongo_sort[((order[0] != 'cnt') ? '_id.' : '') + order[0]] = (order[1] == 'ASC') ? 1 : -1 if $is_mongo
               pieces['<!--ORDERBY-->'] += tick_field() + strip_aliases(order[0]) + tick_field() +  " " + order[1]
             end
           } if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
@@ -4067,6 +4183,18 @@ module WidgetList
         if ! @items['orderBy'].empty?
           pieces['<!--ORDERBY-->'] += ',' if foundColumn == true
           pieces['<!--ORDERBY-->'] += @items['orderBy']
+
+          if $is_mongo
+            if @items['orderBy'].include?(',')
+              criteriaTmp = @items['orderBy'].split_it(',')
+            else
+              criteriaTmp = [@items['orderBy']]
+            end
+
+            criteriaTmp.each { |value|
+              @mongo_sort['_id.' + value.gsub(/ASC/,'').gsub(/DESC/,'').strip] = (value.include?('DESC')) ? -1 : 1
+            }
+          end
         end
 
       elsif !@items['orderBy'].empty?
@@ -4095,7 +4223,7 @@ module WidgetList
         when 'oracle'
 
           pieces['<!--LIMIT-->'] =
-            '
+              '
             WHERE
             (
                  rn >' + (@sequence > 1 ? '' : '=') + ' :LOW
@@ -4115,6 +4243,26 @@ module WidgetList
         @sequence = 1
       end
 
+
+      if $is_mongo
+
+        #
+        # Ordering in mongo object
+        #
+
+        columnordering = pieces['<!--ORDERBY-->'].gsub!(/ORDER BY/,'')
+        pieces['<!--ORDERBY-->'] = columnordering.strip unless columnordering.nil?
+        @active_record_model = @active_record_model.order_by(pieces['<!--ORDERBY-->'])  unless columnordering.nil?
+
+        #
+        # Limits in mongo
+        #
+        @active_record_model = @active_record_model.skip(@items['bindVarsLegacy']['LOW'].to_i).limit(@items['rowLimit'].to_i)
+
+        @mongo_skip  = @items['bindVarsLegacy']['LOW'].to_i
+        @mongo_limit = @items['rowLimit'].to_i
+
+      end
       statement
     end
 
@@ -4125,6 +4273,45 @@ module WidgetList
 
     def auto_column_name(name='')
       name.gsub(/\_/,' ').gsub(/\-/,' ').capitalize
+    end
+
+    def self.mysql_to_mongo_predicate(predicate='=',value='',build_mongo_expression_hash=false)
+      functioncall = ''
+      case predicate
+        when '>','gt'
+          functioncall = 'gt'
+        when 'in','in'
+          functioncall = 'in'
+        when '>=','gte'
+          functioncall = 'gte'
+        when '<','lt'
+          functioncall = 'lt'
+        when '<=','lte'
+          functioncall = 'lte'
+        when '!=','ne'
+          functioncall = 'ne'
+        else
+          functioncall = ''
+      end
+      if build_mongo_expression_hash
+        if functioncall.empty?
+          #when using the aggregation framework in mongoid, you do not pass {$eq => 'val'}, you pass just the value associated with the column
+          return value
+        else
+          return {'$' + functioncall => value}
+        end
+      else
+        return functioncall
+      end
+    end
+
+    def self.where(list_parms,field,value,predicate='=')
+      if $is_mongo
+        list_parms['predicate'] <<  WidgetList::List.mysql_to_mongo_predicate(predicate,value,false)
+      end
+      list_parms['filter']    << field
+      list_parms['bindVars']  << value
+      return list_parms
     end
 
     def get_total_records()
@@ -4138,15 +4325,68 @@ module WidgetList
         sql = WidgetList::Utils::fill({'<!--VIEW-->' => get_view(),'<!--GROUPBY-->' => !@items['groupBy'].empty? ? ' GROUP BY ' + @items['groupBy'] : '' }, @items['statement']['count']['view'])
       end
 
-      if ! @filter.empty?
-        filter = ' WHERE ' + @filter
+      if $is_mongo
+
+        @active_record_model = @active_record_model.skip(0) #turn object into Mongoid::Criteria which has all the column definitions needed in _select
+
+        #
+        # List filters
+        #
+        @mongo_match = []
+        @items['filter'].each_with_index { |value, key|
+          field = value.to_sym
+          predicate = ''
+          if @items.key?('predicate') && !@items['predicate'][key].nil? && !@items['predicate'][key].empty? && value.to_sym.respond_to?(@items['predicate'][key])
+            field = field.send(@items['predicate'][key])
+            predicate = '$' + @items['predicate'][key]
+          end
+
+          @active_record_model = @active_record_model.where('$and' => [{
+                                                                           field => WidgetList::List.parse_inputs_for_mongo_predicates(@active_record_model, value, predicate, @items['bindVars'][key])
+                                                                       }]) if @items['groupBy'].empty?
+          @mongo_match << { value =>  WidgetList::List.mysql_to_mongo_predicate(@items['predicate'][key],@items['bindVars'][key],true) } if @items['fields'].key?(value)
+        } if @items.key?('filter') && !@items['filter'].empty?
+
+        if !@items['groupBy'].empty?
+
+          if @items['groupBy'].include?(',')
+            criteriaTmp = @items['groupBy'].split_it(',')
+          else
+            criteriaTmp = [@items['groupBy']]
+          end
+
+          map_groups = {}
+          criteriaTmp.each { |value|
+            map_groups[value] =  "$#{value}"
+          }
+          #
+          @group_match =
+              {
+                  "group" =>  {"$group" => { "_id" => map_groups , "cnt" => { "$sum" => 1 } } },
+              }
+        end
+
+      else
+
+        if ! @filter.empty?
+          filter = ' WHERE ' + @filter
+        end
+        sql = WidgetList::Utils::fill({'<!--WHERE-->' => filter}, sql)
       end
 
-      sql = WidgetList::Utils::fill({'<!--WHERE-->' => filter}, sql)
-
-      if ! sql.empty?
+      if ! sql.empty? || $is_mongo
         if @items['showPagination']
-          cnt = get_database._select(sql, @items['bindVars'], @items['bindVarsLegacy'], @active_record_model)
+
+          tmp_match = @group_match
+
+          if $is_mongo
+            if !tmp_match.nil?
+              tmp_match = @group_match.dup
+              tmp_match = tmp_match.merge({"match" =>   @mongo_match })
+            end
+          end
+
+          cnt = get_database._select( $is_mongo ? 'count' : sql, @items['bindVars'], @items['bindVarsLegacy'], @active_record_model, tmp_match)
           if cnt > 0
             if cnt > get_database.final_results['TOTAL'][0].to_i
               #sometimes databases and queries run do not count(1) and group properly and instead
@@ -4185,19 +4425,23 @@ module WidgetList
         begin
           WidgetList::List::load_widget_list_database_yml()
 
-          if $widget_list_db_conf.key?(db_type)
-            if $widget_list_db_conf[db_type]['adapter'].include?('mysql')
-              return 'mysql'
-            elsif $widget_list_db_conf[db_type]['adapter'].include?('postgres')
-              return 'postgres'
-            elsif $widget_list_db_conf[db_type]['adapter'].include?('oracle')
-              return 'oracle'
-            elsif $widget_list_db_conf[db_type]['adapter'].include?('sqlite')
-              return 'sqlite'
-            elsif $widget_list_db_conf[db_type]['adapter'].include?('sqlserver')
-              return 'sqlserver'
-            elsif $widget_list_db_conf[db_type]['adapter'].include?('ibm')
-              return 'db2'
+          if $is_mongo
+            return 'mongo'
+          else
+            if $widget_list_db_conf.key?(db_type)
+              if $widget_list_db_conf[db_type]['adapter'].include?('mysql')
+                return 'mysql'
+              elsif $widget_list_db_conf[db_type]['adapter'].include?('postgres')
+                return 'postgres'
+              elsif $widget_list_db_conf[db_type]['adapter'].include?('oracle')
+                return 'oracle'
+              elsif $widget_list_db_conf[db_type]['adapter'].include?('sqlite')
+                return 'sqlite'
+              elsif $widget_list_db_conf[db_type]['adapter'].include?('sqlserver')
+                return 'sqlserver'
+              elsif $widget_list_db_conf[db_type]['adapter'].include?('ibm')
+                return 'db2'
+              end
             end
           end
         rescue
@@ -4218,7 +4462,13 @@ module WidgetList
 
     def self.load_widget_list_database_yml
       if $widget_list_db_conf.nil?
-        $widget_list_db_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "database.yml")).read).result)
+        if Rails.root.join("config", "mongoid.yml").file?
+          $is_mongo            = true
+          $widget_list_db_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "mongoid.yml")).read).result)
+        else
+          $is_mongo            = false
+          $widget_list_db_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "database.yml")).read).result)
+        end
       end
     end
 
@@ -4237,11 +4487,11 @@ module WidgetList
     end
 
     def get_view
-      @active_record_model = false
+      @active_record_model = false if @active_record_model.nil?
       if (@is_primary_sequel && @items['database'] == 'primary') ||  (@is_secondary_sequel && @items['database'] == 'secondary')
         return @items['view']
-      elsif @items['view'].respond_to?('scoped') && @items['view'].scoped.respond_to?('to_sql')
-        @active_record_model = @items['view'].name.constantize
+      elsif $is_mongo || (@items['view'].respond_to?('scoped') && @items['view'].scoped.respond_to?('to_sql'))
+        @active_record_model = @items['view'].name.constantize if @active_record_model == false
 
         new_columns = []
 
@@ -4275,15 +4525,19 @@ module WidgetList
           }
         end
 
-        view     = @items['view'].scoped.to_sql
-        sql_from = view[view.index(/FROM/),view.length]
-        view     = "SELECT #{new_columns.join(',')} " + sql_from
-        where    = ''
-        if !@items['groupBy'].empty?
-          where    = '<!--WHERE-->'
-        end
+        if $is_mongo
+          return ''
+        else
+          view     = @items['view'].scoped.to_sql
+          sql_from = view[view.index(/FROM/),view.length]
+          view     = "SELECT #{new_columns.join(',')} " + sql_from
+          where    = ''
+          if !@items['groupBy'].empty?
+            where    = '<!--WHERE-->'
+          end
 
-        return "( #{view} #{where} <!--GROUPBY--> ) a"
+          return "( #{view} #{where} <!--GROUPBY--> ) a"
+        end
       else
         return ""
       end
