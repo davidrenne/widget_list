@@ -11,6 +11,15 @@ https://www.youtube.com/watch?v=A6mZa8Ge2Rk
 
 ****
 
+## Slides from Barcamp 2013
+
+****
+
+https://docs.google.com/presentation/d/1gnybf8f7afRM8w5UjTMoV82-0S5HftPewn4pAuIybk8/edit?usp=sharing
+
+
+****
+
 ## Introduction
 
 ****
