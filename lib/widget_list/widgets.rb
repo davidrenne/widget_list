@@ -624,7 +624,7 @@ module WidgetList
         'frmSubmit'  => '',        #this option adds hidden frmbutton
         'submit'     => '',
         'args'       => {},
-        'class'      => 'btn',     #Always stays the same
+        'class'      => 'wl-btn',     #Always stays the same
         'innerClass' => 'info',    #.primary(blue) .info(light-blue) .success(green) .danger(red) .disabled(light grey) .default(grey)
         'passive'    => false,
         'function'   => 'ButtonLinkPost',
