@@ -99,7 +99,7 @@ module WidgetList
       #
       # BASE
       #
-      @fill['<!--POST_URL-->']                  = $_SERVER['PATH_INFO']
+      @fill['<!--POST_URL-->']                  = $_SERVER['SCRIPT_NAME'] + $_SERVER['PATH_INFO']
       @fill['<!--BUTTONS-->']                   = WidgetList::Widgets::widget_button('Step One - Start ->',           {'id' => 'start'      , 'onclick' => "ShowStart();"    , 'innerClass' => "primary"  } ) +
           WidgetList::Widgets::widget_button('Step Two - Fields ->',          {'id' => 'fields'     , 'onclick' => "ShowFields();"  , 'innerClass' => "primary disabled"  } ) +
           WidgetList::Widgets::widget_button('Step Three - Rows ->',          {'id' => 'rows'       , 'onclick' => "ShowRows();"    , 'innerClass' => "primary disabled"  } ) +
