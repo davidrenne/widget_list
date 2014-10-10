@@ -807,3 +807,26 @@ div#advanced-search-container ul.advanced-search-container-inline input.info-inp
 *+html ul#pagination li div {display:inline}
 *+html ul#pagination li div.select-outer {background: url("../assets/images/input_text_right.png") no-repeat scroll right 2px transparent;}
 *+html ul#pagination li div.select-outer div.select-inner select {margin-top: -4px !important;}
+
+
+.next-active {
+    cursor:pointer;
+    background: transparent url("../assets/images/page-next.gif") no-repeat;
+}
+
+.next-disabled {
+    opacity:0.4;
+    filter:alpha(opacity=40);
+    background: transparent url("../assets/images/page-next.gif") no-repeat;
+}
+
+.previous-active {
+    cursor:pointer;
+    background: transparent url("../assets/images/page-back.gif") no-repeat;
+}
+
+.previous-disabled {
+    opacity:0.4;
+    filter:alpha(opacity=40);
+    background: transparent url("../assets/images/page-back.gif") no-repeat;
+}
