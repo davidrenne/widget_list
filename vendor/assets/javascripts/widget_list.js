@@ -341,7 +341,10 @@ function ListJumpMin(url, id, callback, post)
         {
           (callback)();
         }
-      }, "json");
+      }, "json").fail(function() {
+          alert('An error occurred.  No new results were fetched.');
+          ajaxStatus(id, 0);
+      });
     }
     catch(e)
     {
