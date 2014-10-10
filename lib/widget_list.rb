@@ -1043,7 +1043,7 @@ module WidgetList
 
         if $_REQUEST.key?('ajax')
           model         = model_name.constantize.new
-          model.fields.keys.each { |field|
+          model.columns.keys.each { |field|
             fields[field] = field.gsub(/_/,' _').camelize
             all_fields[field] = field.gsub(/_/,' _').camelize
             fields_function[field] = 'CNT(' + field + ') or NVL(' + field + ') or TO_DATE(' + field + ') etc...'
