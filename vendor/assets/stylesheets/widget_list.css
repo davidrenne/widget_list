@@ -12,11 +12,9 @@
    height:3px;
 }
 
-table.widget_list
-{
-   border: 1px solid #CCCCCC;
+input.info-input:focus {
+    outline-width: 0;
 }
-
 
 table.widget_list tbody tr td span
 {
@@ -606,7 +604,7 @@ div.inputOuter
 
 
 div.inputOuter .inputInner {position:relative;background: transparent url('../assets/images/input_text_left.png') no-repeat scroll top left;border: none;height: 27px;line-height: 27px;padding-left: 6px;width: auto;padding-right: 7px;}
-div.inputOuter .inputInner input {margin:6px 0 0 6px;border:none;background:transparent;width:100%}
+div.inputOuter .inputInner input { border:none;background:transparent;width:100%}
 div.inputOuter .inputInner input.search-ahead {width:97%}
 
 /**

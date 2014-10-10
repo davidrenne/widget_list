@@ -2034,7 +2034,7 @@ module WidgetList
           #
           # Font
           #
-          'fontFamily'           => '"Times New Roman", Times, serif',
+          'fontFamily'           => false,  #'"Times New Roman", Times, serif',
           'headerFooterFontSize' => '14px',
           'dataFontSize'         => '14px',
           'titleFontSize'        => '24px',
@@ -2434,7 +2434,9 @@ module WidgetList
         @templateFill['<!--SHADOW_SPREAD-->']        = get_shadow_spread_value()
         @templateFill['<!--SHADOW_COLOR-->']         = @items['shadowColor']
         @templateFill['<!--BORDER_HEAD_FOOT_TOP-->'] = @items['borderHeadFoot'] ? 'border-top:' + @items['headFootBorderStyle'] + ';' : ''
-        @templateFill['<!--FONT-->']                 = @items['fontFamily']
+        if @items['fontFamily']
+          @templateFill['<!--FONT-->']               = 'font-family:' + @items['fontFamily'] + ';'
+        end
         @templateFill['<!--FONT_HEADER-->']          = @items['headerFooterFontSize']
 
 
@@ -2523,11 +2525,11 @@ module WidgetList
               list_search['name']        = 'list_search_name_' + @items['name']
               list_search['class']       = 'inputOuter widget-search-outer ' + @items['name'].downcase + '-search'
               list_search['search_ahead']       = {
-                  'url'          => searchUrl,
-                  'skip_queue'   => false,
-                  'target'       => @items['name'],
-                  'search_form'  => @items['listSearchForm'],
-                  'onkeyup'      => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
+                  'url'               => searchUrl,
+                  'skip_queue'        => false,
+                  'target'            => @items['name'],
+                  'search_form'       => @items['listSearchForm'],
+                  'onkeyup'           => (! @items['searchOnkeyup'].empty?) ? WidgetList::Utils::fill({'<!--URL-->'=>searchUrl, '<!--TARGET-->' => @items['name'], '<!--FUNCTION_ALL-->' => @items['ajaxFunctionAll']}, @items['searchOnkeyup'] + '<!--FUNCTION_ALL-->') : ''
               }
 
               fillRansack = {}
