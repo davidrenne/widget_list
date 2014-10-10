@@ -367,11 +367,20 @@ Style a row based on the value of the column.
     *= require widget_list
     *= require widgets
 ```
-    Change application.js to:
+
+Change application.js to:
+
 ```ruby
     //= require widget_list
 ```
-### #2 - Run `bundle exec rails s` to have widget_list create config/widget-list.yml (by default a sqlite3 memory database is created)
+
+Compile the new assets:
+
+```
+rake assets:precompile
+```
+
+### #2 - Run `bundle exec rails s` to have widget_list create config/widget-list.yml which will point to your active record database.yml
 
     Configure your connection settings for your primary or secondary widget_list connections.
 

@@ -392,29 +392,29 @@ table.searchBox td.label
    padding:0px;
 }
 
-.btn.danger,
+.wl-btn.danger,
 .alert-message.danger,
-.btn.danger:hover,
+.wl-btn.danger:hover,
 .alert-message.danger:hover,
-.btn.error,
+.wl-btn.error,
 .alert-message.error,
-.btn.error:hover,
+.wl-btn.error:hover,
 .alert-message.error:hover,
-.btn.success,
+.wl-btn.success,
 .alert-message.success,
-.btn.success:hover,
+.wl-btn.success:hover,
 .alert-message.success:hover,
-.btn.info,
+.wl-btn.info,
 .alert-message.info,
-.btn.info:hover,
+.wl-btn.info:hover,
 .alert-message.info:hover
 {
   color: #ffffff;
 }
 
-.btn.danger,
+.wl-btn.danger,
 .alert-message.danger,
-.btn.error,
+.wl-btn.error,
 .alert-message.error
 {
   background-color: #c43c35;
@@ -432,7 +432,7 @@ table.searchBox td.label
   border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
 }
 
-.btn.success, .alert-message.success
+.wl-btn.success, .alert-message.success
 {
   background-color: #91b32b;
   background-repeat: repeat-x;
@@ -450,7 +450,7 @@ table.searchBox td.label
 }
 
 
-.btn.info, .alert-message.info
+.wl-btn.info, .alert-message.info
 {
   background-color: #339bb9;
   background-repeat: repeat-x;
@@ -467,7 +467,7 @@ table.searchBox td.label
   border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
 }
 
-a.btn
+a.wl-btn
 {
   cursor: pointer;
   display: inline-block;
@@ -502,7 +502,7 @@ a.btn
 }
 
 
-.btn:hover
+.wl-btn:hover
 {
   background-position: 0 -15px;
   color: #333;
@@ -510,7 +510,7 @@ a.btn
 }
 
 
-.btn.primary
+.wl-btn.primary
 {
   color: #fff;
   background-color: #0064cd;
@@ -528,14 +528,14 @@ a.btn
   border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
 }
 
-.btn:active
+.wl-btn:active
 {
   -webkit-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
   -moz-box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.btn.disabled
+.wl-btn.disabled
 {
   cursor: default;
   background-image: none;
@@ -550,7 +550,7 @@ a.btn
 }
 
 
-.btn[disabled]
+.wl-btn[disabled]
 {
   cursor: default;
   background-image: none;
@@ -564,7 +564,7 @@ a.btn
   box-shadow: none;
 }
 
-.btn.large
+.wl-btn.large
 {
   font-size: 16px;
   line-height: normal;
@@ -575,14 +575,14 @@ a.btn
 }
 
 
-.btn.small
+.wl-btn.small
 {
   padding: 4px 9px 4px;
   font-size: 11px;
   font-weight: normal !important;
 }
 
-button.btn::-moz-focus-inner, input[type=submit].btn::-moz-focus-inner
+button.wl-btn::-moz-focus-inner, input[type=submit].wl-btn::-moz-focus-inner
 {
   padding: 0;
   border: 0;
