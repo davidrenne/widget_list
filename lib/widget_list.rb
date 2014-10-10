@@ -1042,7 +1042,7 @@ module WidgetList
         controller = ($_REQUEST.key?('desiredController') ? $_REQUEST['desiredController'] :  $_REQUEST['controller'] )
 
         if $_REQUEST.key?('ajax')
-          model         = model_name.constantize.new
+          model         = model_name.constantize
           model.columns.keys.each { |field|
             fields[field] = field.gsub(/_/,' _').camelize
             all_fields[field] = field.gsub(/_/,' _').camelize
