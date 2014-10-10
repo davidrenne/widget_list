@@ -177,7 +177,7 @@ widget_list features and configurations primarily work by a single large hash pa
 
 `listDescription` - This adds a grey header box.  It is useful for describing the main query `default=''`
 
-`pageId` - Base path for requests (typically you never need to change this) `default=$_SERVER['PATH_INFO']`
+`pageId` - Base path for requests (typically you never need to change this) `default=$_SERVER['SCRIPT_NAME'] + $_SERVER['PATH_INFO']`
 
 `view` - A sub-select query to your database (ALWAYS ALIASED) `default=''`
 
