@@ -1043,10 +1043,10 @@ module WidgetList
 
         if $_REQUEST.key?('ajax')
           model         = model_name.constantize
-          model.columns.keys.each { |field|
-            fields[field] = field.gsub(/_/,' _').camelize
-            all_fields[field] = field.gsub(/_/,' _').camelize
-            fields_function[field] = 'CNT(' + field + ') or NVL(' + field + ') or TO_DATE(' + field + ') etc...'
+          model.columns.each { |field|
+            fields[field.name] = field.name.gsub(/_/,' _').camelize
+            all_fields[field.name] = field.name.gsub(/_/,' _').camelize
+            fields_function[field.name] = 'CNT(' + field.name + ') or NVL(' + field.name + ') or TO_DATE(' + field.name + ') etc...'
           }
           footer_buttons['Add New ' + model_name]            = {}
           footer_buttons['Add New ' + model_name]['url']     = '/' + controller + '/add/'
