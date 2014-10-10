@@ -1920,7 +1920,7 @@ module WidgetList
           'database'            => 'primary', #
           'title'               => '',
           'listDescription'     => '',
-          'pageId'              => $_SERVER['PATH_INFO'],
+          'pageId'              => $_SERVER['SCRIPT_NAME'] + $_SERVER['PATH_INFO'],
           'view'                => '',
           'data'                => {},
           'bindVars'            => [],
