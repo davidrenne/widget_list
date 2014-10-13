@@ -757,3 +757,8 @@ module WidgetList
     end
   end
 end
+
+# require 'widget_list/utils'
+# require 'widget_list/hash'
+# require 'widget_list/tpl'
+# puts WidgetList::Widgets.test_all
