@@ -107,7 +107,7 @@ module WidgetList
       #
       # Select box attributes
       #
-      items['attribs']   = {}
+      items['attribs']   = []
       items['size']      = 1
       items['disabled']  = false
       items['noDataMsg'] = 'No Data'
@@ -616,6 +616,7 @@ module WidgetList
         'name'       => '',
         'id'         => '',
         'url'        => '',
+        'attribs'    => [],
         'link'       => '',        #alias of url
         'href'       => '',        #alias of url
         'page'       => '',
@@ -690,6 +691,7 @@ module WidgetList
                                 '<!--BUTTON_ONCLICK-->'     => items['onclick'].gsub(/\"/,"'"),
                                 '<!--BUTTON_LABEL-->'       => items['label'],
                                 '<!--NAME-->'               => items['name'],
+                                '<!--ATTRS-->'              => items['attribs'].join(' '),
                                 '<!--ID-->'                 => items['id'],
                                 '<!--BUTTON_STYLE-->'       => items['style'],
                                 '<!--BUTTON_CLASS_INNER-->' => items['innerClass'],
