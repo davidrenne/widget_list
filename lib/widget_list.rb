@@ -3512,7 +3512,7 @@ module WidgetList
                 #
                 # Will build ?tagname=XXXX based on your hash passed to your page
                 #
-                buttonAttribs.deep_merge!({ 'args' => { tagName => @results[tag.upcase][j] } }) unless all_wildcard
+                buttonAttribs.deep_merge!({ 'args' => { tagName => @results[tag.upcase][j] } })
               end
             else
 
