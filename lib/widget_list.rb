@@ -3485,8 +3485,10 @@ module WidgetList
         function     = @items['linkFunction']
         parameters   = ''
         renderButton = true
-
-        page = buttonAttribs['page'].dup
+        page         = ''
+        if buttonAttribs.key?('page')
+          page = buttonAttribs['page'].dup
+        end
         if buttonAttribs.key?('tags')
           tags = buttonAttribs['tags'].dup
           all_wildcard = false
