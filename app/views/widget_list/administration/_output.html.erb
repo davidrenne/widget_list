@@ -498,7 +498,7 @@
     if(jQuery(obj).val() != '') {
       jQuery.post(jQuery('#widget_list_administration').attr('action'), 'ajax=1&model=' + jQuery(obj).val(), function(response)
       {
-        jQuery('#name').val(jQuery(obj).val().toLowerCase() + '_listing');
+        jQuery('#name,#desiredAction').val(jQuery(obj).val().toLowerCase() + '_listing');
         jQuery('#field_table').html(response['fields']);
         jQuery('#hidden_field_table').html(response['fields_hidden']);
         jQuery('#checkboxField').html(response['checked_fields']);
