@@ -1,3 +1,5 @@
+require 'cgi'
+
 module WidgetList
 
   class Utils
@@ -26,7 +28,7 @@ module WidgetList
         if v.class.name == 'Hash'
           q << {k => v}.to_params
         else
-          q << k.to_s + '=' + URI.encode(URI.decode(v.to_s))
+          q << k.to_s + '=' + CGI.escape(URI.decode(v.to_s))
         end
       }
       q.join('&')
