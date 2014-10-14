@@ -654,7 +654,7 @@ module WidgetList
       end
 
       if items['url'].empty? && !items['page'].empty?
-        items['url'] = WidgetList::Utils::build_url(items['page'], items['args'])
+        items['url'] = items['page']
       end
 
       if !items['href'].empty? && items['onclick'].empty?
