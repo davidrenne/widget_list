@@ -6,12 +6,14 @@ require 'widget_list/version'
 Gem::Specification.new do |gem|
 
   gem.name          = "widget_list"
+
+  gem.licenses      = ['MIT']
   
   gem.version       = WidgetList::VERSION
   
   gem.authors       = ["David Renne"]
   
-  gem.email         = ["message_me_on_github@dave.com"]
+  gem.email         = ["widgetlist@davidrenne.com"]
   
   gem.description   = %q{An Advanced and flexible ajax data grid. Supports several databases where data is pulled from either using Sequel ORM (optional even though is a dependency), Active Record Models or Raw SQL.}
   
