@@ -49,6 +49,9 @@
     }
 
     window.onbeforeunload = function (evt) {
+      if (isSubmitting) {
+        return;
+      }
       var message = 'Are you sure you want to abandon this widget_list implementation?  Doing so will lose all your work?';
       if (typeof evt == 'undefined') {
         evt = window.event;
@@ -57,9 +60,7 @@
       if (evt) {
         evt.returnValue = message;
       }
-      if (!isSubmitting) {
-        return message;
-      }
+      return message;
     }
 
   });
