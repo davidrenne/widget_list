@@ -15,17 +15,13 @@ Gem::Specification.new do |gem|
   
   gem.email         = ["widgetlist@davidrenne.com"]
   
-  gem.description   = %q{An Ajax data grid for Rails applications with Sequel SQL queries or Active Record relations.}
+  gem.description   = %q{Build interactive data tables in Rails from Sequel SQL queries or Active Record relations. widget_list handles sorting, search, pagination, Ajax updates, and CSV export. Configure columns in Ruby and add advanced filters with Ransack.}
   
-  gem.summary       = %q{Sortable, searchable, exportable data grids for Rails}
+  gem.summary       = %q{Rails data grids with Ajax search, sorting, pagination, and CSV export}
   gem.required_ruby_version = '>= 3.2'
   
   gem.homepage      = "https://github.com/davidrenne/widget_list"
   
-  #
-  # SEQUEL IS NOW OPTIONAL!! I am sure most people will be using ActiveRecord ORM
-  # I am including it as a dependency just because it is easier to pull it down and have it available
-  #
   gem.add_dependency('sequel', '5.109.0')
 
   gem.add_dependency('ransack', '5.0.2')

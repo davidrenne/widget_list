@@ -133,7 +133,9 @@ Open `http://127.0.0.1:3000/` for Sequel or `/ransack` for Active Record. Search
 
 ## Release
 
-`./checkin_gem.sh` validates and builds the gem, and runs the sibling Rails 8 example tests when present. Review and commit your changes on `main`. `./publish_gem.sh` checks that the tree is clean, builds the package, and publishes it to RubyGems.org. RubyGems may prompt for your MFA code; the gemspec marks MFA as required. No credential is stored in these scripts. Publishing is a separate, intentional step from committing.
+The RubyGems page takes its short summary and longer description from `gem.summary` and `gem.description` in [widget_list.gemspec](widget_list.gemspec). Edit those fields before building and publishing a new version; changing GitHub or the RubyGems web page does not update an already published gem version.
+
+`./checkin_gem.sh` validates and builds the gem, and runs the sibling Rails 8 example tests when present. Review and commit your changes on `main`. Sign in to the command-line publisher with `gem signin` if needed, using an API key with the `push_rubygem` scope. A RubyGems website session does not sign in the `gem` command. Then run `./publish_gem.sh`; it checks that the tree is clean, builds the package, and pushes it to RubyGems.org. RubyGems may prompt for MFA in the terminal or open a browser for WebAuthn. No credential is stored in these scripts. Publishing is a separate, intentional step from committing.
 
 See [RubyGems publishing](https://guides.rubygems.org/publishing/) and [MFA setup](https://guides.rubygems.org/setting-up-otp-mfa/) for account setup.
 
