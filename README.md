@@ -1,6 +1,6 @@
 # Widget List Gem
 
-`widget_list` renders sortable, searchable Rails data grids with Ajax paging and CSV export. Version >= 2.0.0 has been exercised with **Rails 8.1.4**, **Ruby 3.4.11**, **Sequel 5.109.0**, **Ransack 5.0.2**, and SQLite. The restored administration console is in the 2.0.1 source on `main`; publish 2.0.1 before installing it from RubyGems. Rails 8.1 requires Ruby 3.2 or newer. The Rails 3 era guide remains in [docs/legacy-readme.md](docs/legacy-readme.md) for reference.
+`widget_list` [gem](https://rubygems.org/gems/widget_list) renders sortable, searchable Rails data grids with Ajax paging and CSV export. Version >= 2.0.0 has been exercised with **Rails 8.1.4**, **Ruby 3.4.11**, **Sequel 5.109.0**, **Ransack 5.0.2**, and SQLite. The restored administration console is in the 2.0.1 source on `main`; publish 2.0.1 before installing it from RubyGems. Rails 8.1 requires Ruby 3.2 or newer. The Rails 3 era guide remains in [docs/legacy-readme.md](docs/legacy-readme.md) for reference.
 
 The runnable [widget_list_example_rails8](https://github.com/davidrenne/widget_list_example_rails8/) contains both a Sequel SQL list and a Ransack/Active Record list. Its README and single commit diff show every caller change needed in a fresh Rails 8 app.
 
