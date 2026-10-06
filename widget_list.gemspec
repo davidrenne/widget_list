@@ -13,7 +13,7 @@ Gem::Specification.new do |gem|
   
   gem.authors       = ["David Renne"]
   
-  gem.email         = ["widgetlist@davidrenne.com"]
+  gem.email         = ["dnxglya4@duck.com"]
   
   gem.description   = %q{Build interactive data tables in Rails from Sequel SQL queries or Active Record relations. widget_list handles sorting, search, pagination, Ajax updates, and CSV export. Configure columns in Ruby and add advanced filters with Ransack.}
   
@@ -23,7 +23,6 @@ Gem::Specification.new do |gem|
   gem.homepage      = "https://github.com/davidrenne/widget_list"
   
   gem.add_dependency('sequel', '5.109.0')
-
   gem.add_dependency('ransack', '5.0.2')
   gem.add_dependency('csv', '~> 3.3')
   gem.metadata['rubygems_mfa_required'] = 'true'
