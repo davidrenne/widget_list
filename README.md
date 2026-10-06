@@ -1,6 +1,6 @@
-# widget_list
+# Widget List Gem
 
-`widget_list` renders sortable, searchable Rails data grids with Ajax paging and CSV export. Version 2.0.0 has been exercised with **Rails 8.1.4**, **Ruby 3.4.11**, **Sequel 5.109.0**, **Ransack 5.0.2**, and SQLite. The restored administration console is in the 2.0.1 source on `main`; publish 2.0.1 before installing it from RubyGems. Rails 8.1 requires Ruby 3.2 or newer. The Rails 3 era guide remains in [docs/legacy-readme.md](docs/legacy-readme.md) for reference.
+`widget_list` renders sortable, searchable Rails data grids with Ajax paging and CSV export. Version >= 2.0.0 has been exercised with **Rails 8.1.4**, **Ruby 3.4.11**, **Sequel 5.109.0**, **Ransack 5.0.2**, and SQLite. The restored administration console is in the 2.0.1 source on `main`; publish 2.0.1 before installing it from RubyGems. Rails 8.1 requires Ruby 3.2 or newer. The Rails 3 era guide remains in [docs/legacy-readme.md](docs/legacy-readme.md) for reference.
 
 The runnable [widget_list_example_rails8](https://github.com/davidrenne/widget_list_example_rails8/) contains both a Sequel SQL list and a Ransack/Active Record list. Its README and single commit diff show every caller change needed in a fresh Rails 8 app.
 
@@ -8,7 +8,11 @@ The runnable [widget_list_example_rails8](https://github.com/davidrenne/widget_l
 
 [![Play the original widget_list demo](docs/widget-list-demo-thumbnail.png)](https://www.youtube.com/watch?v=A6mZa8Ge2Rk)
 
-This video shows the original 1.x interface. For the Rails 8 integration, use the current example app below.
+## Screenshot Latest Theme
+
+![The AI theme showing a Sequel inventory grid in the Rails 8 example](docs/screenshots/theme_ai_rails8.png)
+
+The [AI theme](https://github.com/davidrenne/widget_list_theme_ai) gives `widget_list` a dark navy canvas, crisp typography, and cyan-to-violet accents. This screenshot shows the [Rails 8 example](https://github.com/davidrenne/widget_list_example_rails8/) with a live Sequel inventory grid, search, CSV export, and links to the Ransack grid and administration console. The theme styles the grid and controls; the example app provides the surrounding header and navigation.
 
 ## Add it to a Rails 8 app
 
@@ -53,16 +57,16 @@ Load this script in the layout's `<head>` without `defer`: the administration wi
 
 `widget_list` lets a theme provide default colors, type, borders, and button styles through `WidgetListThemeHelper::ThemeDefaults`. Settings passed to an individual `WidgetList.go!` call override theme defaults. A theme can also ship a stylesheet for finer control.
 
-| Theme | Appearance | Compatibility |
-| --- | --- | --- |
-| [AI theme](https://github.com/davidrenne/widget_list_theme_ai) | Midnight surfaces, cyan and violet accents, modern grid controls | Built for widget_list 2.x and Rails 8 |
-| [Cruddy](https://github.com/davidrenne/widget_list_theme_cruddy) | Warm, textured classic style | Legacy 1.x theme; requires migration for 2.x |
-| [Blue Sky Basin](https://github.com/davidrenne/widget_list_theme_blue_sky_basin) | Blue mountain inspired palette | Legacy 1.x theme; requires migration for 2.x |
+| Theme                                                                            | Appearance                                                       | Compatibility                                |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------- |
+| [AI theme](https://github.com/davidrenne/widget_list_theme_ai)                   | Midnight surfaces, cyan and violet accents, modern grid controls | Built for widget_list 2.x and Rails 8        |
+| [Cruddy](https://github.com/davidrenne/widget_list_theme_cruddy)                 | Warm, textured classic style                                     | Legacy 1.x theme; requires migration for 2.x |
+| [Blue Sky Basin](https://github.com/davidrenne/widget_list_theme_blue_sky_basin) | Blue mountain inspired palette                                   | Legacy 1.x theme; requires migration for 2.x |
 
-The AI theme is under development. To try it in your own Rails app, check out `widget_list_theme_ai` next to the app and add this line to its Gemfile:
+The AI theme is ready for use, to add update this line to its Gemfile:
 
 ```ruby
-gem 'widget_list_theme_ai', path: '../widget_list_theme_ai'
+gem 'widget_list_theme_ai', '0.1.0'
 ```
 
 Then run `bundle install`, add `//= link widget_list_theme_ai.css` to `app/assets/config/manifest.js`, and load `widget_list_theme_ai` after `widget_list` and `widgets` in the layout's `stylesheet_link_tag`. The theme uses a local system font stack and makes no external font request. See the [theme README on the preview branch](https://github.com/davidrenne/widget_list_theme_ai/tree/codex/ai-theme) for the complete setup and the example's `codex/ai-theme-example` branch for a working caller. That branch also uses the local core checkout for a pagination fix pending release.
@@ -184,16 +188,16 @@ If `config/widget-list.yml` points `primary` at Sequel and `secondary` at Active
 
 These are the original screenshots from the Rails 3 era. The Rails 8 wizard uses the same steps, while its generated code and preview have been updated for Rails 8 and Ransack 5.
 
-| Start with a model | Configure search and export |
-| --- | --- |
+| Start with a model                                                   | Configure search and export                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | ![Original administration start screen](docs/screenshots/admin1.jpg) | ![Original search and export settings](docs/screenshots/admin2.jpg) |
 
-| Select fields | Configure row buttons |
-| --- | --- |
+| Select fields                                            | Configure row buttons                                |
+| -------------------------------------------------------- | ---------------------------------------------------- |
 | ![Original field selection](docs/screenshots/admin3.jpg) | ![Original row buttons](docs/screenshots/admin4.jpg) |
 
-| Preview the list | Generate controller code |
-| --- | --- |
+| Preview the list                                      | Generate controller code                                |
+| ----------------------------------------------------- | ------------------------------------------------------- |
 | ![Original list preview](docs/screenshots/admin5.png) | ![Original generated code](docs/screenshots/admin6.png) |
 
 <details>
@@ -211,7 +215,7 @@ These are the original screenshots from the Rails 3 era. The Rails 8 wizard uses
 
 ## Release
 
-Version 2.0.0 is published; the administration console fixes are prepared as 2.0.1 on `main` and have not been published. The RubyGems page takes its short summary and longer description from `gem.summary` and `gem.description` in [widget_list.gemspec](widget_list.gemspec). To change them in a future release, bump `WidgetList::VERSION` in `lib/widget_list/version.rb` and publish a new version; published versions cannot be overwritten.
+Version 2.0.2 is published; the administration console fixes are ready for consumption. The RubyGems page takes its short summary and longer description from `gem.summary` and `gem.description` in [widget_list.gemspec](widget_list.gemspec). To change them in a future release, bump `WidgetList::VERSION` in `lib/widget_list/version.rb` and publish a new version; published versions cannot be overwritten.
 
 `./checkin_gem.sh` validates and builds the gem, and runs the sibling local-source Rails 8 example tests when present. Review and commit your changes on `main`. Sign in to the command-line publisher with `gem signin` if needed, using an API key with the `push_rubygem` scope. A RubyGems website session does not sign in the `gem` command. Then run `./publish_gem.sh`; it checks that the tree is clean, builds the package, and pushes it to RubyGems.org. RubyGems may prompt for MFA in the terminal or open a browser for WebAuthn. No credential is stored in these scripts. Publishing is a separate, intentional step from committing.
 
