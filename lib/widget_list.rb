@@ -438,16 +438,11 @@ module WidgetList
         :column_alias => '#{escape_code field[1]['column_to_show']}',
         :primary_database => #{page_config['primaryDatabase'] == '1' ? 'true' : 'false'}
       )"
-          if $is_mongo
-            code = "filterValue"
-          else
-            code = "#{page_config['view']}.sanitize(filterValue)"
-          end
           case_statements += <<-EOD
 
         when '#{field[0]}'
           list_parms['filter']          << " #{field[1]['data_to_pass_from_view'].gsub(/_linked/,'')} = ? "
-          list_parms['bindVars']        << #{code}
+          list_parms['bindVars']        << filterValue
           list_parms['listDescription']  = drillDownBackLink + ' Filtered by #{escape_code field[1]['data_to_pass_from_view'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
           EOD
         }
@@ -855,7 +850,11 @@ module WidgetList
         when 'html'
           @output = output
         when 'json'
-          render json: JSON.parse(output)
+          if WidgetList::RequestContext.request.key?('iframe')
+            @output = output
+          else
+            render json: JSON.parse(output)
+          end
         when 'export'
           send_data output, filename: list_parms['name'] + '.csv', type: 'text/csv'
       end
