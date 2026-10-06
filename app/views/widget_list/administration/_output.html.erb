@@ -39,6 +39,10 @@
   var all = '.init,.start,.fields,.rows,.search,.footer,.misc_submit';
   var all_btns = '#start,#fields,#rows,#search,#footer,#misc_submit';
   jQuery(document).ready(function () {
+    PopulateColumnSelects();
+    jQuery(document).on('change', 'select.widget-list-column-select', function () {
+      jQuery(this).attr('data-selected', this.value);
+    });
     if (jQuery('#view').val() != '') {
       jQuery(all_btns).removeClass('disabled');
     }
@@ -138,31 +142,60 @@
     ClickTab('.misc_submit',arguments.callee.name);
   }
 
+  function SetColumnValue(control, value) {
+    var field = jQuery(control);
+    if (field.is('select') && !field.find('option').filter(function () { return this.value == value; }).length) {
+      field.append(jQuery('<option>').val(value).text(value));
+    }
+    field.val(value);
+    field.attr(field.is('select') ? 'data-selected' : 'value', value);
+  }
+
+  function PopulateColumnSelects() {
+    var columns = jQuery('#checkboxField option').map(function () { return this.value; }).get().filter(Boolean);
+    if (!columns.length) return;
+
+    jQuery('select.widget-list-column-select').each(function () {
+      var field = jQuery(this);
+      var selected = field.val() || field.attr('data-selected') || '';
+      if (['column_name', 'col_name', 'field_name'].indexOf(selected) !== -1) selected = '';
+
+      field.empty().append(jQuery('<option>').val('').text(field.hasClass('group_by_keys') ? 'All items / select a column' : 'Select a column'));
+      columns.forEach(function (column) {
+        field.append(jQuery('<option>').val(column).text(column));
+      });
+      if (selected && columns.indexOf(selected) === -1) {
+        field.append(jQuery('<option>').val(selected).text(selected + ' (saved value)'));
+      }
+      SetColumnValue(field, selected);
+    });
+  }
+
   function ReplaceColumnsToLinked(obj) {
+    var isPassColumn = jQuery(obj).hasClass('drill_downs_data_to_pass_from_view');
+    var displayColumn = jQuery(obj).closest('tr').find('.drill_downs_column_to_show').val() || '';
+    if (isPassColumn && displayColumn.endsWith('_linked')) return;
     found = false;
-    var className = obj.className;
     jQuery(obj).css('background-color','white');
     jQuery('.fields_keys, .fields_hidden_keys, .fields_function_keys').each(
       function(key, value) {
         if(jQuery(value).val() == jQuery(obj).val().trim() && jQuery(obj).val().search(/_linked/i) == -1) {
           found = true;
           var id_original = jQuery(obj).val().trim();
-          jQuery(value).val(jQuery(obj).val().trim() + '_linked');
-          jQuery(obj).val(jQuery(obj).val().trim() + '_linked');
-          jQuery(obj).attr('value',jQuery(this).val().trim());
-          if (className == 'drill_downs_data_to_pass_from_view') {
+          SetColumnValue(value, jQuery(obj).val().trim() + '_linked');
+          SetColumnValue(obj, isPassColumn ? id_original : id_original + '_linked');
+          if (isPassColumn) {
             jQuery('.drill_downs_column_to_show[value="col_name"]').each(
               function(key1, value1) {
-                jQuery(value1).val(jQuery(obj).val().trim());
-                jQuery(value1).attr('value',jQuery(value1).val().trim());
+                jQuery(value1).val(id_original + '_linked');
+                jQuery(value1).attr('value',id_original + '_linked');
                 return false;
               }
             )
           } else {
-            jQuery('.drill_downs_data_to_pass_from_view[value="col_name"]').each(
+            jQuery('.drill_downs_data_to_pass_from_view').filter(function () { return !this.value || this.value == 'col_name'; }).each(
               function(key1, value1) {
-                jQuery(value1).val(jQuery(obj).val().trim());
-                jQuery(value1).attr('value',jQuery(value1).val().trim());
+                SetColumnValue(value1, id_original);
                 return false;
               }
             )
@@ -179,10 +212,9 @@
 
           jQuery('#showHidden').attr('checked',true);
           AddHiddenField();
-          jQuery('.fields_hidden_keys[value=""]').each(
+          jQuery('.fields_hidden_keys').filter(function () { return !this.value; }).each(
               function(key1, value1) {
-                jQuery(value1).val(id_original);
-                jQuery(value1).attr('value',id_original);
+                SetColumnValue(value1, id_original);
                 return false;
               }
           );
@@ -197,6 +229,7 @@
   }
 
   function InvalidField(obj) {
+    if (!jQuery(obj).val()) return;
     found = false;
     jQuery(obj).css('background-color','white');
     jQuery('.fields_keys, .fields_hidden_keys, .fields_function_keys').each(
@@ -327,6 +360,7 @@
 
   function AddGroupBy() {
     jQuery('#grouping_table').html(jQuery('#grouping_table').html() + jQuery('#default_grouping_template').html());
+    PopulateColumnSelects();
   }
 
   function AddButton() {
@@ -336,6 +370,7 @@
 
   function AddDrillDown() {
     jQuery('#drill_down_table').html(jQuery('#drill_down_table').html() + jQuery('#default_drill_down_template').html());
+    PopulateColumnSelects();
   }
 
   function AddFooterButton() {
@@ -345,10 +380,12 @@
 
   function AddHiddenField() {
     jQuery('#hidden_field_table').html(jQuery('#hidden_field_table').html() + jQuery('#default_hidden_field_template').html());
+    PopulateColumnSelects();
   }
 
   function AddFieldFunction() {
     jQuery('#field_function_table').html(jQuery('#field_function_table').html() + jQuery('#default_field_function_template').html());
+    PopulateColumnSelects();
   }
 
   function FakeCheck(obj) {
@@ -357,11 +394,11 @@
 
   function RemoveField(obj) {
     var isHiddenRemoval = false;
-    if (jQuery(obj).parent().parent().find('input.fields_hidden_keys').length > 0) {
+    if (jQuery(obj).parent().parent().find('.fields_hidden_keys').length > 0) {
       isHiddenRemoval = true;
     }
     var isFunctionRemoval = false;
-    if (jQuery(obj).parent().parent().find('input.fields_function_keys').length > 0) {
+    if (jQuery(obj).parent().parent().find('.fields_function_keys').length > 0) {
       isFunctionRemoval = true;
     }
 
@@ -403,10 +440,9 @@
     }
     AddHiddenField();
     jQuery('.hidden_fields_dependent').show();
-    jQuery('.fields_hidden_keys[value=""]').each(
+    jQuery('.fields_hidden_keys').filter(function () { return !this.value; }).each(
         function(key1, value1) {
-          jQuery(value1).val(field_name);
-          jQuery(value1).attr('value',field_name);
+          SetColumnValue(value1, field_name);
           return false;
         }
     );
@@ -436,17 +472,16 @@
     if (jQuery('#fieldFunctionOn').not(':checked')) {
       jQuery('#fieldFunctionOn').attr('checked',true);
     }
-    var objExists = '.fields_function_keys[value="' + field_name + '"]';
-    if (jQuery(objExists).length > 0) {
+    var objExists = jQuery('.fields_function_keys').filter(function () { return this.value == field_name; });
+    if (objExists.length > 0) {
       alert('Field Function for ' + field_name + ' already exists, please modify');
       jQuery(objExists).css('background-color','pink');
     } else {
       AddFieldFunction();
       jQuery('.function_dependent').show();
-      jQuery('.fields_function_keys[value=""]').each(
+      jQuery('.fields_function_keys').filter(function () { return !this.value; }).each(
           function(key1, value1) {
-            jQuery(value1).val(field_name);
-            jQuery(value1).attr('value',field_name);
+            SetColumnValue(value1, field_name);
             return false;
           }
       );
@@ -463,7 +498,7 @@
 
   function ShowField(obj) {
 
-    var field_name = jQuery(obj).parent().parent().find('input.fields_hidden_keys').val();
+    var field_name = jQuery(obj).parent().parent().find('.fields_hidden_keys').val();
     RemoveField(obj);
     AddField();
     jQuery('.fields_keys[value=""]').each(
@@ -501,6 +536,7 @@
         jQuery('#checkboxField').html(response['checked_fields']);
         jQuery('#footer_table').html(response['footer_buttons']);
         jQuery('#grouping_table').html(response['group_by']);
+        PopulateColumnSelects();
         SaveChanges();
         if (jQuery(obj).val() != '') {
           jQuery(all_btns).removeClass('disabled');

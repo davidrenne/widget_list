@@ -134,7 +134,7 @@ Open `http://127.0.0.1:3000/` for Sequel or `/ransack` for Active Record. Search
 
 ## Administration console
 
-The original administration wizard is restored in the [Rails 8 migration example](https://github.com/davidrenne/widget_list_example). Open `/administration` there to choose an Active Record model and fields, configure sorting, search, row buttons and export, preview the list, then generate starter controller code. The example routes it only in development and test. It uses the sibling `widget_list` checkout, so the console fixes require the 2.0.1 source until that version is published.
+The original administration wizard is restored in the [Rails 8 migration example](https://github.com/davidrenne/widget_list_example). Open `/administration` there to choose an Active Record model and fields, configure sorting, search, row buttons and export, preview the list, then generate starter controller code. Hidden fields, field functions, grouping fields, and the drill-down value column use dropdowns populated from the selected model's table columns. The drill-down display column remains editable for custom expressions. The example routes the wizard only in development and test. It uses the sibling `widget_list` checkout, so the console fixes require the 2.0.1 source until that version is published.
 
 To add the wizard to your own app, first complete the asset setup above. Then add a GET/POST route, a controller action, and a view:
 

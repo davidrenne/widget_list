@@ -193,7 +193,8 @@ module WidgetList
       @fieldFill['<!--DESC-->']                 = 'Desc'
       @fieldFill['<!--DISABLED-->']             = 'disabled'
       @fieldFill['<!--TR_STYLE-->']             = ''
-      @fill['<!--HIDDEN_FIELD_TEMPLATE-->']     = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+      @fieldFill['<!--ONBLUR1-->']              = ''
+      @fill['<!--HIDDEN_FIELD_TEMPLATE-->']     = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row', :locals => { :key_select => true }) )
       @fill['<!--ADD_HIDDEN_FIELD_BUTTON-->']   = WidgetList::Widgets::widget_button('Add Hidden Field',  {'onclick' => "AddHiddenField();", 'innerClass' => "success" } )
       @fill['<!--ALL_HIDDEN_FIELDS-->']         = (!@isEditing) ? '' : page_json['fields_hidden']
 
@@ -208,7 +209,8 @@ module WidgetList
       @fieldFill['<!--DESC-->']                 = 'Database Function'
       @fieldFill['<!--DISABLED-->']             = ''
       @fieldFill['<!--TR_STYLE-->']             = ''
-      @fill['<!--FIELD_FUNCTION_TEMPLATE-->']   = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+      @fieldFill['<!--ONBLUR1-->']              = ''
+      @fill['<!--FIELD_FUNCTION_TEMPLATE-->']   = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row', :locals => { :key_select => true }) )
       @fill['<!--ADD_FIELD_FUNCTION_BUTTON-->'] = WidgetList::Widgets::widget_button('Add Function',  {'onclick' => "AddFieldFunction();", 'innerClass' => "success" } )
       @fill['<!--ALL_FIELD_FUNCTIONS-->']       = (!@isEditing) ? '' : page_json['fields_function']
 
@@ -266,7 +268,7 @@ module WidgetList
       @fieldFill['<!--COLOR_HELP-->']           = ':column_to_show should either be the column or possibly a formatted column like CONCAT or COUNT'
       @fieldFill['<!--SUBJECT-->']              = 'drill_downs'
 
-      @fill['<!--THE_DRILL_DOWN_TEMPLATE-->']   = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
+      @fill['<!--THE_DRILL_DOWN_TEMPLATE-->']   = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row', :locals => { :middle_column_select => true }) )
       @fill['<!--ADD_DRILL_DOWN_BUTTON-->']     = WidgetList::Widgets::widget_button('Add New Drill Down',  {'onclick' => "AddDrillDown();", 'innerClass' => "success" } )
       @fill['<!--ALL_DRILL_DOWNS-->']           = page_json['drill_downs']
 
@@ -283,7 +285,7 @@ module WidgetList
 
       @fieldFill = {}
       @fieldFill['<!--REMOVE_FIELD_BUTTON-->']  = remove_field_button()
-      @fieldFill['<!--FIELD_VALUE-->']          = 'column_name'
+      @fieldFill['<!--FIELD_VALUE-->']          = ''
       @fieldFill['<!--FIELD_DESC-->']           = 'User Desc'
       @fieldFill['<!--SUBJECT-->']              = 'group_by'
       @fieldFill['<!--FIELD-->']                = 'Field'
@@ -291,7 +293,7 @@ module WidgetList
       @fieldFill['<!--DISABLED-->']             = ''
       @fieldFill['<!--ONBLUR1-->']              = 'InvalidField(this)'
       @fieldFill['<!--TR_STYLE-->']             = ''
-      @fill['<!--DEFAULT_GROUPING-->']          = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+      @fill['<!--DEFAULT_GROUPING-->']          = WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row', :locals => { :key_select => true }) )
       @fill['<!--ADD_GROUP_BY_BUTTON-->']       = WidgetList::Widgets::widget_button('Add New Group By',  {'onclick' => "AddGroupBy();", 'innerClass' => "success" } )
       @fill['<!--GROUPING_ITEMS-->']            = (!@isEditing) ? '' : page_json['group_by']
 
@@ -420,6 +422,7 @@ module WidgetList
       list_parms['searchFieldsOut']#{add_pointer(field[1]['column_to_show'],9)} true"
 
           column_to_show = "'#{field[1]['column_to_show'].gsub(/_linked/,'')}'"
+          data_to_pass = "'#{field[1]['data_to_pass_from_view'].gsub(/_linked/,'')}'"
           if using_grouping
             if database_type == 'oracle'
               column_to_show = "groupByFilter == 'none' ? '#{escape_code field[1]['column_to_show'].gsub(/_linked/,'')}' : 'MAX(#{escape_code field[1]['column_to_show'].gsub(/_linked/,'')})'"
@@ -430,7 +433,7 @@ module WidgetList
       list_parms['fieldFunction']#{add_pointer(field[1]['column_to_show'],7)} WidgetList::List::build_drill_down(
         :list_id => list_parms['name'],
         :drill_down_name => '#{escape_code field[0]}',
-        :data_to_pass_from_view => #{column_to_show},
+        :data_to_pass_from_view => #{data_to_pass},
         :column_to_show => #{column_to_show},
         :column_alias => '#{escape_code field[1]['column_to_show']}',
         :primary_database => #{page_config['primaryDatabase'] == '1' ? 'true' : 'false'}
@@ -443,9 +446,9 @@ module WidgetList
           case_statements += <<-EOD
 
         when '#{field[0]}'
-          list_parms['filter']          << " #{field[1]['column_to_show'].gsub(/_linked/,'')} = ? "
+          list_parms['filter']          << " #{field[1]['data_to_pass_from_view'].gsub(/_linked/,'')} = ? "
           list_parms['bindVars']        << #{code}
-          list_parms['listDescription']  = drillDownBackLink + ' Filtered by #{escape_code field[1]['column_to_show'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
+          list_parms['listDescription']  = drillDownBackLink + ' Filtered by #{escape_code field[1]['data_to_pass_from_view'].gsub(/_linked/,'').camelize} (' + filterValue + ')'
           EOD
         }
 
@@ -1040,7 +1043,6 @@ module WidgetList
         buttons['Edit']['class']     = 'info'
         if WidgetList::RequestContext.request.key?('ajax')
           group_by['']               = 'All ' + model_name + 's'
-          group_by['field_name']     = 'This will group by field_name and show Count'
           buttons['Delete']['url']   = '/' + controller + '/delete/' + fields.keys.first + '/'
           buttons['Edit']['url']     = '/' + controller + '/edit/' + fields.keys.first + '/'
         end
@@ -1149,7 +1151,8 @@ module WidgetList
         @fieldFill['<!--FIELD-->']               = 'Field'
         @fieldFill['<!--DISABLED-->']            = 'disabled'
         @fieldFill['<!--TR_STYLE-->']            = ''
-        @response['fields_hidden'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+        @fieldFill['<!--ONBLUR1-->'] = ''
+        @response['fields_hidden'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row', :locals => { :key_select => true }) )
       }
 
       group_by.each { |field,description|
@@ -1164,7 +1167,7 @@ module WidgetList
         @fieldFill['<!--DISABLED-->']             = ''
         @fieldFill['<!--ONBLUR1-->']              = 'InvalidField(this)'
         @fieldFill['<!--TR_STYLE-->']            = ''
-        @response['group_by'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+        @response['group_by'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row', :locals => { :key_select => true }) )
       }
 
       fields_function.each { |field,description|
@@ -1177,7 +1180,8 @@ module WidgetList
         @fieldFill['<!--FIELD-->']               = 'Field'
         @fieldFill['<!--DISABLED-->']            = ''
         @fieldFill['<!--TR_STYLE-->']            = ''
-        @response['fields_function'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row') )
+        @fieldFill['<!--ONBLUR1-->'] = ''
+        @response['fields_function'] += WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/field_row', :locals => { :key_select => true }) )
       }
 
       buttons.each { |field|
@@ -1227,7 +1231,7 @@ module WidgetList
         @fieldFill['<!--COLOR_HELP-->']           = ':column_to_show should either be the column or possibly a formatted column like CONCAT or COUNT'
         @fieldFill['<!--SUBJECT-->']              = 'drill_downs'
 
-        @response['drill_downs']                     +=  WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
+        @response['drill_downs']                     +=  WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row', :locals => { :middle_column_select => true }) )
       }
 
       footer_buttons.each { |field|
@@ -3399,7 +3403,13 @@ module WidgetList
       if WidgetList::List.get_db_type(items[:primary_database]) == 'oracle'
         link = %[q'[<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}("#{items[:drill_down_name]}", ListDrillDownGetRowValue(this) ,"#{items[:list_id]}"#{items[:extra_js_func_params]});#{items[:extra_function]}'>]' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}q'[</a><script class='val-db' type='text'>]' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])} q'[</script>]' #{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
       else
-        if WidgetList::List.get_db_type(items[:primary_database]) == 'postgres'
+        if WidgetList::List.get_db_type(items[:primary_database]) == 'sqlite'
+          sql_literal = ->(value) { "'#{value.gsub("'", "''")}'" }
+          prefix = %(<a style="cursor:pointer;color:#{items[:link_color]};" class="#{items[:column_alias]}_drill#{items[:column_class]}" onclick="#{items[:js_function_name]}('#{items[:drill_down_name]}', ListDrillDownGetRowValue(this) ,'#{items[:list_id]}'#{items[:extra_js_func_params]});#{items[:extra_function]}">)
+          middle = '</a><script class="val-db" type="text">'
+          suffix = '</script>'
+          link = "#{sql_literal.call(prefix)} || #{items[:column_to_show]} || #{sql_literal.call(middle)} || #{items[:data_to_pass_from_view]} || #{sql_literal.call(suffix)}#{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]}" : ''}"
+        elsif WidgetList::List.get_db_type(items[:primary_database]) == 'postgres'
           link = %['<a style="cursor:pointer;color:#{items[:link_color]};" class="#{items[:column_alias]}_drill#{items[:column_class]}" onclick="#{items[:js_function_name]}(''#{items[:drill_down_name]}'', ListDrillDownGetRowValue(this) ,''#{items[:list_id]}''#{items[:extra_js_func_params]});#{items[:extra_function]}">"' #{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}'</a><script class="val-db" type="text">' #{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])}'</script>' #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
         else
           link = %[#{WidgetList::List::concat_inner(items[:primary_database])}"<a style='cursor:pointer;color:#{items[:link_color]};' class='#{items[:column_alias]}_drill#{items[:column_class]}' onclick='#{items[:js_function_name]}(#{WidgetList::List::double_quote(items[:primary_database])}#{items[:drill_down_name]}#{WidgetList::List::double_quote(items[:primary_database])}, ListDrillDownGetRowValue(this) ,#{WidgetList::List::double_quote(items[:primary_database])}#{items[:list_id]}#{WidgetList::List::double_quote(items[:primary_database])}#{items[:extra_js_func_params]});#{items[:extra_function]}'>"#{WidgetList::List::concat_string(items[:primary_database])}#{items[:column_to_show]}#{WidgetList::List::concat_string(items[:primary_database])}"</a><script class='val-db' type='text'>"#{WidgetList::List::concat_string(items[:primary_database])} #{items[:data_to_pass_from_view]} #{WidgetList::List::concat_string(items[:primary_database])}"</script>"#{WidgetList::List::concat_outer(items[:primary_database])} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}]
