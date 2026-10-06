@@ -1819,7 +1819,7 @@ module WidgetList
           @items['LIST_SEQUENCE'] = 1
         end
 
-        if @items['LIST_SEQUENCE'].class.name == 'Fixnum' && @items['LIST_SEQUENCE'] > 0
+        if @items['LIST_SEQUENCE'].is_a?(Integer) && @items['LIST_SEQUENCE'] > 0
           @sequence               = @items['LIST_SEQUENCE'].to_i
         end
 

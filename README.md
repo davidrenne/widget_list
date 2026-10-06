@@ -49,6 +49,24 @@ Load the assets in the application layout's `<head>`:
 
 Load this script in the layout's `<head>` without `defer`: the administration wizard's inline script needs jQuery as it is parsed. The gem resolves its image URLs through Sprockets when compiling CSS. No manual image copy or static middleware is needed. An app using the default Rails 8 Propshaft pipeline should replace `propshaft` with `sprockets-rails` for this integration. Run `bin/rails assets:precompile` to check production assets.
 
+## Themes
+
+`widget_list` lets a theme provide default colors, type, borders, and button styles through `WidgetListThemeHelper::ThemeDefaults`. Settings passed to an individual `WidgetList.go!` call override theme defaults. A theme can also ship a stylesheet for finer control.
+
+| Theme | Appearance | Compatibility |
+| --- | --- | --- |
+| [AI theme](https://github.com/davidrenne/widget_list_theme_ai) | Midnight surfaces, cyan and violet accents, modern grid controls | Built for widget_list 2.x and Rails 8 |
+| [Cruddy](https://github.com/davidrenne/widget_list_theme_cruddy) | Warm, textured classic style | Legacy 1.x theme; requires migration for 2.x |
+| [Blue Sky Basin](https://github.com/davidrenne/widget_list_theme_blue_sky_basin) | Blue mountain inspired palette | Legacy 1.x theme; requires migration for 2.x |
+
+The AI theme is under development. To try it in your own Rails app, check out `widget_list_theme_ai` next to the app and add this line to its Gemfile:
+
+```ruby
+gem 'widget_list_theme_ai', path: '../widget_list_theme_ai'
+```
+
+Then run `bundle install`, add `//= link widget_list_theme_ai.css` to `app/assets/config/manifest.js`, and load `widget_list_theme_ai` after `widget_list` and `widgets` in the layout's `stylesheet_link_tag`. The theme uses a local system font stack and makes no external font request. See the [theme README](https://github.com/davidrenne/widget_list_theme_ai#readme) for the complete setup and the example's `codex/ai-theme-example` branch for a working caller. That branch also uses the local core checkout for a pagination fix pending release.
+
 ## Choose a database source
 
 **Active Record only:** `config/widget-list.yml` is optional. The gem uses the current Rails environment's Active Record connection as its primary source. Pass an `ActiveRecord::Relation` as `list['view']`.
