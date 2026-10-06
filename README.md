@@ -65,7 +65,7 @@ The AI theme is under development. To try it in your own Rails app, check out `w
 gem 'widget_list_theme_ai', path: '../widget_list_theme_ai'
 ```
 
-Then run `bundle install`, add `//= link widget_list_theme_ai.css` to `app/assets/config/manifest.js`, and load `widget_list_theme_ai` after `widget_list` and `widgets` in the layout's `stylesheet_link_tag`. The theme uses a local system font stack and makes no external font request. See the [theme README](https://github.com/davidrenne/widget_list_theme_ai#readme) for the complete setup and the example's `codex/ai-theme-example` branch for a working caller. That branch also uses the local core checkout for a pagination fix pending release.
+Then run `bundle install`, add `//= link widget_list_theme_ai.css` to `app/assets/config/manifest.js`, and load `widget_list_theme_ai` after `widget_list` and `widgets` in the layout's `stylesheet_link_tag`. The theme uses a local system font stack and makes no external font request. See the [theme README on the preview branch](https://github.com/davidrenne/widget_list_theme_ai/tree/codex/ai-theme) for the complete setup and the example's `codex/ai-theme-example` branch for a working caller. That branch also uses the local core checkout for a pagination fix pending release.
 
 ## Choose a database source
 
