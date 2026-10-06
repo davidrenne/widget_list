@@ -4,6 +4,12 @@
 
 The runnable [widget_list_example_rails8](https://github.com/davidrenne/widget_list_example_rails8/) contains both a Sequel SQL list and a Ransack/Active Record list. Its README and single commit diff show every caller change needed in a fresh Rails 8 app.
 
+## Video demo
+
+[![Play the original widget_list demo](docs/widget-list-demo-thumbnail.png)](https://www.youtube.com/watch?v=A6mZa8Ge2Rk)
+
+This video shows the original 1.x interface. For the Rails 8 integration, use the current example app below.
+
 ## Add it to a Rails 8 app
 
 `widget_list` uses jQuery and Sprockets assets. In your Gemfile:
@@ -12,12 +18,6 @@ The runnable [widget_list_example_rails8](https://github.com/davidrenne/widget_l
 gem 'sprockets-rails'
 gem 'jquery-rails'
 gem 'widget_list', '~> 2.0'
-```
-
-For local development before publishing version 2.0.0, replace the last line with:
-
-```ruby
-gem 'widget_list', path: '../widget_list'
 ```
 
 Run `bundle install`. Add `app/assets/config/manifest.js`:
@@ -118,10 +118,11 @@ A standard GET URL such as `/items?q[name_cont]=Apple` applies the filter. The g
 
 ## Try the example
 
-With `widget_list` and `widget_list_example_rails8` checked out as sibling directories:
+The example installs the published 2.0.0 gem from RubyGems. Clone and run it anywhere:
 
 ```sh
-cd ../widget_list_example_rails8
+git clone https://github.com/davidrenne/widget_list_example_rails8.git
+cd widget_list_example_rails8
 bundle install
 bin/rails db:prepare
 bin/rails db:seed
@@ -129,13 +130,13 @@ bin/rails test
 bin/rails server
 ```
 
-Open `http://127.0.0.1:3000/` for Sequel or `/ransack` for Active Record. Search SKU `1001`, change pages, export CSV, or open the filter arrow and set **Name contains Apple**. The example uses a relative Bundler `path:` dependency, so edits to this gem are picked up after restarting the server.
+Open `http://127.0.0.1:3000/` for Sequel or `/ransack` for Active Record. Search SKU `1001`, change pages, export CSV, or open the filter arrow and set **Name contains Apple**.
 
 ## Release
 
-The RubyGems page takes its short summary and longer description from `gem.summary` and `gem.description` in [widget_list.gemspec](widget_list.gemspec). Edit those fields before building and publishing a new version; changing GitHub or the RubyGems web page does not update an already published gem version.
+Version 2.0.0 is published. The RubyGems page takes its short summary and longer description from `gem.summary` and `gem.description` in [widget_list.gemspec](widget_list.gemspec). To change them in a future release, bump `WidgetList::VERSION` in `lib/widget_list/version.rb` and publish a new version; published versions cannot be overwritten.
 
-`./checkin_gem.sh` validates and builds the gem, and runs the sibling Rails 8 example tests when present. Review and commit your changes on `main`. Sign in to the command-line publisher with `gem signin` if needed, using an API key with the `push_rubygem` scope. A RubyGems website session does not sign in the `gem` command. Then run `./publish_gem.sh`; it checks that the tree is clean, builds the package, and pushes it to RubyGems.org. RubyGems may prompt for MFA in the terminal or open a browser for WebAuthn. No credential is stored in these scripts. Publishing is a separate, intentional step from committing.
+`./checkin_gem.sh` validates and builds the gem, and runs the sibling local-source Rails 8 example tests when present. Review and commit your changes on `main`. Sign in to the command-line publisher with `gem signin` if needed, using an API key with the `push_rubygem` scope. A RubyGems website session does not sign in the `gem` command. Then run `./publish_gem.sh`; it checks that the tree is clean, builds the package, and pushes it to RubyGems.org. RubyGems may prompt for MFA in the terminal or open a browser for WebAuthn. No credential is stored in these scripts. Publishing is a separate, intentional step from committing.
 
 See [RubyGems publishing](https://guides.rubygems.org/publishing/) and [MFA setup](https://guides.rubygems.org/setting-up-otp-mfa/) for account setup.
 

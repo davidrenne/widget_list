@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 version=$(ruby -Ilib -rwidget_list/version -e 'print WidgetList::VERSION')
 gem build widget_list.gemspec --output "widget_list-${version}.gem"
 
-example_dir="../widget_list_example_rails8"
+example_dir="../widget_list_example"
 if [[ -f "${example_dir}/bin/rails" ]]; then
   (cd "$example_dir" && bundle install && bin/rails test)
 fi
