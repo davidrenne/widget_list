@@ -8,6 +8,7 @@ module WidgetList
       RequestContext.session = session.to_h.deep_dup
       RequestContext.server = request.env
       RequestContext.request = request.filtered_parameters
+      RequestContext.csrf_token = form_authenticity_token
 
       yield
     ensure

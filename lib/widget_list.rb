@@ -43,10 +43,12 @@ module WidgetList
 
 
       #Loop models
-      models = Dir[ Rails.root.join("app", "models").to_s + '**/*'].reject {|fn| File.directory?(fn) }
+      models = Dir[Rails.root.join('app', 'models', '**', '*.rb').to_s].reject do |path|
+        File.basename(path) == 'application_record.rb'
+      end
       if !models.empty?
         model_options = '<option value="">Select a Model</option>' + models.collect { |model|
-          model_name = model.split('/').last.to_s.camelize.gsub(/.rb/,'')
+          model_name = File.basename(model, '.rb').camelize
           "<option value='#{model_name}' #{((@isEditing && page_config['view'] == model_name) ? 'selected' : '')}>#{model_name}</option>"
         }.sort.uniq.join('')
       else
@@ -119,7 +121,10 @@ module WidgetList
       @fill['<!--VIEW_OPTIONS-->']              = model_options
       @fill['<!--TITLE_VALUE-->']               = (!@isEditing) ? '' : page_config['title']
       @fill['<!--DESC_VALUE-->']                = (!@isEditing) ? '' : page_config['listDescription']
-      @fill['<!--PRIMARY_CHECKED-->']           = (!@isEditing) ? 'checked' : (page_config['primaryDatabase'] == "1") ? 'checked' : ''
+      WidgetList::List.load_widget_list_yml
+      primary_is_active_record = !$widget_list_conf[:primary].to_s.include?(':/')
+      @fill['<!--PRIMARY_CHECKED-->']           = (!@isEditing) ? (primary_is_active_record ? 'checked' : '') : (page_config['primaryDatabase'] == "1") ? 'checked' : ''
+      @fill['<!--AUTH_TOKEN-->']                = ERB::Util.html_escape(WidgetList::RequestContext.csrf_token.to_s)
 
       #
       # FIELD LEVEL
@@ -595,7 +600,7 @@ module WidgetList
 
       if page_config['useRansack'] == '1' && page_config['showSearch'] == '1' && $is_mongo == false
         view_code = "
-      list_parms#{add_pointer('ransackSearch',-10)} #{page_config['view']}.search(#{(WidgetList::RequestContext.request.key?('iframe')) ? 'WidgetList::RequestContext.request' : 'params'}[:q])
+      list_parms#{add_pointer('ransackSearch',-10)} #{page_config['view']}.ransack(#{(WidgetList::RequestContext.request.key?('iframe')) ? 'WidgetList::RequestContext.request' : 'params'}[:q])
       list_parms#{add_pointer('view',-10)} list_parms['ransackSearch'].result
         "
         if page_config['ransackAdvancedForm'] == '1'
@@ -622,7 +627,7 @@ module WidgetList
 
       else
         view_code = "
-      list_parms#{add_pointer('view',-10)} #{page_config['view']}
+      list_parms#{add_pointer('view',-10)} #{page_config['view']}.all
         "
       end
 
@@ -807,8 +812,6 @@ module WidgetList
       end
 
       <<-EOD
-    begin
-
       #{variable_code}
       list_parms                      = WidgetList::List::init_config()
       list_parms['name']              = '#{escape_code page_config['name']}'
@@ -849,35 +852,10 @@ module WidgetList
         when 'html'
           @output = output
         when 'json'
-          return render :inline => output
+          render json: JSON.parse(output)
         when 'export'
-          send_data(output, :filename => list_parms['name'] + '.csv')
-          return
+          send_data output, filename: list_parms['name'] + '.csv', type: 'text/csv'
       end
-
-    rescue Exception => e
-
-      #
-      # Rescue Errors
-      #
-      Rails.logger.info e.to_s + "\\n\\n" + $!.backtrace.join("\\n\\n")
-
-      if Rails.env == 'development'
-        list_parms['errors'] << '<br/><br/><strong style="color:maroon;">(Ruby Exception - Still attempted to render list with given config ' + list_parms.inspect + ') Exception ==> ' + e.to_s + "<br/><br/>Backtrace:<br/><br/>" + $!.backtrace.join("<br/><br/>") + "</strong>"
-      end
-
-      output_type, output  = WidgetList::List.build_list(list_parms)
-
-      case output_type
-        when 'html'
-          @output = output
-        when 'json'
-          return render :inline => output
-        when 'export'
-          send_data(output, :filename => list_parms['name'] + '.csv')
-          return
-      end
-    end
       EOD
     end
 

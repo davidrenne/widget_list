@@ -82,33 +82,29 @@
       var by_pass = false;
     }
     if (by_pass || VerifyOK(func_name)) {
-      jQuery('.search_dependent').hide(0,function() {
-        jQuery(all).hide(0,function() {
-          jQuery(which_class).fadeIn(0,function() {
-            if (func_name == 'ShowSearch') {
-              ShowSearchOptions(function() {
-                ShowGroupingOptions();
-                ShowExportOptions();
-
-              });
-            }
-            if (func_name == 'ShowFields') {
-              ShowHiddenOptions();
-              ShowFunctionOptions();
-            }
-            if (func_name == 'ShowSubmit') {
-              ShowCheckboxOptions();
-            }
-            if (func_name == 'ShowRows') {
-              ShowButtonOptions();
-              ShowDrillDownOptions();
-            }
-            if (func_name == 'ShowFooter') {
-              ShowFooterOptions();
-            }
-          });
+      jQuery('.search_dependent').hide();
+      jQuery(all).hide();
+      jQuery(which_class).show();
+      if (func_name == 'ShowSearch') {
+        ShowSearchOptions(function() {
+          ShowGroupingOptions();
+          ShowExportOptions();
         });
-      });
+      }
+      if (func_name == 'ShowFields') {
+        ShowHiddenOptions();
+        ShowFunctionOptions();
+      }
+      if (func_name == 'ShowSubmit') {
+        ShowCheckboxOptions();
+      }
+      if (func_name == 'ShowRows') {
+        ShowButtonOptions();
+        ShowDrillDownOptions();
+      }
+      if (func_name == 'ShowFooter') {
+        ShowFooterOptions();
+      }
 
       if (!by_pass) {
         SaveChanges();
@@ -521,7 +517,7 @@
         if (jQuery(obj).val() != '' && jQuery('#showExport').is(':checked')) {
           jQuery('#exportButtonTitle').val('Export All ' + jQuery(obj).val() + 's');
         }
-      }, "json").error(function(response) {
+      }, "json").fail(function(response) {
                 alert('An error occurred instantiating this model.  Check the response for errors.');
               });
     }
@@ -568,6 +564,7 @@
 
 </script>
 <form action="<!--POST_URL-->" method="post" id="widget_list_administration">
+  <input type="hidden" name="authenticity_token" value="<!--AUTH_TOKEN-->"/>
   <h1 style="font-size:24;"><!--TITLE--></h1><div class="horizontal_rule"></div>
   <h3>Get started quickly by selecting the features you need for this list</h3>
   <table>

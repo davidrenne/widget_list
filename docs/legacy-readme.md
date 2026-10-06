@@ -65,31 +65,31 @@ In rails you have will_paginate and other ones like it using the ActiveRecord ap
 
 ### Main Example Loaded:
 
-![](http://davidrenne.com/github/widget_list/main.png)
+![](screenshots/main.png)
 
 ###Filter Drop Downs:
 
-![](http://davidrenne.com/github/widget_list/filtered.png)
+![](screenshots/filtered.png)
 
 ###Searching a row (with wild card search):
 
-![](http://davidrenne.com/github/widget_list/search.png)
+![](screenshots/search.png)
 
 ###Searching "name=asdf_18" (With ActiveRecord and Ransack hook):
 
-![](http://davidrenne.com/github/widget_list/ransack1.png)
+![](screenshots/ransack1.png)
 
 ###Searching "name=asdf_18" and "sku<9000"(With ActiveRecord and Ransack hook):
 
-![](http://davidrenne.com/github/widget_list/ransack2.png)
+![](screenshots/ransack2.png)
 
 ###Searching "name=asdf_18" and "sku < 9000" and "price > 67" (With ActiveRecord and Ransack hook):
 
-![](http://davidrenne.com/github/widget_list/ransack3.png)
+![](screenshots/ransack3.png)
 
 ###Theme plugins/gem support ([The Blue Sky Basin Theme][2]):
 
-![](http://davidrenne.com/github/widget_list/theme_blue_sky_basin.png)
+![](screenshots/theme_blue_sky_basin.png)
 
 ****
 
@@ -114,21 +114,21 @@ And then add this to a clean controller.  If you have code below, please return 
 
 Next you will see this interface which will build some starter code for you:
 
-![](http://davidrenne.com/github/widget_list/admin1.jpg)
+![](screenshots/admin1.jpg)
 
-![](http://davidrenne.com/github/widget_list/admin2.jpg)
+![](screenshots/admin2.jpg)
 
-![](http://davidrenne.com/github/widget_list/admin3.jpg)
+![](screenshots/admin3.jpg)
 
-![](http://davidrenne.com/github/widget_list/admin4.jpg)
+![](screenshots/admin4.jpg)
 
 ###As you can see below, there is a preview iframe of what you are configuring:
 
-![](http://davidrenne.com/github/widget_list/admin5.png)
+![](screenshots/admin5.png)
 
 ###And finally, the code is output to get you started
 
-![](http://davidrenne.com/github/widget_list/admin6.png)
+![](screenshots/admin6.png)
 
 ****
 
