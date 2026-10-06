@@ -27,7 +27,7 @@ table.widget_list tbody tr td span
 div.btn_outer
 {
     position:relative;
-    background: transparent url('../assets/images/buttons/regular/green/rightside-regular-btn.png') no-repeat scroll top right;
+    background: transparent url('<%= asset_url('buttons/regular/green/rightside-regular-btn.png') %>') no-repeat scroll top right;
     display: inline;
     float: left;
     font: normal 12px arial, sans-serif;
@@ -40,7 +40,7 @@ div.btn_outer
 
 div.btn_outer div.btn_inner
 {
-    background: transparent url('../assets/images/buttons/regular/green/leftside-regular-btn.png') no-repeat;
+    background: transparent url('<%= asset_url('buttons/regular/green/leftside-regular-btn.png') %>') no-repeat;
     display: block;
     line-height: 14px;
     padding: 5px 0 0px 12px;
@@ -89,7 +89,7 @@ div.btn_outer div.btn_inner div.textShadow
 div.btn_sml_outer
 {
     position:relative;
-    background: transparent url('../assets/images/buttons/small/green/rightside-small-btn.png') no-repeat scroll top right;
+    background: transparent url('<%= asset_url('buttons/small/green/rightside-small-btn.png') %>') no-repeat scroll top right;
     display: inline;
     float: left;
     font: normal 12px arial, sans-serif;
@@ -102,7 +102,7 @@ div.btn_sml_outer
 
 div.btn_sml_outer div.btn_sml_inner
 {
-    background: transparent url('../assets/images/buttons/small/green/leftside-small-btn.png') no-repeat;
+    background: transparent url('<%= asset_url('buttons/small/green/leftside-small-btn.png') %>') no-repeat;
     display: block;
     line-height: 8px;
     padding: 5px 0 0px 8px;
@@ -172,7 +172,7 @@ div.required
 
 .buttonArea
 {
-   /*background: url("../assets/images/grad.png") repeat-x scroll 0 0 transparent;*/
+   /*background: url("<%= asset_url('grad.png') %>") repeat-x scroll 0 0 transparent;*/
    background-color:#ececec ;
    height:50px;
    text-align:right;
@@ -192,7 +192,7 @@ div.required
 
 .summary .header
 {
-   background: url("../assets/images/head-gradient.gif") repeat-x scroll 0 0 transparent;
+   background: url("<%= asset_url('head-gradient.gif') %>") repeat-x scroll 0 0 transparent;
    height:23px;
    font-size:14px;
    font-weight:800;
@@ -200,7 +200,7 @@ div.required
 
 .goback
 {
-   background: url('../assets/images/gobblecons/teal/share-arrows-24-left.png') no-repeat;
+   background: url('<%= asset_url('gobblecons/teal/share-arrows-24-left.png') %>') no-repeat;
    margin-right: 15px;
    width: 24px;
    height: 19px;
@@ -275,7 +275,7 @@ ul#pagination li div.active
    font-size:13px;
    font-weight:bold;
    height:40px;
-   /*background: transparent url('../assets/images/catbar-bg.png') repeat-x bottom;*/
+   /*background: transparent url('<%= asset_url('catbar-bg.png') %>') repeat-x bottom;*/
 }
 
 .listContainer table.widget_list td, .listContainerPassive table.widget_list td
@@ -312,7 +312,7 @@ div#noListResults
 
 .ajaxLoad
 {
-   background: #737373 url('../assets/images/list-loader.gif') no-repeat;
+   background: #737373 url('<%= asset_url('list-loader.gif') %>') no-repeat;
    background-position:50% 50%;
    position:absolute;
    width:100%;
@@ -333,7 +333,7 @@ div#noListResults
 
 .listContainerPassive table.widget_list tr.widget_list_header
 {
-    /*background: url("../assets/images/th_header.gif") repeat-x scroll left center transparent;  */
+    /*background: url("<%= asset_url('th_header.gif') %>") repeat-x scroll left center transparent;  */
     padding: 4px;
     text-align: center;
     vertical-align: middle;
@@ -594,7 +594,7 @@ button.wl-btn::-moz-focus-inner, input[type=submit].wl-btn::-moz-focus-inner
 div.inputOuter
 {
     position:relative;
-    background: transparent url('../assets/images/input_text_right.png') no-repeat scroll top right;
+    background: transparent url('<%= asset_url('input_text_right.png') %>') no-repeat scroll top right;
     display: inline-block;
     height: 27px;
     line-height: 27px;
@@ -603,7 +603,7 @@ div.inputOuter
 }
 
 
-div.inputOuter .inputInner {position:relative;background: transparent url('../assets/images/input_text_left.png') no-repeat scroll top left;border: none;height: 27px;line-height: 27px;padding-left: 6px;width: auto;padding-right: 7px;}
+div.inputOuter .inputInner {position:relative;background: transparent url('<%= asset_url('input_text_left.png') %>') no-repeat scroll top left;border: none;height: 27px;line-height: 27px;padding-left: 6px;width: auto;padding-right: 7px;}
 div.inputOuter .inputInner input { border:none;background:transparent;width:100%}
 div.inputOuter .inputInner input.search-ahead {width:97%}
 
@@ -622,14 +622,14 @@ div.inputOuter .inputInner input.search-ahead {width:97%}
 /**
 * Advanced Search Down Arrow
 */
-.widget-search-arrow {background: url('../assets/images/gobblecons/mid-gray/arrow-16.png') no-repeat scroll 0px 0px transparent;float:right;margin:8px;position: relative;right:-23px;top:-30px;cursor:pointer;border:0px solid red;height:20px;width:20px;display:none}
-.widget-search-arrow:hover {background: url('../assets/images/gobblecons/mid-gray/arrow-16.png') no-repeat scroll 0px 0px transparent;}
+.widget-search-arrow {background: url('<%= asset_url('gobblecons/mid-gray/arrow-16.png') %>') no-repeat scroll 0px 0px transparent;float:right;margin:8px;position: relative;right:-23px;top:-30px;cursor:pointer;border:0px solid red;height:20px;width:20px;display:none}
+.widget-search-arrow:hover {background: url('<%= asset_url('gobblecons/mid-gray/arrow-16.png') %>') no-repeat scroll 0px 0px transparent;}
 
 /**
 * Search Ahead Magifier Glass
 */
-.widget-search-magnifier {background: url('../assets/images/gobblecons/mid-gray/search-16.png') no-repeat scroll 0px 0px transparent;float:right;margin:7px;position: relative;right:-13px;top:-30px;cursor:pointer;border:0px solid red;height:20px;width:20px}
-.widget-search-magnifier:hover {background: url('../assets/images/gobblecons/mid-gray/search-16.png') no-repeat scroll 0px 0px transparent}
+.widget-search-magnifier {background: url('<%= asset_url('gobblecons/mid-gray/search-16.png') %>') no-repeat scroll 0px 0px transparent;float:right;margin:7px;position: relative;right:-13px;top:-30px;cursor:pointer;border:0px solid red;height:20px;width:20px}
+.widget-search-magnifier:hover {background: url('<%= asset_url('gobblecons/mid-gray/search-16.png') %>') no-repeat scroll 0px 0px transparent}
 
 /**
 * Advanced Search Close Button
@@ -805,28 +805,28 @@ div#advanced-search-container ul.advanced-search-container-inline input.info-inp
 */
 .page_legacy {width:600px; left:0; margin-left:0;}
 *+html ul#pagination li div {display:inline}
-*+html ul#pagination li div.select-outer {background: url("../assets/images/input_text_right.png") no-repeat scroll right 2px transparent;}
+*+html ul#pagination li div.select-outer {background: url("<%= asset_url('input_text_right.png') %>") no-repeat scroll right 2px transparent;}
 *+html ul#pagination li div.select-outer div.select-inner select {margin-top: -4px !important;}
 
 
 .next-active {
     cursor:pointer;
-    background: transparent url("../assets/images/page-next.gif") no-repeat;
+    background: transparent url("<%= asset_url('page-next.gif') %>") no-repeat;
 }
 
 .next-disabled {
     opacity:0.4;
     filter:alpha(opacity=40);
-    background: transparent url("../assets/images/page-next.gif") no-repeat;
+    background: transparent url("<%= asset_url('page-next.gif') %>") no-repeat;
 }
 
 .previous-active {
     cursor:pointer;
-    background: transparent url("../assets/images/page-back.gif") no-repeat;
+    background: transparent url("<%= asset_url('page-back.gif') %>") no-repeat;
 }
 
 .previous-disabled {
     opacity:0.4;
     filter:alpha(opacity=40);
-    background: transparent url("../assets/images/page-back.gif") no-repeat;
+    background: transparent url("<%= asset_url('page-back.gif') %>") no-repeat;
 }

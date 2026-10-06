@@ -1,13 +1,13 @@
-svn delete --force vendor/cache/widget_list-$1.gem vendor/bundle/ruby/1.9.1/cache/widget_list-$1.gem vendor/bundle/ruby/1.9.1/specifications/widget_list-$1.gemspec vendor/bundle/ruby/1.9.1/gems/widget_list-$1
+#!/usr/bin/env bash
+set -euo pipefail
 
-grep -rl '"widget_list", "'$1'"' Gemfile | xargs sed -i 's/"widget_list", "'$1'"/"widget_list", "'$2'"/g'
+cd "$(dirname "$0")"
+version=$(ruby -Ilib -rwidget_list/version -e 'print WidgetList::VERSION')
+gem build widget_list.gemspec --output "widget_list-${version}.gem"
 
-bundle install
+example_dir="../widget_list_example_rails8"
+if [[ -f "${example_dir}/bin/rails" ]]; then
+  (cd "$example_dir" && bundle install && bin/rails test)
+fi
 
-svn add vendor/cache/widget_list-$2.gem vendor/bundle/ruby/1.9.1/cache/widget_list-$2.gem vendor/bundle/ruby/1.9.1/specifications/widget_list-$2.gemspec vendor/bundle/ruby/1.9.1/gems/widget_list-$2
-
-echo -e -n  "Please test your solution and press enter to checkin new gem" 
-read THEMENAME
-
-
-svn commit vendor/cache/widget_list-$1.gem vendor/bundle/ruby/1.9.1/cache/widget_list-$1.gem vendor/bundle/ruby/1.9.1/specifications/widget_list-$1.gemspec vendor/bundle/ruby/1.9.1/gems/widget_list-$1 vendor/cache/widget_list-$2.gem vendor/bundle/ruby/1.9.1/cache/widget_list-$2.gem vendor/bundle/ruby/1.9.1/specifications/widget_list-$2.gemspec vendor/bundle/ruby/1.9.1/gems/widget_list-$2 Gemfile.lock Gemfile -m "$1 -> $2 gem update"
+printf 'Built widget_list-%s.gem. Review git diff and commit on main before publishing.\n' "$version"

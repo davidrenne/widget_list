@@ -62,7 +62,6 @@ module WidgetList
         '<!--VALUE-->'       => items['value'],
         '<!--REQUIRED-->'    => items['template_required'],
         '<!--CHECKED-->'     => items['checked'],
-        '<!--VALUE-->'       => items['value'],
         '<!--DISABLED-->'    => items['disabled']
       }
 

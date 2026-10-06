@@ -15,9 +15,10 @@ Gem::Specification.new do |gem|
   
   gem.email         = ["widgetlist@davidrenne.com"]
   
-  gem.description   = %q{An Advanced and flexible ajax data grid. Supports several databases where data is pulled from either using Sequel ORM (optional even though is a dependency), Active Record Models or Raw SQL.}
+  gem.description   = %q{An Ajax data grid for Rails applications with Sequel SQL queries or Active Record relations.}
   
-  gem.summary       = %q{In rails you have will_paginate and other gems like it using the ActiveRecord approach, but widget_list adds some awesome treats to standard boring pagers}
+  gem.summary       = %q{Sortable, searchable, exportable data grids for Rails}
+  gem.required_ruby_version = '>= 3.2'
   
   gem.homepage      = "https://github.com/davidrenne/widget_list"
   
@@ -25,9 +26,11 @@ Gem::Specification.new do |gem|
   # SEQUEL IS NOW OPTIONAL!! I am sure most people will be using ActiveRecord ORM
   # I am including it as a dependency just because it is easier to pull it down and have it available
   #
-  gem.add_dependency('sequel', '3.42.0')
+  gem.add_dependency('sequel', '5.109.0')
 
-  gem.add_dependency('ransack', '0.7.2')
+  gem.add_dependency('ransack', '5.0.2')
+  gem.add_dependency('csv', '~> 3.3')
+  gem.metadata['rubygems_mfa_required'] = 'true'
   
   gem.files         = `git ls-files`.split($/)
   

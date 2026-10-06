@@ -25,10 +25,10 @@ module WidgetList
     def self.build_query_string(args)
       q = []
       args.each { |k,v|
-        if v.class.name == 'Hash'
-          q << {k => v}.to_params
+        if v.is_a?(Hash) || v.respond_to?(:to_unsafe_h)
+          q << {k => (v.respond_to?(:to_unsafe_h) ? v.to_unsafe_h : v)}.to_query
         else
-          q << k.to_s + '=' + CGI.escape(URI.decode(v.to_s))
+          q << k.to_s + '=' + CGI.escape(v.to_s)
         end
       }
       q.join('&')
@@ -39,8 +39,8 @@ module WidgetList
     def self.build_url(page='',args = {}, append_get=false)
       qs = build_query_string(args)
       getvars = ''
-      if append_get && $_REQUEST
-        getvars = build_query_string($_REQUEST)
+      if append_get && WidgetList::RequestContext.request
+        getvars = build_query_string(WidgetList::RequestContext.request)
       end
 
       unless page =~ /\?/
@@ -54,7 +54,7 @@ module WidgetList
     def self.fill(tags = {}, template = '')
       tpl = template.dup
       tags.each { |k,v|
-        tpl = tpl.gsub(k.to_s,v.to_s)
+        tpl = tpl.gsub(k.to_s) { v.to_s }
       }
       tpl
     end

@@ -1,757 +1,142 @@
-# WidgetList
-====================
-****
+# widget_list
 
-## Watch it in Action Here
+`widget_list` renders sortable, searchable Rails data grids with Ajax paging and CSV export. Version 2.0.0 has been exercised with **Rails 8.1.4**, **Ruby 3.4.11**, **Sequel 5.109.0**, **Ransack 5.0.2**, and SQLite. Rails 8.1 requires Ruby 3.2 or newer. The Rails 3 era guide remains in [docs/legacy-readme.md](docs/legacy-readme.md) for reference.
 
-****
+The runnable [widget_list_example_rails8](https://github.com/davidrenne/widget_list_example_rails8/) contains both a Sequel SQL list and a Ransack/Active Record list. Its README and single commit diff show every caller change needed in a fresh Rails 8 app.
 
-https://www.youtube.com/watch?v=A6mZa8Ge2Rk	
+## Add it to a Rails 8 app
 
-
-****
-
-## Slides and video from Barcamp 2013
-
-****
-
-http://youtu.be/K4pe4ESIbc0
-
-https://docs.google.com/presentation/d/1gnybf8f7afRM8w5UjTMoV82-0S5HftPewn4pAuIybk8/edit?usp=sharing
-
-
-****
-
-## Introduction
-
-****
-
-This is my first gem ever!  It is an exciting gem because it is being used in production by a fortune 500 company.  Please use and give me feedback/issues/pull requests.
-
-****
-
-## Summary
-
-****
-
-I feel like there are not very good lists in ruby/rails and/or dont care to find any because nothing will compare to widget_list's implementation.
-
-In rails you have will_paginate and other ones like it using the ActiveRecord approach, but widget_list adds some awesome treats to standard boring pagers:
-
-* A sleek ajaxified list
-* Full Blown configuration administration tool
-* Supports *ALL Databases (Haven't tested everything yet though, I am sure there are tweaks for each DB). mysql, postgres, oracle and sqllite tested (basic example)
-* Full sorting ASC/DESC and paging/limits of list via ajax
-* Easily add row level buttons for each row
-* Custom tags to pass to be replaced by actual data from each column/value
-* Automatic wildcard search support as well as CSV numeric parsing of when to perform a LIKE search or an IN statement on the primary keys
-* Column mappings and names
-* Drill down link helper functions to allow user to click and filter the list by the particular record value
-* Checkboxes for each row for custom selection and mass actions
-* Session rememberance for each list/view of what was last sorted, which page the person was on, the limit and search filters
-* Ability to set a custom HTML arrow which draws a hidden DIV intended for someone to put custom widgets inside of to pass new filters to the list before it executes
-* Buttons for each row and areas on the bottom of the grid where you can add "Action buttons"
-* Export visible data as CSV
-* Grouping/Predefined report filter feature
-* Either use a custom advanced searching form you build, or use the ransack dependency to build out a powerful filtering mechanism on the DOWN ARROW form users click.  (See screenshots below)
-* Granular control over site-wide list parameter defaults using [A WidgetList Helper][1] or by simply copying the desired partial from the gem's app/views/widget_list/list_partials into your app/views/widget_list/list_partials and modifying the template for your "site-wide template" and outer list shells
-** Support for theme plugins such as [The Blue Sky Basin Theme][2]
-
-****
-
-## Screenshots
-
-****
-
-### Main Example Loaded:
-
-![](http://davidrenne.com/github/widget_list/main.png)
-
-###Filter Drop Downs:
-
-![](http://davidrenne.com/github/widget_list/filtered.png)
-
-###Searching a row (with wild card search):
-
-![](http://davidrenne.com/github/widget_list/search.png)
-
-###Searching "name=asdf_18" (With ActiveRecord and Ransack hook):
-
-![](http://davidrenne.com/github/widget_list/ransack1.png)
-
-###Searching "name=asdf_18" and "sku<9000"(With ActiveRecord and Ransack hook):
-
-![](http://davidrenne.com/github/widget_list/ransack2.png)
-
-###Searching "name=asdf_18" and "sku < 9000" and "price > 67" (With ActiveRecord and Ransack hook):
-
-![](http://davidrenne.com/github/widget_list/ransack3.png)
-
-###Theme plugins/gem support ([The Blue Sky Basin Theme][2]):
-
-![](http://davidrenne.com/github/widget_list/theme_blue_sky_basin.png)
-
-****
-
-## Administration Tool
-
-****
-
-In order to use this tool please paste your @output into your view
+`widget_list` uses jQuery and Sprockets assets. In your Gemfile:
 
 ```ruby
-   <div style="margin:50px;">
-      <%=raw @output%>
-    </div>
-```  
-
-And then add this to a clean controller.  If you have code below, please return below the ajax 
-
-```ruby
-	@output = WidgetList.go!()
-	return render :inline => @output if params.key?('ajax')
+gem 'sprockets-rails'
+gem 'jquery-rails'
+gem 'widget_list', '~> 2.0'
 ```
 
-Next you will see this interface which will build some starter code for you:
-
-![](http://davidrenne.com/github/widget_list/admin1.jpg)
-
-![](http://davidrenne.com/github/widget_list/admin2.jpg)
-
-![](http://davidrenne.com/github/widget_list/admin3.jpg)
-
-![](http://davidrenne.com/github/widget_list/admin4.jpg)
-
-###As you can see below, there is a preview iframe of what you are configuring:
-
-![](http://davidrenne.com/github/widget_list/admin5.png)
-
-###And finally, the code is output to get you started
-
-![](http://davidrenne.com/github/widget_list/admin6.png)
-
-****
-
-## Installation
-
-****
-
-Add this line to your application's Gemfile:
+For local development before publishing version 2.0.0, replace the last line with:
 
 ```ruby
-    gem 'widget_list'
-```
-And then execute:
-```ruby
-    $ bundle
-```
-Or install it yourself as:
-```ruby
-    $ gem install widget_list
+gem 'widget_list', path: '../widget_list'
 ```
 
-****
-
-## Usage/Examples
-
-****
-
-You can either follow the below instructions or take a look at the changes here https://github.com/davidrenne/widget_list_example/commit/e4e8ab54edcf8bc4538b1850ee762c13bc6f5316
-
-I recommend if you use widget_list in production that you use config.consider_all_requests_local = true as errors will be handled but the base lists will still draw.
-
-
-****
-
-## Feature Configurations
-
-****
-
-widget_list features and configurations primarily work by a single large hash passed to the constructor with the features you need for the given request which changes how the list is displayed or filtered.
-
-`name` - The unique name/id's of all the pieces that make up your widget list `default=([*('A'..'Z'),*('0'..'9')]-%w(0 1 I O)).sample(16).join`
-
-`database` - You can pass which DB connection you would like to use for each list.  Only two values/db connections are supported ('primary' or 'secondary') `default='primary'`
-
-`title` - This adds an H1 title and horizontal rule on top of your list `default=''`
-
-`listDescription` - This adds a grey header box.  It is useful for describing the main query `default=''`
-
-`pageId` - Base path for requests (typically you never need to change this) `default=$_SERVER['SCRIPT_NAME'] + $_SERVER['PATH_INFO']`
-
-`view` - A sub-select query to your database (ALWAYS ALIASED) `default=''`
-
-`data` - A "sequel" formatted resultset like would be returned from _select() method.  Instead of running a SQL query, you can pass an array to populate the list `default={}`
-
-`colClass` - Your custom td class for all td's `default=''`
-
-`colAlign` - td align attribute for all td's `default=''`
-
-`fields` - The visible fields shown in the current list.  KEY=column name VALUE= displayed column header `default={}`
-
-`fieldsHidden` - The non-visible fields in the current list.  Typically used when you wish to search on this column, but the main column is a drilldown or some HTML value that isnt easily searchable.  VALUE=column name `default=[]`
-
-`bindVars` - bindVars that are passed to _select() sequel extension I wrote.  Which will replace "?" in your query with the associated bindVar `default=[]`
-
-`bindVarsLegacy` - A Hash whose KEYS ARE CAPITALIZED and whose value is the replacement string.  Inside the "view" you would use :MY_KEY as the template to be replaced `default={}`
-
-`links` - Turn text based record value into a link.  KEY=column name VALUE=hash of link Config.  Links should most likely pass ['tags']['field_name'] = 'get_var_name' (would yeild get_var_name=1234 for that field value 1234).  You can pass ['tags']['onclick'] if you dont want to call ButtonLinkPost which will redirect to the URL built.  If you pass ['onclick']['tags'], each field passed will be passed as a parameter for the function you designate   `default={}`
-
-`buttons` -  Buttons to generate for each row.  KEY=column name VALUE=Hash of widget_button attributes `default={}`
-
-`inputs` -  widget_check is the only one supported so far. (See examples) `default={}`
-
-`filter` - << "xxx = 123" would be the syntax to add a new filter array. (See examples) `default=[]`
-
-`groupBy` - The column name or CSV of names to group by. (See examples) `default=[]`
-
-`rowStart` - Which page the list should start at `default=0`
-
-`rowLimit` - How many rows per page? `default=10`
-
-`orderBy` -  Default order by "column_name DIRECTION" `default=''`
-
-`allowHTML` - Strip HTML from view or not `default=true`
-
-`strlength` - Strip HTML from view or not `default=true`
-
-`searchClear` - Clear the list's search session `default=false`
-
-`searchClearAll` - Clear all search session for all lists `default=false`
-
-`showPagination` - Show pagination HTML `default=true`
-
-`searchSession` - Remember and restore the last search performed `default=true`
-
-`carryOverRequests` -  will allow you to post custom things from request to all sort/paging URLS for each ajax.  Takes an array of GETVARS which will be passed to each request `default=['switch_grouping']`
-
-`customFooter` -  Add buttons or HTML at bottom area of list inside the grey box `default=''`
-
-`customHeader` -  Add buttons or HTML at top area of list above all headers (such as TABS to delineate Summary/Details) `default=''`
-
-`ajaxFunctionAll` -  Custom javascript called asychronously during each click of each event someone interacts with on the list `default=''`
-
-`ajaxFunction` -  Mostly an internal setting `default='ListJumpMin'`
-
-`showSearch` -  Show top search bar `default=true`
-
-`searchOnkeyup` -  Search on key up event `default=''`
-
-`searchOnclick` -  Search on click event `default=''`
-
-`searchIdCol` - By default `id` column is here because typically if you call your PK's id and are auto-increment and numeric.  This can also take in an array of numeric fields so that users can search CSV's of numbers and get back matches `default='id'`
-
-`searchTitle` -  Set a title for the search input `default= 'Search by Id or a list of Ids and more'`
-
-`searchFieldsIn` -  White list of fields to include in a alpha-numeric based like '%%' search  `default={}`
-
-`searchFieldsOut` - Black list of fields to exclude in a alpha-numeric based search `default={'id'=>true}`
-
-`showExport` - Allow users to export current list view as CSV `default=true`
-
-`exportButtonTitle` - Title of button `default='Export CSV'`
-
-`groupByItems` - Custom drop down's created by passing an array of modes.  Best suited to group by the data `default=[]`
-
-`groupBySelected` - Initially selected grouping - defaults to first in list if not.  Please pass the string value of the "groupByItem" `default=false`
-
-`groupByLabel` -  Label describing select box `default='Group By'`
-
-`groupByClick` -  Function to call as a custom function for each click on an item `default=''`
-
-`groupByClickDefault` -  Default group by handler inside widget_list.js `default="ListChangeGrouping('<!--NAME-->', this);"`
-
-`listSearchForm` -  Allows you to pass a custom form for the ARROW drop down for advanced searching `default=''`
-
-`ransackSearch` -  If you pass ModelName.search(params[:q]) ransack will show up in your advanced search `default=false`
-
-`cornerRadius` -  Either int number of pixels for radius corners.  Or '14px' or whatever you want. `default=15`
-
-`columnStyle` -  Column styles.  KEY=column name VALUE= the inline style applied `default={}`
-
-`columnClass` -  Column class.  KEY=column name VALUE= the class name `default={}`
-
-`columnPopupTitle` -  Column title as you hover over.  KEY=column name VALUE=Popup text `default={}`
-
-`columnWidth` -  Column widths.  KEY=column name VALUE= '100px' `default={}`
-
-`columnNoSort` - Dont allow sorting on these columns (By default all visible columns have a sort link built).  KEY=column name VALUE=column name `default={}`
-
-`borderedColumns` - Add a right border to each column. `default=false`
-
-`borderedRows` - Style the border of each row. `default=false`
-
-`borderRowStyle` - Border style of each row. `default='1px solid #CCCCCC'`
-
-`borderHeadFoot` - Style the border of header (bottom) and footer (top). `default=false`
-
-`headFootBorderStyle` - Border style of header (bottom) and footer (top). `default='1px solid #CCCCCC'`
-
-`borderColumnStyle` - Style of row if you use this above feature. `default='1px solid #CCCCCC'`
-
-`bordersEverywhere?` - If true, use borderEverywhere for all four borders you can pass separately `default=false`
-
-`borderEverywhere` - The catch all style of borders for headers, rows, outer table border and columns. `default='1px solid #CCCCCC'`
- 
-`defaultButtonClass`  - As you have seen in many screenshots, there are several buttons.  This controls the innerClass of those drawn from the list.  See lib/widget_list/widgets.rb `default='info'`
-
-`useBoxShadow`  - Show shadow or not on list `default=true`
-
-`shadowInset`  - Number or string with '11Px' for an 11PX Inset `default=10`
-
-`shadowSpread` - Number or string with '11Px' for an 11PX spread `default=20`
-
-`shadowColor` - Color of bottom right shadow `default='shadowColor'`
-
-`rowClass` - Class added to all rows `default=''`
-
-`rowFontColor` - Font color of all data rows that dont have a rowStylesByStatus color: passed to it `default='black'`
-
-`rowColorByStatus` - {'rowColorByStatus' =>
-                                {'active'=>
-                                   {'No'  => '#EBEBEB' }
-                                }
-                     } 
-Color a row based on the value of the column.
-`default={}`
-
-`rowStylesByStatus` -  {'rowStylesByStatus' =>
-                                {'active'=>
-                                   {'No'  => 'font-style:italic;color:red;' }
-                                }
-                             }
-Style a row based on the value of the column.
-`default={}`
-
-`rowOffsets` - Color for each row and offset `default=['FFFFFF','FFFFFF']`
-
-`noDataMessage` - Message to show when no data is found `default='Currently no data.'`
-
-`useSort` - Allow sorting on list `default=true`
-
-`headerClass` - Class of each individual header column `default={}`
-
-`fieldFunction` - A way to wrap or inject columns or SQL formatting in place of your columns `default={}`
-
-`template` - Pass in a custom template for outer shell `default=''`
-
-`templateFilter` - Instead of widget list building your search box.  Pass your own HTML `default=''`
-
-`storeSessionChecks` - See http://stackoverflow.com/questions/1928204/marshal-data-too-short for configuring larger session storage which checkboxes would eat up if you had this set to true `default=false`
-
-`totalRow` - Add in your numeric or dollar amount fields you want to sum or average for the bottom record list_parms['totalRow']['my_field'] = true `default={}`
-
-`totalRowFirstCol` -  A string to display what the row is showing `default='<strong>Total:</strong>'`
-
-`totalRowMethod` - Allows you to pass 'average' to define which columns should average the sum  list_parms['totalRowPrefix']['my_field'] = 'average'.  There is only support for average right now `default={}`
-
-`totalRowPrefix` - The prefix will be automatically generated based off the value such as $ for a dollar amount would be injected without this configuration.  But this allows you to pass whatever you want displayed for the bottom summary row list_parms['totalRowPrefix']['my_field'] = true `default={}`
-
-`totalRowSuffix` - The suffix will be automatically generated based off the value at the end of the last row.  But this allows you to pass whatever you want displayed for the bottom summary row list_parms['totalRowSuffix']['my_field'] = true `default={}`
-
-`totalRowSeparator` -  Your decimal for the formatted number (if any is shown) `default='.'`
-
-`totalRowDelimiter` -  Your "comma" for the formatted number (if any is shown) `default=','`
-
-`totalRowDefault` -  For any columns such as strings which cannot be summed or added into a summary this value will be the place holder for that TD. `default='N/A'`
-
-`columnHooks` - Todo `default={}`
-
-`rowHooks` - Todo `default={}`
-
-
-### #1 - Add widget_list CSS and JS to your application css and js
-
-    Change application.css to:
-```ruby
-    *= require widget_list
-    *= require widgets
+Run `bundle install`. Add `app/assets/config/manifest.js`:
+
+```javascript
+//= link_tree ../images
+//= link_directory ../stylesheets .css
+//= link_directory ../javascripts .js
+//= link widget_list.css
+//= link widgets.css
+//= link widget_list.js
 ```
 
-Change application.js to:
+Add `app/assets/javascripts/application.js`:
 
-```ruby
-    //= require widget_list
+```javascript
+//= require jquery
+//= require jquery_ujs
+//= require widget_list
 ```
 
-Compile the new assets:
+Load the assets in the application layout's `<head>`:
 
+```erb
+<%= csrf_meta_tags %>
+<%= stylesheet_link_tag 'application', 'widget_list', 'widgets' %>
+<%= javascript_include_tag 'application', defer: true %>
 ```
-rake assets:precompile
+
+The gem resolves its image URLs through Sprockets when compiling CSS. No manual image copy or static middleware is needed. An app using the default Rails 8 Propshaft pipeline should replace `propshaft` with `sprockets-rails` for this integration. Run `bin/rails assets:precompile` to check production assets.
+
+## Choose a database source
+
+**Active Record only:** `config/widget-list.yml` is optional. The gem uses the current Rails environment's Active Record connection as its primary source. Pass an `ActiveRecord::Relation` as `list['view']`.
+
+**Sequel SQL and Active Record together:** create `config/widget-list.yml` with the Sequel URI as `primary` and the Rails database environment name as `secondary`:
+
+```yaml
+development:
+  :primary: sqlite://<%= Rails.root.join('storage/development.sqlite3') %>
+  :secondary: development
+  :api_mode: false
+test:
+  :primary: sqlite://<%= Rails.root.join('storage/test.sqlite3') %>
+  :secondary: test
+  :api_mode: false
 ```
 
-### #2 - Run `bundle exec rails s` to have widget_list create config/widget-list.yml which will point to your active record database.yml
+Set `list['database']` to `'primary'` for a SQL table or view name, or `'secondary'` for an Active Record relation. Use the corresponding database file from your app's `config/database.yml`. Only SQLite was exercised during this upgrade; the older examples for PostgreSQL, Oracle, and MongoDB have not been reverified.
 
-    Configure your connection settings for your primary or secondary widget_list connections.
+## Render a list
 
-    http://sequel.rubyforge.org/rdoc/files/doc/opening_databases_rdoc.html
+The controller must answer GET for the first page and POST for the gem's Ajax controls. For example:
 
-### #3 - If you wish to integrate into an existing rails application create a new controller
-    
-    rails generate controller WidgetListExamples ruby_items
-
-  Then modify app/views/widget_list_examples/ruby_items.html.erb and add 
 ```ruby
-   <div style="margin:50px;">
-      <%=raw @output%>
-    </div>
-```  
-  Add config/routes.rb if it is not in there:
-```ruby
-  match ':controller(/:action)'
-```
-  Ensure that sessions are loaded into active record because widget_list keeps track of several settings on each list for each session
-```ruby
-  config.session_store :active_record_store
-```  
-  Add the example shown below to app/controllers/widget_list_examples_controller.rb#ruby_items
-  
-  Go To http://localhost:3000/widget_list_examples/ruby_items
+# config/routes.rb
+match '/items', to: 'items#index', via: [:get, :post]
 
-****
+# app/controllers/items_controller.rb
+class ItemsController < ApplicationController
+  def index
+    list = WidgetList::List.init_config
+    list['name'] = 'items'
+    list['database'] = 'primary' # omit for the default Active Record source
+    list['view'] = 'items'       # use Item.all for Active Record
+    list['fields'] = { 'id' => 'ID', 'name' => 'Name', 'sku' => 'SKU' }
+    list['searchIdCol'] = ['id', 'sku']
+    list['rowLimit'] = 10
 
-### Example Calling Page That Sets up Config and calls WidgetList.render
-
-****
-   
-```ruby
-    #
-    # Load Sample "items" Data. Comment out in your first time executing a widgetlist to create the items table
-    #
-=begin
-    begin
-      WidgetList::List.get_sequel.create_table :items do
-        primary_key :id
-        String :name
-        Float :price
-        Fixnum :sku
-        String :active
-        Date :date_added
-      end
-      items = WidgetList::List.get_sequel[:items]
-      100.times {
-        items.insert(:name => 'ab\'c_quoted_'    + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-01', :sku => rand(9999), :active => 'Yes')
-        items.insert(:name => '12"3_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-02', :sku => rand(9999), :active => 'Yes')
-        items.insert(:name => 'asdf_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-03', :sku => rand(9999), :active => 'Yes')
-        items.insert(:name => 'qwerty_'          + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-04', :sku => rand(9999), :active => 'No')
-        items.insert(:name => 'meow_'            + rand(35).to_s,   :price => rand * 100, :date_added => '2008-02-05', :sku => rand(9999), :active => 'No')
-      }
-    rescue Exception => e
-      #
-      # Table already exists
-      #
-      logger.info "Test table in items already exists? " + e.to_s
+    type, output = WidgetList::List.build_list(list)
+    case type
+    when 'html'   then @output = output
+    when 'json'   then render json: JSON.parse(output)
+    when 'export' then send_data output, filename: 'items.csv', type: 'text/csv'
     end
-=end
-
-    begin
-
-      list_parms   = WidgetList::List::init_config()
-
-      #
-      # Give it a name, some SQL to feed widget_list and set a noDataMessage
-      #
-      list_parms['name']          = 'ruby_items_yum'
-
-      #
-      # Handle Dynamic Filters
-      #
-      groupBy  = WidgetList::List::get_group_by_selection(list_parms)
-
-      case groupBy
-        when 'Item Name'
-          groupByFilter                  = 'item'
-          countSQL                       = 'COUNT(1) as cnt,'
-          groupBySQL                     = 'GROUP BY name'
-          groupByDesc                    = ' (Grouped By Name)'
-        when 'Sku Number'
-          groupByFilter                  = 'sku'
-          countSQL                       = 'COUNT(1) as cnt,'
-          groupBySQL                     = 'GROUP BY sku'
-          groupByDesc                    = ' (Grouped By Sku Number)'
-        else
-          groupByFilter                  = 'none'
-          countSQL                       = ''
-          groupBySQL                     = ''
-          groupByDesc                    = ''
-      end
-
-      list_parms['filter']    = []
-      list_parms['bindVars']  = []
-      drillDown, filterValue  = WidgetList::List::get_filter_and_drilldown(list_parms['name'])
-
-      case drillDown
-        when 'filter_by_name'
-          list_parms['filter']   << " name = ? "
-          list_parms['bindVars'] << filterValue
-          list_parms['listDescription']   = WidgetList::List::drill_down_back(list_parms['name']) + ' Filtered by Name (' + filterValue + ')' + groupByDesc
-        when 'filter_by_sku'
-          list_parms['filter']   << " sku = ? "
-          list_parms['bindVars'] << filterValue
-          list_parms['listDescription']   = WidgetList::List::drill_down_back(list_parms['name']) + ' Filtered by SKU (' + filterValue + ')' + groupByDesc
-        else
-          list_parms['listDescription']   = ''
-          list_parms['listDescription']   = WidgetList::List::drill_down_back(list_parms['name']) if !groupByDesc.empty?
-          list_parms['listDescription']  += 'Showing All Ruby Items' + groupByDesc
-      end
-
-      # put <%= @output %> inside your view for initial load nothing to do here other than any custom concatenation of multiple lists
-      #
-      # Setup your first widget_list
-      #
-
-      button_column_name = 'actions'
-
-      #
-      # customFooter will add buttons to the bottom of the list.
-      #
-
-      list_parms['customFooter'] =  WidgetList::Widgets::widget_button('Add New Item', {'page' => '/add/'} ) + WidgetList::Widgets::widget_button('Do something else', {'page' => '/else/'} )
-
-      #
-      # Give some SQL to feed widget_list and set a noDataMessage
-      #
-      list_parms['searchIdCol']   = ['id','sku']
-
-      #
-      # Because sku_linked column is being used and the raw SKU is hidden, we need to make this available for searching via fields_hidden
-      #
-      list_parms['fieldsHidden'] = ['sku']
-
-      drill_downs = []
-
-      drill_downs << WidgetList::List::build_drill_down( :list_id                => list_parms['name'],
-                                                         :drill_down_name        => 'filter_by_name',
-                                                         :data_to_pass_from_view => 'a.name',
-                                                         :column_to_show         => 'a.name',
-                                                         :column_alias           => 'name_linked'
-                                                       )
-
-      drill_downs << WidgetList::List::build_drill_down(
-                                                         :list_id                => list_parms['name'],
-                                                         :drill_down_name        => 'filter_by_sku',
-                                                         :data_to_pass_from_view => 'a.sku',
-                                                         :column_to_show         => 'a.sku',
-                                                         :column_alias           => 'sku_linked'
-                                                       )
-
-      list_parms['view']          = '(
-                                       SELECT
-                                             ' + countSQL + '
-                                             ' + drill_downs.join(' , ') + ',
-                                             \'\'     AS checkbox,
-                                             a.id         AS id,
-                                             a.active     AS active,
-                                             a.name       AS name,
-                                             a.sku        AS sku,
-                                             a.price      AS price,
-                                             a.date_added AS date_added
-                                         FROM
-                                             items a
-                                       ' + groupBySQL + '
-                                     ) a'
-
-      #
-      # Map out the visible fields
-      #
-      list_parms['fields'] = {}
-      list_parms['fields']['checkbox']         = 'checkbox_header'
-      list_parms['fields']['cnt']              = 'Total Items In Group'         if groupByFilter != 'none'
-      list_parms['fields']['id']               = 'Item Id'                      if groupByFilter == 'none'
-      list_parms['fields']['name_linked']      = 'Name'                         if groupByFilter == 'none' or groupByFilter == 'item'
-      list_parms['fields']['price']            = 'Price of Item'                if groupByFilter == 'none'
-      list_parms['fields']['sku_linked']       = 'Sku #'                        if groupByFilter == 'none' or groupByFilter == 'sku'
-      list_parms['fields']['date_added']       = 'Date Added'                   if groupByFilter == 'none'
-      list_parms['fields']['active']           = 'Active Item'                  if groupByFilter == 'none'
-      list_parms['fields'][button_column_name] = button_column_name.capitalize  if groupByFilter == 'none'
-
-
-      list_parms['noDataMessage'] = 'No Ruby Items Found'
-      list_parms['title']         = 'Ruby Items Using Sequel!!!'
-
-      #
-      # Create small button array and pass to the buttons key
-      #
-
-      mini_buttons = {}
-      mini_buttons['button_edit'] = {'page'       => '/edit',
-                                     'text'       => 'Edit',
-                                     'function'   => 'Redirect',
-                                     #pass tags to pull from each column when building the URL
-                                     'tags'       => {'my_key_name' => 'name','value_from_database'=>'price'}}
-
-      mini_buttons['button_delete'] = {'page'       => '/delete',
-                                       'text'       => 'Delete',
-                                       'function'   => 'alert',
-                                       'innerClass' => 'danger'}
-      list_parms['buttons']                                            = {button_column_name => mini_buttons}
-      list_parms['fieldFunction']                                      = {
-        button_column_name => "''",
-        'date_added'  => ['postgres','oracle'].include?(WidgetList::List::get_db_type) ? "TO_CHAR(date_added, 'MM/DD/YYYY')" : "date_added"
-      }
-
-      list_parms['groupByItems']    = ['All Records', 'Item Name', 'Sku Number']
-
-
-      #
-      # Setup a custom field for checkboxes stored into the session and reloaded when refresh occurs
-      #
-      list_parms = WidgetList::List.checkbox_helper(list_parms,'id')
-
-      #
-      # Generate a template for the DOWN ARROW for CUSTOM FILTER
-      #
-      input = {}
-
-      input['id']          = 'comments'
-      input['name']        = 'comments'
-      input['width']       = '170'
-      input['max_length']  = '500'
-      input['input_class'] = 'info-input'
-      input['title']       = 'Optional CSV list'
-
-      button_search = {}
-      button_search['onclick']      = "alert('This would search, but is not coded.  That is for you to do')"
-
-      list_parms['listSearchForm'] = WidgetList::Utils::fill( {
-                                                                  '<!--BUTTON_SEARCH-->'       => WidgetList::Widgets::widget_button('Search', button_search),
-                                                                  '<!--COMMENTS-->'            => WidgetList::Widgets::widget_input(input),
-                                                                  '<!--BUTTON_CLOSE-->'        => "HideAdvancedSearch(this)" } ,
-                                                                '
-      <div id="advanced-search-container">
-      <div class="widget-search-drilldown-close" onclick="<!--BUTTON_CLOSE-->">X</div>
-        <ul class="advanced-search-container-inline" id="search_columns">
-          <li>
-             <div>Search Comments</div>
-             <!--COMMENTS-->
-          </li>
-        </ul>
-      <br/>
-      <div style="text-align:right;width:100%;height:30px;" class="advanced-search-container-buttons"><!--BUTTON_RESET--><!--BUTTON_SEARCH--></div>
-      </div>'
-      # or to keep HTML out of controller render_to_string(:partial => 'partials/form_xxx')
-      )
-
-      #
-      # Control widths of special fields
-      #
-
-      list_parms['columnWidth']    = {
-        'date_added'=>'200px',
-        'sku_linked'=>'20px',
-      }
-
-      #
-      # If certain statuses of records are shown, visualize
-      #
-
-      list_parms.deep_merge!({'rowStylesByStatus' =>
-                                {'active'=>
-                                   {'Yes' => '' }
-                                }
-                             })
-      list_parms.deep_merge!({'rowStylesByStatus' =>
-                                {'active'=>
-                                   {'No'  => 'font-style:italic;color:red;' }
-                                }
-                             })
-
-      list_parms.deep_merge!({'rowColorByStatus' =>
-                                {'active'=>
-                                   {'Yes' => '' }
-                                }
-                             })
-      list_parms.deep_merge!({'rowColorByStatus' =>
-                                {'active'=>
-                                   {'No'  => '#EBEBEB' }
-                                }
-                             })
-
-
-      list_parms['columnPopupTitle'] = {}
-      list_parms['columnPopupTitle']['checkbox']         = 'Select any record'
-      list_parms['columnPopupTitle']['cnt']              = 'Total Count'
-      list_parms['columnPopupTitle']['id']               = 'The primary key of the item'
-      list_parms['columnPopupTitle']['name_linked']      = 'Name (Click to drill down)'
-      list_parms['columnPopupTitle']['price']            = 'Price of item (not formatted)'
-      list_parms['columnPopupTitle']['sku_linked']       = 'Sku # (Click to drill down)'
-      list_parms['columnPopupTitle']['date_added']       = 'The date the item was added to the database'
-      list_parms['columnPopupTitle']['active']           = 'Is the item active?'
-
-      output_type, output  = WidgetList::List.build_list(list_parms)
-
-      case output_type
-        when 'html'
-          # put <%= @output %> inside your view for initial load nothing to do here other than any custom concatenation of multiple lists
-          @output = output
-        when 'json'
-          return render :inline => output
-        when 'export'
-          send_data(output, :filename => list_parms['name'] + '.csv')
-          return
-      end
-
-    rescue Exception => e
-
-      Rails.logger.info e.to_s + "\n\n" + $!.backtrace.join("\n\n")
-
-      #really this block is just to catch initial ruby errors in setting up your list_parms
-      #I suggest taking out this rescue when going to production
-      output_type, output  = WidgetList::List.build_list(list_parms)
-
-      case output_type
-        when 'html'
-          @output = output
-        when 'json'
-          return render :inline => output
-        when 'export'
-          send_data(output, :filename => list_parms['name'] + '.csv')
-          return
-      end
-
-    end
+  end
+end
 ```
 
-****
+In `app/views/items/index.html.erb`, render `<%= raw @output %>`. Only use trusted values in custom HTML fields and SQL fragments. The gem builds markup and SQL from list configuration.
 
-## Contributing
+For Ransack filtering, allowlist searchable model columns and pass both the search object and its relation:
 
-****
+```ruby
+class Item < ApplicationRecord
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[id name sku]
+  end
+end
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+search = Item.ransack(params[:q])
+list['database'] = 'secondary' # omit if Active Record is primary
+list['ransackSearch'] = search
+list['view'] = search.result
+```
 
+A standard GET URL such as `/items?q[name_cont]=Apple` applies the filter. The gem also renders its advanced Ransack form from `ransackSearch`.
 
-Meta
-----
+## Try the example
 
-* Gems: <https://rubygems.org/gems/widget_list>
+With `widget_list` and `widget_list_example_rails8` checked out as sibling directories:
 
+```sh
+cd ../widget_list_example_rails8
+bundle install
+bin/rails db:prepare
+bin/rails db:seed
+bin/rails test
+bin/rails server
+```
 
-Authors
--------
+Open `http://127.0.0.1:3000/` for Sequel or `/ransack` for Active Record. Search SKU `1001`, change pages, export CSV, or open the filter arrow and set **Name contains Apple**. The example uses a relative Bundler `path:` dependency, so edits to this gem are picked up after restarting the server.
 
-David Renne :: david_renne @ ya hoo - .com :: @phpnerd
+## Release
 
-License
--------
+`./checkin_gem.sh` validates and builds the gem, and runs the sibling Rails 8 example tests when present. Review and commit your changes on `main`. `./publish_gem.sh` checks that the tree is clean, builds the package, and publishes it to RubyGems.org. RubyGems may prompt for your MFA code; the gemspec marks MFA as required. No credential is stored in these scripts. Publishing is a separate, intentional step from committing.
 
-Copyright 2012 David Renne
+See [RubyGems publishing](https://guides.rubygems.org/publishing/) and [MFA setup](https://guides.rubygems.org/setting-up-otp-mfa/) for account setup.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+## Upgrade notes
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-[1]: https://github.com/davidrenne/widget_list_example/blob/master/app/helpers/widget_list_helper.rb
-[2]: https://github.com/davidrenne/widget_list_theme_blue_sky_basin
+The migration replaced Rails 3 callbacks and asset middleware, Ruby's removed `URI.decode`, unsafe SQL `eval`, and process-wide request globals. Ransack 5 requires explicit `ransackable_attributes` in each searchable model. The original 2013 administration builder and non-SQLite adapters are still historical code paths; the Rails 8 example verifies the list, Ajax search, pagination, advanced Ransack filtering, CSV export, and asset compilation.

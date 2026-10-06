@@ -1,4 +1,5 @@
 require 'ransack'
+require 'widget_list/request_context'
 require 'widget_list/version'
 require 'widget_list/hash'
 require 'widget_list/string'
@@ -17,7 +18,7 @@ module WidgetList
   # WidgetList Administration/Setup
   #
   def self.go!()
-    if $_REQUEST.key?('iframe')
+    if WidgetList::RequestContext.request.key?('iframe')
       eval(WidgetList::Administration.new.translate_config_to_code())
       return @output
     else
@@ -30,7 +31,7 @@ module WidgetList
     def show_interface()
       config_file = Rails.root.join("config", "widget-list-administration.json")
       config_file_all = Rails.root.join("config", "widget-list-administration-all.json")
-      if config_file.file? && !$_REQUEST.key?('ajax') && !$_REQUEST.key?('name')
+      if config_file.file? && !WidgetList::RequestContext.request.key?('ajax') && !WidgetList::RequestContext.request.key?('name')
         File.delete(Rails.root.join("config", "widget-list-administration.json"))
       end
 
@@ -65,7 +66,7 @@ module WidgetList
       # INIT PROMPT
       #
 
-      if config_file_all.file? && !$_REQUEST.key?('restore')
+      if config_file_all.file? && !WidgetList::RequestContext.request.key?('restore')
         @fill['<!--BUTTON_CSS-->']       = 'style="display:none"'
         @fill['<!--START_CSS-->']        = 'style="display:none"'
         options = ''
@@ -99,7 +100,7 @@ module WidgetList
       #
       # BASE
       #
-      @fill['<!--POST_URL-->']                  = $_SERVER['SCRIPT_NAME'] + $_SERVER['PATH_INFO']
+      @fill['<!--POST_URL-->']                  = WidgetList::RequestContext.server['SCRIPT_NAME'] + WidgetList::RequestContext.server['PATH_INFO']
       @fill['<!--BUTTONS-->']                   = WidgetList::Widgets::widget_button('Step One - Start ->',           {'id' => 'start'      , 'onclick' => "ShowStart();"    , 'innerClass' => "primary"  } ) +
           WidgetList::Widgets::widget_button('Step Two - Fields ->',          {'id' => 'fields'     , 'onclick' => "ShowFields();"  , 'innerClass' => "primary disabled"  } ) +
           WidgetList::Widgets::widget_button('Step Three - Rows ->',          {'id' => 'rows'       , 'onclick' => "ShowRows();"    , 'innerClass' => "primary disabled"  } ) +
@@ -112,8 +113,8 @@ module WidgetList
       # START
       #
       @fill['<!--TITLE-->']                     = 'Stub Out A New WidgetList Implementation'
-      @fill['<!--CONTROLLER_VALUE-->']          = (!@isEditing) ? $_REQUEST['controller'] : page_config['desiredController']
-      @fill['<!--ACTION_VALUE-->']              = (!@isEditing) ? $_REQUEST['action'] : page_config['desiredAction']
+      @fill['<!--CONTROLLER_VALUE-->']          = (!@isEditing) ? WidgetList::RequestContext.request['controller'] : page_config['desiredController']
+      @fill['<!--ACTION_VALUE-->']              = (!@isEditing) ? WidgetList::RequestContext.request['action'] : page_config['desiredAction']
       @fill['<!--NAME_VALUE-->']                = (!@isEditing) ? config_id : page_config['name']
       @fill['<!--VIEW_OPTIONS-->']              = model_options
       @fill['<!--TITLE_VALUE-->']               = (!@isEditing) ? '' : page_config['title']
@@ -370,7 +371,7 @@ module WidgetList
     end
 
     def escape_code(code)
-      if $_REQUEST.key?('iframe')
+      if WidgetList::RequestContext.request.key?('iframe')
         #It is so weird, during output return, you need an extra slash to populate the code properly, but during rendering this is needed
         code.gsub(/'/,"\\\\'")
       else
@@ -594,7 +595,7 @@ module WidgetList
 
       if page_config['useRansack'] == '1' && page_config['showSearch'] == '1' && $is_mongo == false
         view_code = "
-      list_parms#{add_pointer('ransackSearch',-10)} #{page_config['view']}.search(#{($_REQUEST.key?('iframe')) ? '$_REQUEST' : 'params'}[:q])
+      list_parms#{add_pointer('ransackSearch',-10)} #{page_config['view']}.search(#{(WidgetList::RequestContext.request.key?('iframe')) ? 'WidgetList::RequestContext.request' : 'params'}[:q])
       list_parms#{add_pointer('view',-10)} list_parms['ransackSearch'].result
         "
         if page_config['ransackAdvancedForm'] == '1'
@@ -888,9 +889,9 @@ module WidgetList
       config_file = Rails.root.join("config", "widget-list-administration.json")
       config_file_all = Rails.root.join("config", "widget-list-administration-all.json")
 
-      if config_file.file? && ($_REQUEST.key?('iframe') || $_REQUEST.key?('name'))
+      if config_file.file? && (WidgetList::RequestContext.request.key?('iframe') || WidgetList::RequestContext.request.key?('name'))
         configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration.json")).read)
-      elsif $_REQUEST.key?('restore')
+      elsif WidgetList::RequestContext.request.key?('restore')
         configuration = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration-all.json")).read)
       else
         configuration = {}
@@ -1039,9 +1040,9 @@ module WidgetList
 
         fields,fields_hidden,fields_function,buttons,footer_buttons,group_by,drill_downs,flags,misc = normalize_configs(page_config)
       else
-        controller = ($_REQUEST.key?('desiredController') ? $_REQUEST['desiredController'] :  $_REQUEST['controller'] )
+        controller = (WidgetList::RequestContext.request.key?('desiredController') ? WidgetList::RequestContext.request['desiredController'] :  WidgetList::RequestContext.request['controller'] )
 
-        if $_REQUEST.key?('ajax')
+        if WidgetList::RequestContext.request.key?('ajax')
           model         = model_name.constantize
           model.columns.each { |field|
             fields[field.name] = field.name.gsub(/_/,' _').camelize
@@ -1059,7 +1060,7 @@ module WidgetList
         buttons['Delete']['url']     = '/' + controller + '/delete/id/'
         buttons['Edit']['url']       = '/' + controller + '/edit/id/'
         buttons['Edit']['class']     = 'info'
-        if $_REQUEST.key?('ajax')
+        if WidgetList::RequestContext.request.key?('ajax')
           group_by['']               = 'All ' + model_name + 's'
           group_by['field_name']     = 'This will group by field_name and show Count'
           buttons['Delete']['url']   = '/' + controller + '/delete/' + fields.keys.first + '/'
@@ -1275,7 +1276,7 @@ module WidgetList
         @response['footer_buttons']             +=  WidgetList::Utils::fill(@fieldFill , ac.render_to_string(:partial => 'widget_list/administration/button_row') )
       }
 
-      if $_REQUEST.key?('ajax') || @isEditing
+      if WidgetList::RequestContext.request.key?('ajax') || @isEditing
         @response['all_fields']     = all_fields
         @response['checked_fields'] = build_field_options(all_fields, page_config.key?('checkboxField') ? page_config['checkboxField'] : '')
       end
@@ -1289,13 +1290,13 @@ module WidgetList
 
     def config_id()
       config_id =  ''
-      if $_REQUEST.key?('restore')
-        config_id = $_REQUEST['restore']
+      if WidgetList::RequestContext.request.key?('restore')
+        config_id = WidgetList::RequestContext.request['restore']
       else
-        config_id += $_REQUEST['controller'] if $_REQUEST.key?('controller')
-        config_id += $_REQUEST['action'] if $_REQUEST.key?('action')
-        config_id += '|' + $_REQUEST['desiredController'] if $_REQUEST.key?('desiredController')
-        config_id += '-' + $_REQUEST['desiredAction'] if $_REQUEST.key?('desiredAction')
+        config_id += WidgetList::RequestContext.request['controller'] if WidgetList::RequestContext.request.key?('controller')
+        config_id += WidgetList::RequestContext.request['action'] if WidgetList::RequestContext.request.key?('action')
+        config_id += '|' + WidgetList::RequestContext.request['desiredController'] if WidgetList::RequestContext.request.key?('desiredController')
+        config_id += '-' + WidgetList::RequestContext.request['desiredAction'] if WidgetList::RequestContext.request.key?('desiredAction')
       end
       return config_id
     end
@@ -1311,7 +1312,7 @@ module WidgetList
       else
         configuration = {}
       end
-      configuration[config_id] = $_REQUEST
+      configuration[config_id] = WidgetList::RequestContext.request
       time = Time.new
       configuration[config_id]['savedOn'] = time.year.to_s + '-' + time.month.to_s.rjust(2, "0") + '-' + time.day.to_s.rjust(2, "0")
 
@@ -1319,14 +1320,14 @@ module WidgetList
         file.puts configuration.to_json
       end
 
-      if !$_REQUEST.key?('iframe') && !$_REQUEST.key?('ajax')
+      if !WidgetList::RequestContext.request.key?('iframe') && !WidgetList::RequestContext.request.key?('ajax')
         config_file_all = Rails.root.join("config", "widget-list-administration-all.json")
         if config_file_all.file?
           configuration_all = JSON.parse(File.new(Rails.root.join("config", "widget-list-administration-all.json")).read)
         else
           configuration_all = {}
         end
-        configuration_all[config_id] = $_REQUEST
+        configuration_all[config_id] = WidgetList::RequestContext.request
         configuration_all[config_id]['savedOn'] = time.year.to_s + '-' + time.month.to_s.rjust(2, "0") + '-' + time.day.to_s.rjust(2, "0")
 
         File.open(Rails.root.join("config", "widget-list-administration-all.json"), "w") do |file|
@@ -1336,10 +1337,10 @@ module WidgetList
 
 
       @fill = {}
-      unless $_REQUEST.key?('ajax')
+      unless WidgetList::RequestContext.request.key?('ajax')
         @fill['<!--CODE-->'] = translate_config_to_code()
       end
-      return WidgetList::Utils::fill(@fill ,ac.render_to_string(:partial => 'widget_list/administration/output_save') )  unless $_REQUEST.key?('ajax')
+      return WidgetList::Utils::fill(@fill ,ac.render_to_string(:partial => 'widget_list/administration/output_save') )  unless WidgetList::RequestContext.request.key?('ajax')
       return @fill.to_json
     end
   end
@@ -1366,6 +1367,7 @@ module WidgetList
 
     # @param [Hash] list
     def initialize(list={})
+      WidgetList::RequestContext.used = true
 
       # Defaults for all configs
       # See https://github.com/davidrenne/widget_list/blob/master/README.md#feature-configurations
@@ -1498,7 +1500,7 @@ module WidgetList
       end
 
 
-      if $_REQUEST.key?('searchClear')
+      if WidgetList::RequestContext.request.key?('searchClear')
         clear_search_session()
       end
 
@@ -1506,41 +1508,41 @@ module WidgetList
         @isJumpingList = false
 
         #Ajax ListJump
-        if ! $_REQUEST.empty?
-          if $_REQUEST.key?('LIST_FILTER_ALL') && !$_REQUEST['LIST_FILTER_ALL'].empty?
-            @items['LIST_FILTER_ALL']     = $_REQUEST['LIST_FILTER_ALL']
+        if ! WidgetList::RequestContext.request.empty?
+          if WidgetList::RequestContext.request.key?('LIST_FILTER_ALL') && !WidgetList::RequestContext.request['LIST_FILTER_ALL'].empty?
+            @items['LIST_FILTER_ALL']     = WidgetList::RequestContext.request['LIST_FILTER_ALL']
             @isJumpingList = true
           end
 
-          if $_REQUEST.key?('LIST_COL_SORT') && !$_REQUEST['LIST_COL_SORT'].empty?
-            @items['LIST_COL_SORT']     = $_REQUEST['LIST_COL_SORT']
+          if WidgetList::RequestContext.request.key?('LIST_COL_SORT') && !WidgetList::RequestContext.request['LIST_COL_SORT'].empty?
+            @items['LIST_COL_SORT']     = WidgetList::RequestContext.request['LIST_COL_SORT']
             @isJumpingList = true
           end
 
-          if $_REQUEST.key?('LIST_COL_SORT_ORDER') && !$_REQUEST['LIST_COL_SORT_ORDER'].empty?
-            @items['LIST_COL_SORT_ORDER']     = $_REQUEST['LIST_COL_SORT_ORDER']
+          if WidgetList::RequestContext.request.key?('LIST_COL_SORT_ORDER') && !WidgetList::RequestContext.request['LIST_COL_SORT_ORDER'].empty?
+            @items['LIST_COL_SORT_ORDER']     = WidgetList::RequestContext.request['LIST_COL_SORT_ORDER']
             @isJumpingList = true
           end
 
-          if $_REQUEST.key?('LIST_SEQUENCE') && !$_REQUEST['LIST_SEQUENCE'].empty?
-            @items['LIST_SEQUENCE']     = $_REQUEST['LIST_SEQUENCE'].to_i
+          if WidgetList::RequestContext.request.key?('LIST_SEQUENCE') && !WidgetList::RequestContext.request['LIST_SEQUENCE'].empty?
+            @items['LIST_SEQUENCE']     = WidgetList::RequestContext.request['LIST_SEQUENCE'].to_i
             @isJumpingList = true
           end
 
-          if $_REQUEST.key?('ROW_LIMIT') && !$_REQUEST['ROW_LIMIT'].empty?
-            @items['ROW_LIMIT']     = $_REQUEST['ROW_LIMIT']
+          if WidgetList::RequestContext.request.key?('ROW_LIMIT') && !WidgetList::RequestContext.request['ROW_LIMIT'].empty?
+            @items['ROW_LIMIT']     = WidgetList::RequestContext.request['ROW_LIMIT']
             @isJumpingList = true
 
             if @items['showPagination']
-              $_SESSION['pageDisplayLimit']            = $_REQUEST['ROW_LIMIT']
-              $_SESSION.deep_merge!({'ROW_LIMIT' => { @items['name'] => $_REQUEST['ROW_LIMIT']} })
+              WidgetList::RequestContext.session['pageDisplayLimit']            = WidgetList::RequestContext.request['ROW_LIMIT']
+              WidgetList::RequestContext.session.deep_merge!({'ROW_LIMIT' => { @items['name'] => WidgetList::RequestContext.request['ROW_LIMIT']} })
             end
 
           end
 
           clear_sort_get_vars()
 
-          if $_REQUEST.key?('list_action') && $_REQUEST['list_action'] == 'ajax_widgetlist_checks' && @items['storeSessionChecks']
+          if WidgetList::RequestContext.request.key?('list_action') && WidgetList::RequestContext.request['list_action'] == 'ajax_widgetlist_checks' && @items['storeSessionChecks']
             ajax_maintain_checks()
           end
 
@@ -1553,14 +1555,14 @@ module WidgetList
             clear_search_session(@items.key?('searchClearAll'))
           end
 
-          matchesCurrentList   = $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['BUTTON_VALUE'] == @items['buttonVal']
-          isSearchRequest      = $_REQUEST.key?('search_filter') && $_REQUEST['search_filter'] != 'undefined'
+          matchesCurrentList   = WidgetList::RequestContext.request.key?('BUTTON_VALUE') && WidgetList::RequestContext.request['BUTTON_VALUE'] == @items['buttonVal']
+          isSearchRequest      = WidgetList::RequestContext.request.key?('search_filter') && WidgetList::RequestContext.request['search_filter'] != 'undefined'
           templateCustomSearch = !@items['templateFilter'].empty? # if you define templateFilter WidgetList will not attempt to build a where clause with search
 
           #
           # Search restore
           #
-          if !isSearchRequest && !$_SESSION.empty? && $_SESSION.key?('SEARCH_FILTER') && $_SESSION['SEARCH_FILTER'].key?(@items['name']) && @items['searchSession']
+          if !isSearchRequest && !WidgetList::RequestContext.session.empty? && WidgetList::RequestContext.session.key?('SEARCH_FILTER') && WidgetList::RequestContext.session['SEARCH_FILTER'].key?(@items['name']) && @items['searchSession']
             isSearchRestore = true
           end
 
@@ -1570,10 +1572,10 @@ module WidgetList
             get_view() if $is_mongo # call function to fill in @active_record_model
 
             if !isSearchRestore
-              $_SESSION.deep_merge!({'SEARCH_FILTER' => { @items['name'] => $_REQUEST['search_filter']} })
-              searchFilter = $_REQUEST['search_filter'].strip_or_self()
+              WidgetList::RequestContext.session.deep_merge!({'SEARCH_FILTER' => { @items['name'] => WidgetList::RequestContext.request['search_filter']} })
+              searchFilter = WidgetList::RequestContext.request['search_filter'].strip_or_self()
             else
-              searchFilter = $_SESSION['SEARCH_FILTER'][@items['name']]
+              searchFilter = WidgetList::RequestContext.session['SEARCH_FILTER'][@items['name']]
             end
 
             if ! searchFilter.empty?
@@ -1794,7 +1796,7 @@ module WidgetList
           @templateFill['<!--DATA-->']  = '<tr><td colspan="50"><div id="noListResults">' + generate_error_output(e) + @items['noDataMessage'] + '</div></td></tr>'
         end
 
-        if !$_REQUEST.key?('BUTTON_VALUE')
+        if !WidgetList::RequestContext.request.key?('BUTTON_VALUE')
 
           #Initialize page load/Session stuff whe list first loads
           #
@@ -1809,12 +1811,12 @@ module WidgetList
         #Set a list title if it exists
         #
 
-        if ! $_REQUEST.key?('BUTTON_VALUE') && !@items['title'].empty?
+        if ! WidgetList::RequestContext.request.key?('BUTTON_VALUE') && !@items['title'].empty?
           @items['templateHeader'] = '
                                        <h1 style="font-size:' + get_header_px_value() + ';"><!--TITLE--></h1><div class="horizontal_rule"></div>
                                        <!--FILTER_HEADER-->
                                      '
-        elsif !$_REQUEST.key?('BUTTON_VALUE')
+        elsif !WidgetList::RequestContext.request.key?('BUTTON_VALUE')
           # Only if not in ajax would we want to output the filter header
           #
           @items['templateHeader'] = '<!--FILTER_HEADER-->'
@@ -1844,8 +1846,8 @@ module WidgetList
           @items['rowLimit']      = @items['ROW_LIMIT'].to_i
         end
 
-        if $_SESSION.key?('ROW_LIMIT') && !$_SESSION['ROW_LIMIT'].nil? && $_SESSION['ROW_LIMIT'].key?(@items['name']) && !$_SESSION['ROW_LIMIT'][@items['name']].empty?
-          @items['rowLimit'] = $_SESSION['ROW_LIMIT'][@items['name']].to_i
+        if WidgetList::RequestContext.session.key?('ROW_LIMIT') && !WidgetList::RequestContext.session['ROW_LIMIT'].nil? && WidgetList::RequestContext.session['ROW_LIMIT'].key?(@items['name']) && !WidgetList::RequestContext.session['ROW_LIMIT'][@items['name']].empty?
+          @items['rowLimit'] = WidgetList::RequestContext.session['ROW_LIMIT'][@items['name']].to_i
         end
 
         if ! @items['LIST_COL_SORT'].empty?
@@ -1920,7 +1922,7 @@ module WidgetList
           'database'            => 'primary', #
           'title'               => '',
           'listDescription'     => '',
-          'pageId'              => $_SERVER['SCRIPT_NAME'] + $_SERVER['PATH_INFO'],
+          'pageId'              => WidgetList::RequestContext.server['SCRIPT_NAME'] + WidgetList::RequestContext.server['PATH_INFO'],
           'view'                => '',
           'data'                => {},
           'bindVars'            => [],
@@ -2150,17 +2152,17 @@ module WidgetList
 
     def ajax_maintain_checks()
 
-      if !$_SESSION.key?('list_checks')
-        $_SESSION['list_checks'] = {}
+      if !WidgetList::RequestContext.session.key?('list_checks')
+        WidgetList::RequestContext.session['list_checks'] = {}
       end
 
       #
       # A list must be provided
       #
-      if $_REQUEST.key?('LIST_NAME')
-        listName  = $_REQUEST['LIST_NAME']
-        sqlHash   = $_REQUEST['SQL_HASH']
-        sequence  = $_REQUEST['LIST_SEQUENCE'].to_s
+      if WidgetList::RequestContext.request.key?('LIST_NAME')
+        listName  = WidgetList::RequestContext.request['LIST_NAME']
+        sqlHash   = WidgetList::RequestContext.request['SQL_HASH']
+        sequence  = WidgetList::RequestContext.request['LIST_SEQUENCE'].to_s
 
         #
         # The placeholder is created when the list initially forms. This validates it and makes it so
@@ -2171,18 +2173,18 @@ module WidgetList
         # For each posted check box
         #
 
-        $_REQUEST.each { |value, checked|
+        WidgetList::RequestContext.request.each { |value, checked|
           if checked.to_s == '1'
             #
             # Set it as checked
             #
-            $_SESSION.deep_merge!({'list_checks' => { listName + sqlHash + value => true  } })
+            WidgetList::RequestContext.session.deep_merge!({'list_checks' => { listName + sqlHash + value => true  } })
           else
             #
             # Unset if it exists and is unchecked
             #
-            if $_SESSION['list_checks'].key?(listName + sqlHash + value)
-              $_SESSION['list_checks'].delete(listName + sqlHash + value)
+            if WidgetList::RequestContext.session['list_checks'].key?(listName + sqlHash + value)
+              WidgetList::RequestContext.session['list_checks'].delete(listName + sqlHash + value)
             end
           end
         }
@@ -2190,18 +2192,18 @@ module WidgetList
         #
         # Check All
         #
-        if $_REQUEST.key?('checked_all') && $_REQUEST['checked_all'] == '1'
-          if $_SESSION.key?('list_checks')
+        if WidgetList::RequestContext.request.key?('checked_all') && WidgetList::RequestContext.request['checked_all'] == '1'
+          if WidgetList::RequestContext.session.key?('list_checks')
 
-            if $_SESSION['list_checks'].key?('check_all_' + sqlHash + listName + sequence)
-              if $_REQUEST['checked_all'].empty?
-                $_SESSION['list_checks'].delete('check_all_' + sqlHash + listName + sequence)
+            if WidgetList::RequestContext.session['list_checks'].key?('check_all_' + sqlHash + listName + sequence)
+              if WidgetList::RequestContext.request['checked_all'].empty?
+                WidgetList::RequestContext.session['list_checks'].delete('check_all_' + sqlHash + listName + sequence)
               else
-                $_SESSION.deep_merge!({'list_checks' => { 'check_all_' + sqlHash + listName + sequence => true } })
+                WidgetList::RequestContext.session.deep_merge!({'list_checks' => { 'check_all_' + sqlHash + listName + sequence => true } })
               end
             else
-              if ! $_REQUEST['checked_all'].empty?
-                $_SESSION.deep_merge!({'list_checks' => { 'check_all_' + sqlHash + listName +  $_REQUEST['LIST_SEQUENCE'] => true } })
+              if ! WidgetList::RequestContext.request['checked_all'].empty?
+                WidgetList::RequestContext.session.deep_merge!({'list_checks' => { 'check_all_' + sqlHash + listName +  WidgetList::RequestContext.request['LIST_SEQUENCE'] => true } })
               end
             end
           end
@@ -2211,82 +2213,82 @@ module WidgetList
 
     def self.clear_check_box_session(name='')
 
-      if $_SESSION.key?('DRILL_DOWN_FILTERS')
-        $_SESSION.delete('DRILL_DOWN_FILTERS')
+      if WidgetList::RequestContext.session.key?('DRILL_DOWN_FILTERS')
+        WidgetList::RequestContext.session.delete('DRILL_DOWN_FILTERS')
       end
 
-      if $_SESSION.key?('DRILL_DOWNS')
-        $_SESSION.delete('DRILL_DOWNS')
+      if WidgetList::RequestContext.session.key?('DRILL_DOWNS')
+        WidgetList::RequestContext.session.delete('DRILL_DOWNS')
       end
 
-      $_SESSION['list_checks'].keys.each { |key|
+      WidgetList::RequestContext.session['list_checks'].keys.each { |key|
         if key.include?(name)
-          $_SESSION['list_checks'].delete(key)
+          WidgetList::RequestContext.session['list_checks'].delete(key)
         end
-      } if $_SESSION.key?('list_checks')  && !$_SESSION['list_checks'].nil? && !$_SESSION['list_checks'].empty?
+      } if WidgetList::RequestContext.session.key?('list_checks')  && !WidgetList::RequestContext.session['list_checks'].nil? && !WidgetList::RequestContext.session['list_checks'].empty?
 
     end
 
     def clear_search_session(all=false)
 
-      if $_SESSION.key?('SEARCH_FILTER') && $_SESSION['SEARCH_FILTER'].key?(@items['name'])
-        $_SESSION['SEARCH_FILTER'].delete(@items['name'])
+      if WidgetList::RequestContext.session.key?('SEARCH_FILTER') && WidgetList::RequestContext.session['SEARCH_FILTER'].key?(@items['name'])
+        WidgetList::RequestContext.session['SEARCH_FILTER'].delete(@items['name'])
       end
 
-      if $_SESSION.key?('ROW_LIMIT') && $_SESSION['ROW_LIMIT'].key?(@items['name'])
-        $_SESSION['ROW_LIMIT'].delete(@items['name'])
+      if WidgetList::RequestContext.session.key?('ROW_LIMIT') && WidgetList::RequestContext.session['ROW_LIMIT'].key?(@items['name'])
+        WidgetList::RequestContext.session['ROW_LIMIT'].delete(@items['name'])
       end
 
-      if $_SESSION.key?('DRILL_DOWNS') && $_SESSION['DRILL_DOWNS'].key?(@items['name'])
-        $_SESSION['DRILL_DOWNS'].delete(@items['name'])
+      if WidgetList::RequestContext.session.key?('DRILL_DOWNS') && WidgetList::RequestContext.session['DRILL_DOWNS'].key?(@items['name'])
+        WidgetList::RequestContext.session['DRILL_DOWNS'].delete(@items['name'])
       end
 
-      if $_SESSION.key?('DRILL_DOWN_FILTERS') && $_SESSION['DRILL_DOWN_FILTERS'].key?(@items['name'])
-        $_SESSION['DRILL_DOWN_FILTERS'].delete(@items['name'])
+      if WidgetList::RequestContext.session.key?('DRILL_DOWN_FILTERS') && WidgetList::RequestContext.session['DRILL_DOWN_FILTERS'].key?(@items['name'])
+        WidgetList::RequestContext.session['DRILL_DOWN_FILTERS'].delete(@items['name'])
       end
 
-      if all && $_SESSION.key?('SEARCH_FILTER')
-        $_SESSION.delete('SEARCH_FILTER')
+      if all && WidgetList::RequestContext.session.key?('SEARCH_FILTER')
+        WidgetList::RequestContext.session.delete('SEARCH_FILTER')
       end
 
-      if all && $_SESSION.key?('ROW_LIMIT')
-        $_SESSION.delete('ROW_LIMIT')
+      if all && WidgetList::RequestContext.session.key?('ROW_LIMIT')
+        WidgetList::RequestContext.session.delete('ROW_LIMIT')
       end
 
-      if $_REQUEST.key?('LIST_FILTER_ALL')
-        $_REQUEST.delete('LIST_FILTER_ALL')
+      if WidgetList::RequestContext.request.key?('LIST_FILTER_ALL')
+        WidgetList::RequestContext.request.delete('LIST_FILTER_ALL')
       end
 
-      if $_REQUEST.key?('LIST_COL_SORT')
-        $_REQUEST.delete('LIST_COL_SORT')
+      if WidgetList::RequestContext.request.key?('LIST_COL_SORT')
+        WidgetList::RequestContext.request.delete('LIST_COL_SORT')
       end
 
-      if $_REQUEST.key?('LIST_COL_SORT_ORDER')
-        $_REQUEST.delete('LIST_COL_SORT_ORDER')
+      if WidgetList::RequestContext.request.key?('LIST_COL_SORT_ORDER')
+        WidgetList::RequestContext.request.delete('LIST_COL_SORT_ORDER')
       end
 
-      if $_REQUEST.key?('LIST_SEQUENCE')
-        $_REQUEST.delete('LIST_SEQUENCE')
+      if WidgetList::RequestContext.request.key?('LIST_SEQUENCE')
+        WidgetList::RequestContext.request.delete('LIST_SEQUENCE')
       end
 
     end
 
     def clear_sql_session(all=false)
 
-      if $_SESSION.key?('LIST_SEQUENCE') && $_SESSION['LIST_SEQUENCE'].key?(@sqlHash)
-        $_SESSION['LIST_SEQUENCE'].delete(@sqlHash)
+      if WidgetList::RequestContext.session.key?('LIST_SEQUENCE') && WidgetList::RequestContext.session['LIST_SEQUENCE'].key?(@sqlHash)
+        WidgetList::RequestContext.session['LIST_SEQUENCE'].delete(@sqlHash)
       end
 
-      if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
-        $_SESSION['LIST_COL_SORT'].delete(@sqlHash)
+      if WidgetList::RequestContext.session.key?('LIST_COL_SORT') && WidgetList::RequestContext.session['LIST_COL_SORT'].key?(@sqlHash)
+        WidgetList::RequestContext.session['LIST_COL_SORT'].delete(@sqlHash)
       end
 
-      if all && $_SESSION.key?('LIST_COL_SORT')
-        $_SESSION.delete('LIST_COL_SORT')
+      if all && WidgetList::RequestContext.session.key?('LIST_COL_SORT')
+        WidgetList::RequestContext.session.delete('LIST_COL_SORT')
       end
 
-      if all && $_SESSION.key?('LIST_SEQUENCE')
-        $_SESSION.delete('LIST_SEQUENCE')
+      if all && WidgetList::RequestContext.session.key?('LIST_SEQUENCE')
+        WidgetList::RequestContext.session.delete('LIST_SEQUENCE')
       end
 
     end
@@ -2294,26 +2296,26 @@ module WidgetList
     def self.get_filter_and_drilldown(listId)
       filter = ''
       drillDown = ''
-      if !$_REQUEST.key?('BUTTON_VALUE')
+      if !WidgetList::RequestContext.request.key?('BUTTON_VALUE')
         # Initialize page load/Session stuff whe list first loads
         #
         WidgetList::List::clear_check_box_session(listId)
       end
 
-      if $_REQUEST.key?('drill_down') && !$_REQUEST.key?('searchClear')
-        drillDown = $_REQUEST['drill_down']
-        $_SESSION.deep_merge!({'DRILL_DOWNS' => { listId => drillDown} })
-      elsif $_SESSION.key?('DRILL_DOWNS') && $_SESSION['DRILL_DOWNS'].key?(listId) && !$_REQUEST.key?('searchClear')
-        drillDown = $_SESSION['DRILL_DOWNS'][listId]
+      if WidgetList::RequestContext.request.key?('drill_down') && !WidgetList::RequestContext.request.key?('searchClear')
+        drillDown = WidgetList::RequestContext.request['drill_down']
+        WidgetList::RequestContext.session.deep_merge!({'DRILL_DOWNS' => { listId => drillDown} })
+      elsif WidgetList::RequestContext.session.key?('DRILL_DOWNS') && WidgetList::RequestContext.session['DRILL_DOWNS'].key?(listId) && !WidgetList::RequestContext.request.key?('searchClear')
+        drillDown = WidgetList::RequestContext.session['DRILL_DOWNS'][listId]
       else
         drillDown = 'default'
       end
 
-      if $_REQUEST.key?('filter') && !$_REQUEST.key?('searchClear')
-        filter = $_REQUEST['filter']
-        $_SESSION.deep_merge!({'DRILL_DOWN_FILTERS' => { listId => filter} })
-      elsif $_SESSION.key?('DRILL_DOWN_FILTERS') && $_SESSION['DRILL_DOWN_FILTERS'].key?(listId) && !$_REQUEST.key?('searchClear')
-        filter = $_SESSION['DRILL_DOWN_FILTERS'][listId]
+      if WidgetList::RequestContext.request.key?('filter') && !WidgetList::RequestContext.request.key?('searchClear')
+        filter = WidgetList::RequestContext.request['filter']
+        WidgetList::RequestContext.session.deep_merge!({'DRILL_DOWN_FILTERS' => { listId => filter} })
+      elsif WidgetList::RequestContext.session.key?('DRILL_DOWN_FILTERS') && WidgetList::RequestContext.session['DRILL_DOWN_FILTERS'].key?(listId) && !WidgetList::RequestContext.request.key?('searchClear')
+        filter = WidgetList::RequestContext.session['DRILL_DOWN_FILTERS'][listId]
       end
       return drillDown, filter
     end
@@ -2321,11 +2323,11 @@ module WidgetList
     def self.get_group_by_selection(list_parms)
       groupBy = ''
 
-      if $_REQUEST.key?('switch_grouping')
-        groupBy = $_REQUEST['switch_grouping']
-        $_SESSION.deep_merge!({'CURRENT_GROUPING' => { list_parms['name'] => groupBy} })
-      elsif $_SESSION.key?('CURRENT_GROUPING') && !$_SESSION['CURRENT_GROUPING'].nil? && $_SESSION['CURRENT_GROUPING'].key?(list_parms['name'])
-        groupBy = $_SESSION['CURRENT_GROUPING'][list_parms['name']]
+      if WidgetList::RequestContext.request.key?('switch_grouping')
+        groupBy = WidgetList::RequestContext.request['switch_grouping']
+        WidgetList::RequestContext.session.deep_merge!({'CURRENT_GROUPING' => { list_parms['name'] => groupBy} })
+      elsif WidgetList::RequestContext.session.key?('CURRENT_GROUPING') && !WidgetList::RequestContext.session['CURRENT_GROUPING'].nil? && WidgetList::RequestContext.session['CURRENT_GROUPING'].key?(list_parms['name'])
+        groupBy = WidgetList::RequestContext.session['CURRENT_GROUPING'][list_parms['name']]
         list_parms['groupBySelected'] =  groupBy
       else
         groupBy = ''
@@ -2335,12 +2337,12 @@ module WidgetList
     end
 
     def clear_sort_get_vars()
-      $_REQUEST.delete('LIST_FILTER_ALL')
-      $_REQUEST.delete('ROW_LIMIT')
-      $_REQUEST.delete('LIST_SEQUENCE')
-      $_REQUEST.delete('LIST_COL_SORT_ORDER')
-      $_REQUEST.delete('LIST_COL_SORT')
-      $_REQUEST.delete('LIST_FILTER_ALL')
+      WidgetList::RequestContext.request.delete('LIST_FILTER_ALL')
+      WidgetList::RequestContext.request.delete('ROW_LIMIT')
+      WidgetList::RequestContext.request.delete('LIST_SEQUENCE')
+      WidgetList::RequestContext.request.delete('LIST_COL_SORT_ORDER')
+      WidgetList::RequestContext.request.delete('LIST_COL_SORT')
+      WidgetList::RequestContext.request.delete('LIST_FILTER_ALL')
     end
 
     def generate_limits()
@@ -2369,11 +2371,11 @@ module WidgetList
     def render(results={})
 
       if @isAdministrating
-        if $_REQUEST.key?('name')
+        if WidgetList::RequestContext.request.key?('name')
           return WidgetList::Administration.new.save_and_show_code()
-        elsif $_REQUEST.key?('ajax') && $_REQUEST.key?('model')
-          return WidgetList::Administration.new.ajax_get_field_json($_REQUEST['model'])
-        elsif $_REQUEST.key?('ajax') && $_REQUEST.key?('save')
+        elsif WidgetList::RequestContext.request.key?('ajax') && WidgetList::RequestContext.request.key?('model')
+          return WidgetList::Administration.new.ajax_get_field_json(WidgetList::RequestContext.request['model'])
+        elsif WidgetList::RequestContext.request.key?('ajax') && WidgetList::RequestContext.request.key?('save')
           return WidgetList::Administration.new.save_and_show_code()
         else
           return WidgetList::Administration.new.show_interface()
@@ -2424,8 +2426,8 @@ module WidgetList
         listJumpUrl['LIST_NAME']           = @items['name']
         listJumpUrl['SQL_HASH']            = @sqlHash
 
-        if $_REQUEST.key?('switch_grouping')
-          listJumpUrl['switch_grouping'] = $_REQUEST['switch_grouping']
+        if WidgetList::RequestContext.request.key?('switch_grouping')
+          listJumpUrl['switch_grouping'] = WidgetList::RequestContext.request['switch_grouping']
         end
 
         @templateFill['<!--CORNER_RADIUS-->']        = get_radius_value()
@@ -2444,7 +2446,7 @@ module WidgetList
         @templateFill['<!--CUSTOM_CONTENT_TOP-->']   = @items['customHeader']
         @templateFill['<!--WRAP_START-->']           = ''
         @templateFill['<!--WRAP_END-->']             = ''
-        if !$_REQUEST.key?('BUTTON_VALUE')
+        if !WidgetList::RequestContext.request.key?('BUTTON_VALUE')
           @templateFill['<!--WRAP_START-->']         = '<div class="widget_list_outer">
                                                    <input type="hidden" id="<!--NAME-->_jump_url_original" value="<!--JUMP_URL-->"/>'
           @templateFill['<!--WRAP_END-->']           = '</div>'
@@ -2475,7 +2477,7 @@ module WidgetList
 
             @templateFill['<!--FILTER_HEADER-->'] = ''
 
-            if !$_REQUEST.key?('search_filter') && !@isJumpingList
+            if !WidgetList::RequestContext.request.key?('search_filter') && !@isJumpingList
 
               #Search page url
               #
@@ -2495,12 +2497,12 @@ module WidgetList
               filterParameters['SQL_HASH']     = @sqlHash
 
               @items['carryOverRequsts'].each { |value|
-                if $_REQUEST.key?(value)
-                  filterParameters[value] = $_REQUEST[value]
+                if WidgetList::RequestContext.request.key?(value)
+                  filterParameters[value] = WidgetList::RequestContext.request[value]
                 end
               }
 
-              searchUrl =  WidgetList::Utils::build_url(@items['pageId'], filterParameters, (!$_REQUEST.key?('BUTTON_VALUE')))
+              searchUrl =  WidgetList::Utils::build_url(@items['pageId'], filterParameters, (!WidgetList::RequestContext.request.key?('BUTTON_VALUE')))
 
               list_search  = {}
               #
@@ -2509,8 +2511,8 @@ module WidgetList
               list_search['value'] = ''
 
               if @items['searchSession']
-                if $_SESSION.key?('SEARCH_FILTER') && !$_SESSION['SEARCH_FILTER'].nil? && $_SESSION['SEARCH_FILTER'].key?(@items['name'])
-                  list_search['value'] = $_SESSION['SEARCH_FILTER'][@items['name']]
+                if WidgetList::RequestContext.session.key?('SEARCH_FILTER') && !WidgetList::RequestContext.session['SEARCH_FILTER'].nil? && WidgetList::RequestContext.session['SEARCH_FILTER'].key?(@items['name'])
+                  list_search['value'] = WidgetList::RequestContext.session['SEARCH_FILTER'][@items['name']]
                 end
               end
 
@@ -2551,8 +2553,8 @@ module WidgetList
               list_group['readonly']      = true
               if @items['groupBySelected']
                 list_group['value']      = @items['groupBySelected']
-              elsif $_REQUEST.key?('group_row_id')
-                tmp                      = $_REQUEST['group_row_id'].gsub(@items['name'] + '_row_','')
+              elsif WidgetList::RequestContext.request.key?('group_row_id')
+                tmp                      = WidgetList::RequestContext.request['group_row_id'].gsub(@items['name'] + '_row_','')
                 if Float(tmp.to_i) != nil
                   list_group['value']      = @items['groupByItems'][tmp.to_i - 1]
                 end
@@ -2609,7 +2611,7 @@ module WidgetList
         end
 
         @templateFill['<!--NAME-->']                 = @items['name']
-        @templateFill['<!--JUMP_URL-->']             = WidgetList::Utils::build_url(@items['pageId'],listJumpUrl,(!$_REQUEST.key?('BUTTON_VALUE')))
+        @templateFill['<!--JUMP_URL-->']             = WidgetList::Utils::build_url(@items['pageId'],listJumpUrl,(!WidgetList::RequestContext.request.key?('BUTTON_VALUE')))
         @templateFill['--JUMP_URL--']                = @templateFill['<!--JUMP_URL-->']
         @templateFill['<!--JUMP_URL_NAME-->']        = @items['name'] + '_jump_url'
 
@@ -2622,7 +2624,7 @@ module WidgetList
         end
       end
 
-      if $_REQUEST.key?('export_widget_list')
+      if WidgetList::RequestContext.request.key?('export_widget_list')
         csv = ''
         @csv.each{ |v|
           csv += v.to_csv
@@ -2674,8 +2676,8 @@ module WidgetList
       templates['btn_previous']  = @items['template_pagination_previous_disabled']
       templates['btn_next']      = @items['template_pagination_next_active']
 
-      if $_REQUEST.key?('search_filter') && ! $_REQUEST['search_filter'].empty?
-        urlTags['search_filter'] = $_REQUEST['search_filter']
+      if WidgetList::RequestContext.request.key?('search_filter') && ! WidgetList::RequestContext.request['search_filter'].empty?
+        urlTags['search_filter'] = WidgetList::RequestContext.request['search_filter']
       end
 
       if @items['LIST_COL_SORT'].empty?
@@ -2691,21 +2693,21 @@ module WidgetList
       end
 
       @items['carryOverRequsts'].each { |value|
-        if $_REQUEST.key?(value)
-          urlTags[value] = $_REQUEST[value]
+        if WidgetList::RequestContext.request.key?(value)
+          urlTags[value] = WidgetList::RequestContext.request[value]
         end
       }
       if (@sequence == @totalPages || ! (@totalPages > 0))
         showNext = false
       else
         urlTags['LIST_SEQUENCE'] = @sequence + 1
-        nextUrl = WidgetList::Utils::build_url(@items['pageId'],urlTags,(!$_REQUEST.key?('BUTTON_VALUE')))
+        nextUrl = WidgetList::Utils::build_url(@items['pageId'],urlTags,(!WidgetList::RequestContext.request.key?('BUTTON_VALUE')))
       end
 
       if @sequence > 1
         pagePrev = @sequence - 1
         urlTags['LIST_SEQUENCE'] = pagePrev
-        prevUrl = WidgetList::Utils::build_url(@items['pageId'],urlTags,(!$_REQUEST.key?('BUTTON_VALUE')))
+        prevUrl = WidgetList::Utils::build_url(@items['pageId'],urlTags,(!WidgetList::RequestContext.request.key?('BUTTON_VALUE')))
         showPrev = true
       end
 
@@ -2739,8 +2741,8 @@ module WidgetList
       urlTags['ROW_LIMIT']     = 10
 
       @items['carryOverRequsts'].each { |value|
-        if $_REQUEST.key?(value)
-          urlTags[value] = $_REQUEST[value]
+        if WidgetList::RequestContext.request.key?(value)
+          urlTags[value] = WidgetList::RequestContext.request[value]
         end
       }
 
@@ -2758,7 +2760,7 @@ module WidgetList
         if (@totalRows >= jumpCount || @totalRows > rowLimitSelect[key-1])
           urlTags['ROW_LIMIT'] = jumpCount
 
-          rowLimitUrl = WidgetList::Utils::build_url(@items['pageId'],urlTags,(!$_REQUEST.key?('BUTTON_VALUE')))
+          rowLimitUrl = WidgetList::Utils::build_url(@items['pageId'],urlTags,(!WidgetList::RequestContext.request.key?('BUTTON_VALUE')))
           selected = ''
           if (@items['rowLimit'] == jumpCount)
             selected = 'selected'
@@ -2818,7 +2820,7 @@ module WidgetList
         urlTags['SQL_HASH']      = @sqlHash
         jumpTemplate = ''
         jumpUrl = ''
-        jumpUrl = WidgetList::Utils::build_url(@items['pageId'], urlTags, (!$_REQUEST.key?('BUTTON_VALUE')))
+        jumpUrl = WidgetList::Utils::build_url(@items['pageId'], urlTags, (!WidgetList::RequestContext.request.key?('BUTTON_VALUE')))
 
         if page == @sequence
           jumpTemplate = @items['template_pagination_jump_active']
@@ -2867,8 +2869,8 @@ module WidgetList
 
       if list_parms.key?('carryOverRequsts')
         list_parms['carryOverRequsts'].each { |value|
-          if $_REQUEST.key?(value)
-            filterParameters[value] = $_REQUEST[value]
+          if WidgetList::RequestContext.request.key?(value)
+            filterParameters[value] = WidgetList::RequestContext.request[value]
           end
         }
         extra_get_vars = WidgetList::Utils::build_query_string(filterParameters)
@@ -2909,7 +2911,7 @@ module WidgetList
 
         colWidthStyle +=  @items['borderHeadFoot'] ? 'border-bottom:' + @items['headFootBorderStyle'] + ';' : ''
 
-        $_SESSION.deep_merge!({'LIST_SEQUENCE' => { @sqlHash => @sequence} })
+        WidgetList::RequestContext.session.deep_merge!({'LIST_SEQUENCE' => { @sqlHash => @sequence} })
 
         #Hover Title
         #
@@ -2954,7 +2956,7 @@ module WidgetList
 
         else
 
-          if $_REQUEST.key?('export_widget_list') && !skip_column(field)
+          if WidgetList::RequestContext.request.key?('export_widget_list') && !skip_column(field)
             @csv[0] << fieldTitle
           end
 
@@ -2994,15 +2996,15 @@ module WidgetList
 
           if (
           ( (@items.key?('LIST_COL_SORT') && !@items['LIST_COL_SORT'].empty?) && @items['LIST_COL_SORT'] == colSort['LIST_COL_SORT']) ||
-              ( $_SESSION.key?('LIST_COL_SORT') && !$_SESSION['LIST_COL_SORT'].nil? && $_SESSION['LIST_COL_SORT'].key?(@sqlHash) && $_SESSION['LIST_COL_SORT'][@sqlHash].key?(field))
+              ( WidgetList::RequestContext.session.key?('LIST_COL_SORT') && !WidgetList::RequestContext.session['LIST_COL_SORT'].nil? && WidgetList::RequestContext.session['LIST_COL_SORT'].key?(@sqlHash) && WidgetList::RequestContext.session['LIST_COL_SORT'][@sqlHash].key?(field))
           )
             changedSession = false
             if @items.key?('LIST_COL_SORT') && !@items['LIST_COL_SORT'].empty?
-              changedSession = ( $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].key?(@sqlHash) && ! $_SESSION['LIST_COL_SORT'][@sqlHash].key?(@items['LIST_COL_SORT']) )
-              if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
-                $_SESSION['LIST_COL_SORT'].delete(@sqlHash)
+              changedSession = ( WidgetList::RequestContext.session.key?('LIST_COL_SORT') && WidgetList::RequestContext.session['LIST_COL_SORT'].key?(@sqlHash) && ! WidgetList::RequestContext.session['LIST_COL_SORT'][@sqlHash].key?(@items['LIST_COL_SORT']) )
+              if WidgetList::RequestContext.session.key?('LIST_COL_SORT') && WidgetList::RequestContext.session['LIST_COL_SORT'].key?(@sqlHash)
+                WidgetList::RequestContext.session['LIST_COL_SORT'].delete(@sqlHash)
               end
-              $_SESSION.deep_merge!({'LIST_COL_SORT' => { @sqlHash => {@items['LIST_COL_SORT']=> @items['LIST_COL_SORT_ORDER']  } } })
+              WidgetList::RequestContext.session.deep_merge!({'LIST_COL_SORT' => { @sqlHash => {@items['LIST_COL_SORT']=> @items['LIST_COL_SORT_ORDER']  } } })
             end
 
             if !changedSession && @items.key?('LIST_COL_SORT') && ! @items['LIST_COL_SORT'].empty?
@@ -3011,9 +3013,9 @@ module WidgetList
               else
                 icon = "&darr;"
               end
-            elsif !changedSession && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
+            elsif !changedSession && WidgetList::RequestContext.session['LIST_COL_SORT'].class.name == 'Hash' && WidgetList::RequestContext.session['LIST_COL_SORT'].key?(@sqlHash)
               #load sort from session
-              $_SESSION['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
+              WidgetList::RequestContext.session['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
                 if order[1] == 'DESC'
                   colSort['LIST_COL_SORT_ORDER'] = "ASC"
                   icon = "&uarr;"
@@ -3027,21 +3029,21 @@ module WidgetList
 
           #Carry over any search criteria on a sort to SORT URL
           #
-          if $_REQUEST.key?('search_filter') && ! $_REQUEST['search_filter'].empty?
-            if $_REQUEST['search_filter'].empty?
-              colSort['search_filter'] = $_REQUEST['search_filter']
+          if WidgetList::RequestContext.request.key?('search_filter') && ! WidgetList::RequestContext.request['search_filter'].empty?
+            if WidgetList::RequestContext.request['search_filter'].empty?
+              colSort['search_filter'] = WidgetList::RequestContext.request['search_filter']
             end
           end
 
           @items['carryOverRequsts'].each { |value|
-            if $_REQUEST.key?(value)
-              colSort[value] = $_REQUEST[value]
+            if WidgetList::RequestContext.request.key?(value)
+              colSort[value] = WidgetList::RequestContext.request[value]
             end
           }
 
           colSort['SQL_HASH'] = @sqlHash
 
-          pieces = {      '<!--COLSORTURL-->'       => WidgetList::Utils::build_url(@items['pageId'],colSort,(!$_REQUEST.key?('BUTTON_VALUE'))),
+          pieces = {      '<!--COLSORTURL-->'       => WidgetList::Utils::build_url(@items['pageId'],colSort,(!WidgetList::RequestContext.request.key?('BUTTON_VALUE'))),
                           '<!--NAME-->'             => @items['name'],
                           '<!--COLSORTICON->'       => icon,
                           '<!--COL_HEADER_ID-->'    => strip_tags(field).gsub(/\s/,'_'),
@@ -3139,7 +3141,7 @@ module WidgetList
 
           if input['check_all']
             checkAllId = input['id']
-            if $_SESSION.key?('list_checks') && !$_SESSION['list_checks'].nil? && $_SESSION['list_checks'].key?('check_all_' + @sqlHash.to_s  + @items['name'].to_s + @sequence.to_s)
+            if WidgetList::RequestContext.session.key?('list_checks') && !WidgetList::RequestContext.session['list_checks'].nil? && WidgetList::RequestContext.session['list_checks'].key?('check_all_' + @sqlHash.to_s  + @items['name'].to_s + @sequence.to_s)
               input['checked'] = true
             end
 
@@ -3147,7 +3149,7 @@ module WidgetList
             # Set header class
             #
             if @items['headerClass'].class.name == 'Array' && @items['headerClass'].key?('checkbox')
-              if $_SESSION['list_checks'].key?('check_all_' + @sqlHash.to_s  + @items['name'].to_s + @sequence.to_s)
+              if WidgetList::RequestContext.session['list_checks'].key?('check_all_' + @sqlHash.to_s  + @items['name'].to_s + @sequence.to_s)
                 input['checked'] = true
               end
             end
@@ -3170,7 +3172,7 @@ module WidgetList
             listJumpUrl['SQL_HASH']            = @sqlHash
             listJumpUrl['list_action']         = 'ajax_widgetlist_checks'
 
-            onClick << "AjaxMaintainChecks(this, '#{input['class_handle']}', '#{@items['name']}', '" + WidgetList::Utils::build_url(@items['pageId'],listJumpUrl,(!$_REQUEST.key?('BUTTON_VALUE'))) + "', '#{checkAllId}');"
+            onClick << "AjaxMaintainChecks(this, '#{input['class_handle']}', '#{@items['name']}', '" + WidgetList::Utils::build_url(@items['pageId'],listJumpUrl,(!WidgetList::RequestContext.request.key?('BUTTON_VALUE'))) + "', '#{checkAllId}');"
           end
 
           input['onclick'] = onClick.join(' ')
@@ -3187,7 +3189,7 @@ module WidgetList
           #
           # Checkbox is checked or not per session (overwrites query)
           #
-          if $_SESSION.key?('list_checks') && !$_SESSION['list_checks'].nil? && $_SESSION['list_checks'].key?(@items['name'] + @sqlHash + input['value'].to_s)
+          if WidgetList::RequestContext.session.key?('list_checks') && !WidgetList::RequestContext.session['list_checks'].nil? && WidgetList::RequestContext.session['list_checks'].key?(@items['name'] + @sqlHash + input['value'].to_s)
             input['checked'] = true
           end
 
@@ -3219,13 +3221,13 @@ module WidgetList
       #
       # If AJAX, send back JSON
       #
-      if $_REQUEST.key?('BUTTON_VALUE') && $_REQUEST['LIST_NAME'] == list_parms['name']
+      if WidgetList::RequestContext.request.key?('BUTTON_VALUE') && WidgetList::RequestContext.request['LIST_NAME'] == list_parms['name']
 
-        if $_REQUEST.key?('export_widget_list')
+        if WidgetList::RequestContext.request.key?('export_widget_list')
           return ['export',list.render()]
         end
 
-        if $_REQUEST['list_action'] != 'ajax_widgetlist_checks'
+        if WidgetList::RequestContext.request['list_action'] != 'ajax_widgetlist_checks'
           ret['list']           = list.render()
           ret['search_bar']     = list.get_header_pieces['searchBar']
           ret['group_by_items'] = list.get_header_pieces['groupByItems']
@@ -3390,7 +3392,7 @@ module WidgetList
     def self.build_drill_down(*params)
       required_params = {
           :list_id                  => true,              # -- your widget_list name (used for JS)
-          :drill_down_name          => true,              # -- an identifier that is pass for the "column" or "type of drill down" which is passed as $_REQUEST['drill_down'] when the user clicks and returned from get_filter_and_drilldown based on session or request
+          :drill_down_name          => true,              # -- an identifier that is pass for the "column" or "type of drill down" which is passed as WidgetList::RequestContext.request['drill_down'] when the user clicks and returned from get_filter_and_drilldown based on session or request
           :data_to_pass_from_view   => true,              # -- Any SQL function or column name/value in the resultset in which would be the value passed when the user clicks the drill down
           :column_to_show           => true,              # -- The visible column or SQL functions to display to user for the link
       }
@@ -3426,7 +3428,7 @@ module WidgetList
         end
       end
 
-      if $_REQUEST.key?('export_widget_list')
+      if WidgetList::RequestContext.request.key?('export_widget_list')
         link = "#{items[:column_to_show]} #{WidgetList::List::is_sequel(items[:primary_database]) ? " as #{items[:column_alias]} " : ""}"
       end
 
@@ -3620,7 +3622,7 @@ module WidgetList
         return "#{function}('#{linkUrl}')"
       else
         url['SQL_HASH']      = @sqlHash
-        linkUrl = WidgetList::Utils::build_url(@items['pageId'], url, (!$_REQUEST.key?('BUTTON_VALUE')))
+        linkUrl = WidgetList::Utils::build_url(@items['pageId'], url, (!WidgetList::RequestContext.request.key?('BUTTON_VALUE')))
         if !parameters.empty?
           return "#{function}(#{parameters.join(',')})"
         else
@@ -3839,7 +3841,7 @@ module WidgetList
             }
 
 
-            if $_REQUEST.key?('export_widget_list')
+            if WidgetList::RequestContext.request.key?('export_widget_list')
               @csv << row_values
             end
 
@@ -4053,7 +4055,7 @@ module WidgetList
           }
 
 
-          if $_REQUEST.key?('export_widget_list')
+          if WidgetList::RequestContext.request.key?('export_widget_list')
             @csv << row_values
           end
 
@@ -4186,8 +4188,8 @@ module WidgetList
         clear_sql_session(@items.key?('searchClearAll'))
       end
 
-      if !$_REQUEST.key?('BUTTON_VALUE') && !$_SESSION['LIST_SEQUENCE'].nil? && $_SESSION.key?('LIST_SEQUENCE') && $_SESSION['LIST_SEQUENCE'].key?(@sqlHash) &&  $_SESSION['LIST_SEQUENCE'][@sqlHash] > 0
-        @sequence = $_SESSION['LIST_SEQUENCE'][@sqlHash]
+      if !WidgetList::RequestContext.request.key?('BUTTON_VALUE') && !WidgetList::RequestContext.session['LIST_SEQUENCE'].nil? && WidgetList::RequestContext.session.key?('LIST_SEQUENCE') && WidgetList::RequestContext.session['LIST_SEQUENCE'].key?(@sqlHash) &&  WidgetList::RequestContext.session['LIST_SEQUENCE'][@sqlHash] > 0
+        @sequence = WidgetList::RequestContext.session['LIST_SEQUENCE'][@sqlHash]
         generate_limits
       end
 
@@ -4201,7 +4203,7 @@ module WidgetList
         pieces['<!--GROUPBY-->'] = ''
       end
 
-      if !@items['LIST_COL_SORT'].empty? || ($_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash))
+      if !@items['LIST_COL_SORT'].empty? || (WidgetList::RequestContext.session.key?('LIST_COL_SORT') && WidgetList::RequestContext.session['LIST_COL_SORT'].class.name == 'Hash' && WidgetList::RequestContext.session['LIST_COL_SORT'].key?(@sqlHash))
         pieces['<!--ORDERBY-->'] += ' ORDER BY '
         foundColumn = false
         if ! @items['LIST_COL_SORT'].empty?
@@ -4209,13 +4211,13 @@ module WidgetList
           @mongo_sort[(( @items['LIST_COL_SORT'] != 'cnt') ? '_id.' : '') + @items['LIST_COL_SORT']] = (@items['LIST_COL_SORT_ORDER'] == 'ASC') ? 1 : -1 if $is_mongo
           pieces['<!--ORDERBY-->'] += tick_field() + strip_aliases(@items['LIST_COL_SORT']) + tick_field() + " " + @items['LIST_COL_SORT_ORDER']
         else
-          $_SESSION['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
+          WidgetList::RequestContext.session['LIST_COL_SORT'][@sqlHash].each_with_index { |order,void|
             if @items['fields'].key?(order[0])
               foundColumn = true
               @mongo_sort[((order[0] != 'cnt') ? '_id.' : '') + order[0]] = (order[1] == 'ASC') ? 1 : -1 if $is_mongo
               pieces['<!--ORDERBY-->'] += tick_field() + strip_aliases(order[0]) + tick_field() +  " " + order[1]
             end
-          } if $_SESSION.key?('LIST_COL_SORT') && $_SESSION['LIST_COL_SORT'].class.name == 'Hash' && $_SESSION['LIST_COL_SORT'].key?(@sqlHash)
+          } if WidgetList::RequestContext.session.key?('LIST_COL_SORT') && WidgetList::RequestContext.session['LIST_COL_SORT'].class.name == 'Hash' && WidgetList::RequestContext.session['LIST_COL_SORT'].key?(@sqlHash)
         end
 
         # Add base order by
@@ -4468,17 +4470,20 @@ module WidgetList
             return 'mongo'
           else
             if $widget_list_db_conf.key?(db_type)
-              if $widget_list_db_conf[db_type]['adapter'].include?('mysql')
+              database_config = $widget_list_db_conf[db_type]
+              database_config = database_config['primary'] if database_config.key?('primary')
+              adapter = database_config.fetch('adapter', '').to_s
+              if adapter.include?('mysql')
                 return 'mysql'
-              elsif $widget_list_db_conf[db_type]['adapter'].include?('postgres')
+              elsif adapter.include?('postgres')
                 return 'postgres'
-              elsif $widget_list_db_conf[db_type]['adapter'].include?('oracle')
+              elsif adapter.include?('oracle')
                 return 'oracle'
-              elsif $widget_list_db_conf[db_type]['adapter'].include?('sqlite')
+              elsif adapter.include?('sqlite')
                 return 'sqlite'
-              elsif $widget_list_db_conf[db_type]['adapter'].include?('sqlserver')
+              elsif adapter.include?('sqlserver')
                 return 'sqlserver'
-              elsif $widget_list_db_conf[db_type]['adapter'].include?('ibm')
+              elsif adapter.include?('ibm')
                 return 'db2'
               end
             end
@@ -4492,7 +4497,13 @@ module WidgetList
 
     def self.load_widget_list_yml
       if $widget_list_conf.nil?
-        $widget_list_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "widget-list.yml")).read).result)[Rails.env]
+        config_file = Rails.root.join('config', 'widget-list.yml')
+        $widget_list_conf = if config_file.file?
+          YAML.safe_load(ERB.new(File.read(config_file)).result,
+                         permitted_classes: [Symbol], aliases: true).fetch(Rails.env).transform_keys(&:to_sym)
+        else
+          { primary: Rails.env, secondary: false, api_mode: false }
+        end
         if Rails.root.join("app/helpers", "widget_list_helper.rb").file?
           require Rails.root.join("app/helpers", "widget_list_helper.rb")
         end
@@ -4503,10 +4514,11 @@ module WidgetList
       if $widget_list_db_conf.nil?
         if Rails.root.join("config", "mongoid.yml").file?
           $is_mongo            = true
-          $widget_list_db_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "mongoid.yml")).read).result)
+          $widget_list_db_conf = YAML.safe_load(ERB.new(File.read(Rails.root.join("config", "mongoid.yml"))).result,
+                                                aliases: true)
         else
           $is_mongo            = false
-          $widget_list_db_conf = YAML.load(ERB.new(File.new(Rails.root.join("config", "database.yml")).read).result)
+          $widget_list_db_conf = Rails.application.config.database_configuration
         end
       end
     end
@@ -4533,8 +4545,8 @@ module WidgetList
       end
       if (@is_primary_sequel && @items['database'] == 'primary') ||  (@is_secondary_sequel && @items['database'] == 'secondary')
         return @items['view']
-      elsif $is_mongo || (@items['view'].respond_to?('scoped') && @items['view'].scoped.respond_to?('to_sql'))
-        @active_record_model = @items['view'].name.constantize if initializing
+      elsif $is_mongo || @items['view'].respond_to?(:to_sql)
+        @active_record_model = @items['view'].klass if initializing && @items['view'].respond_to?(:klass)
         new_columns = []
 
         @items['fields'].each { |column, fieldTitle|
@@ -4570,7 +4582,7 @@ module WidgetList
         if $is_mongo
           return ''
         else
-          view     = @items['view'].scoped.to_sql
+          view     = @items['view'].to_sql
           sql_from = view[view.index(/FROM/),view.length]
           view     = "SELECT #{new_columns.join(',')} " + sql_from
           where    = ''
@@ -4589,16 +4601,9 @@ module WidgetList
 
       @has_connected = true
       begin
-        if Rails.root.join("config", "widget-list.yml").file?
-          WidgetList::List::load_widget_list_yml()
-          if $widget_list_conf.nil?
-            throw 'Configuration file widget-list.yml has no data.  Check that (' + Rails.env + ') Rails.env matches the pointers in the file'
-          end
-          @primary_conn   = $widget_list_conf[:primary]
-          @secondary_conn = $widget_list_conf[:secondary]
-        else
-          throw 'widget-list.yml not found'
-        end
+        WidgetList::List.load_widget_list_yml
+        @primary_conn = $widget_list_conf[:primary]
+        @secondary_conn = $widget_list_conf[:secondary]
 
         @is_primary_sequel                 = true
         @is_secondary_sequel               = true
@@ -4644,11 +4649,7 @@ module WidgetList
       else
         database_conn = $widget_list_conf[:secondary]
       end
-      is_sequel = true
-      if database_conn != false && ! database_conn.include?('://')
-        is_sequel = false
-      end
-      return is_sequel
+      database_conn.is_a?(String) && database_conn.include?('://')
     end
 
     def self.get_sequel(primary=true)

@@ -17,28 +17,28 @@ select.inputLong, select.inputLarge, select.inputSmall
 
 .inputLong
 {
-    background: url("../assets/images/long-text.jpg") no-repeat scroll 0px 2px transparent;
+    background: url("<%= asset_url('long-text.jpg') %>") no-repeat scroll 0px 2px transparent;
     width: 301px;
 }
 
 .inputLarge
 {
-    background: url("../assets/images/text-field.gif") no-repeat scroll 0px 2px transparent;
+    background: url("<%= asset_url('text-field.gif') %>") no-repeat scroll 0px 2px transparent;
 }
 
 .inputSmall
 {
-    background: url("../assets/images/text-field-small.gif") no-repeat scroll 0px 2px transparent;
+    background: url("<%= asset_url('text-field-small.gif') %>") no-repeat scroll 0px 2px transparent;
 }
 
 .inputMeniumTiny
 {
-    background: url("../assets/images/text-field-medium-tiny.gif") no-repeat scroll 0px 2px transparent;
+    background: url("<%= asset_url('text-field-medium-tiny.gif') %>") no-repeat scroll 0px 2px transparent;
 }
 
 .inputTiny
 {
-    background: url("../assets/images/text-field-tiny.gif") no-repeat scroll 0px 2px transparent;
+    background: url("<%= asset_url('text-field-tiny.gif') %>") no-repeat scroll 0px 2px transparent;
 }
 
 .inputLarge
@@ -74,7 +74,7 @@ select.inputLarge
 div.select-outer
 {
     position:relative;
-    background: transparent url('../assets/images/input_text_right.png') no-repeat scroll top right;
+    background: transparent url('<%= asset_url('input_text_right.png') %>') no-repeat scroll top right;
     display: inline-block;
     height: 27px;
     line-height: 27px;
@@ -82,7 +82,7 @@ div.select-outer
     text-decoration: none;
 }
 
-div.select-outer .select-inner {position:relative;background: transparent url('../assets/images/input_text_left.png') no-repeat scroll top left;border: none;height: 27px;line-height: 27px;padding-left: 6px;width: auto;padding-right: 7px; margin-right:-6px}
+div.select-outer .select-inner {position:relative;background: transparent url('<%= asset_url('input_text_left.png') %>') no-repeat scroll top left;border: none;height: 27px;line-height: 27px;padding-left: 6px;width: auto;padding-right: 7px; margin-right:-6px}
 
 div.select-outer div.select-inner select {padding:0px !important; margin:5px 0px 0px 0px !important; border:0px solid red !important;background:transparent !important; width:100% !important}
 
@@ -92,7 +92,7 @@ div.select-outer div.select-inner select {padding:0px !important; margin:5px 0px
 div.select-outer-multiple
 {
     position:relative;
-    background: transparent url('../assets/images/select-multiple-right.png') no-repeat scroll top right;
+    background: transparent url('<%= asset_url('select-multiple-right.png') %>') no-repeat scroll top right;
     display: inline-block;
     height: 140px;
     padding-right: 13px;
@@ -112,6 +112,6 @@ div.select-outer-multiple
    font-weight: bold;
 }
 
-div.select-outer-multiple .select-inner-multiple {position:relative;background: transparent url('../assets/images/select-multiple-left.png') no-repeat scroll top left;border: none;height: 138px;padding-left: 6px;width: auto;padding-right: 7px; margin-right:-10px}
+div.select-outer-multiple .select-inner-multiple {position:relative;background: transparent url('<%= asset_url('select-multiple-left.png') %>') no-repeat scroll top left;border: none;height: 138px;padding-left: 6px;width: auto;padding-right: 7px; margin-right:-10px}
 
 div.select-outer-multiple div.select-inner-multiple select {padding:7px 0px !important;margin:0px !important;border:0px solid red !important;background:transparent !important; position:relative; top:4px; height:126px; width:100% !important}

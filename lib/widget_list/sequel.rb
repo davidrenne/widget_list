@@ -111,32 +111,14 @@ module Sequel
       # or
       # if get_database._select(get_database[:items].filter(:name => 'abc')) > 0
       #
-      sql = ''
       sql = _determine_type(sql_or_obj)
-
-      if self.class.name != 'WidgetListActiveRecord'
-
-        # build csv of bind to eval below (arguments need to be like this for raw SQL passed with bind in Sequel)
-        #
-        parameters = _convert_bind(bind)
-
-        # escape anything incoming in raw SQL such as bound items to create the ruby string to pass
-        #
-        sql.gsub!(/'/,"\\\\'")
-      else
-
-        _convert_active_record_bind(sql, bind)
-
-      end
-
       sql = _bind(sql,replace_in_query)
 
       # build rows array['COLUMN'][0] = 1234;
       #
-      first   = 1
       cnt     = 0
-      tmp     = nil
       @final_results = {}
+      @errors = false
       if Rails.env == 'development'
         Rails.logger.info(sql)
       end
@@ -194,7 +176,7 @@ module Sequel
               results = active_record_model.all.to_a if active_record_model.respond_to?('all')
               results = active_record_model.to_a if active_record_model.respond_to?('to_a') && !group_match.nil?
             else
-              results = active_record_model.find_by_sql(sql)
+              results = active_record_model.find_by_sql(bind.empty? ? sql : [sql, *bind])
             end
 
             (results||[]).each { |row|
@@ -232,27 +214,21 @@ module Sequel
           @last_sql   = sql_or_obj
         end
       else
-        eval("
-          begin
-            @errors = false
-            self['" + sql + "' " +  parameters + "].each { |row|
-              cnt += 1
-              row.each { |k,v|
-                if first == 1
-                  @final_results[k.to_s.upcase] = []
-                end
-                @final_results[k.to_s.upcase] << v
-              }
-              first = 0
-            }
-            @last_sql = self['" + sql + "' " +  parameters + "].get_sql
-          rescue Exception => e
-            Rails.logger.info(e)
-            @errors = true
-            @last_error = e.to_s
-            @last_sql = '" + sql + "' + \"\n\n\n\" + ' With Bind => ' + bind.inspect + ' And  BindLegacy => ' + replace_in_query.inspect
+        begin
+          dataset = sql_or_obj.is_a?(Sequel::Dataset) ? sql_or_obj : fetch(sql, *bind)
+          dataset.each do |row|
+            cnt += 1
+            row.each do |key, value|
+              (@final_results[key.to_s.upcase] ||= []) << value
+            end
           end
-        ")
+          @last_sql = dataset.sql
+        rescue StandardError => e
+          Rails.logger.info(e)
+          @errors = true
+          @last_error = e.to_s
+          @last_sql = "#{sql}\nWith Bind => #{bind.inspect} And BindLegacy => #{replace_in_query.inspect}"
+        end
       end
       @final_count = cnt
       return cnt
