@@ -2407,6 +2407,16 @@ module WidgetList
         listJumpUrl['LIST_NAME']           = @items['name']
         listJumpUrl['SQL_HASH']            = @sqlHash
 
+        # Initial links inherit request parameters in build_url. Ajax links
+        # need the preview context copied because build_url skips that step.
+        if WidgetList::RequestContext.request.key?('BUTTON_VALUE')
+          %w[iframe desiredController desiredAction].each do |key|
+            if WidgetList::RequestContext.request.key?(key)
+              listJumpUrl[key] = WidgetList::RequestContext.request[key]
+            end
+          end
+        end
+
         if WidgetList::RequestContext.request.key?('switch_grouping')
           listJumpUrl['switch_grouping'] = WidgetList::RequestContext.request['switch_grouping']
         end
